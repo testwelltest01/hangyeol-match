@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { OBSERVER_ITEMS, STEPS, TEST_VERSION, firstIncompleteStep, sanitizeAnswers, type Answers } from "@/lib/items";
 import { computeScores } from "@/lib/scoring";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { allow, clientIp, TOO_MANY } from "@/lib/security";
 import { createClient, getUserId } from "@/lib/supabase/server";
 
 export type FormState = { error: string | null };
@@ -31,8 +32,8 @@ export async function saveProfile(_prev: FormState, formData: FormData): Promise
   if (!isAdultByBirthYear(birthYear)) return { error: "한결은 만 19세 이상만 이용할 수 있어요." };
   if (!agreed) return { error: "개인정보 수집·이용에 동의해야 검사를 시작할 수 있어요." };
 
-  const supabase = await createClient();
-  const { error } = await supabase.from("profiles").upsert({
+  // 브라우저에서 직접 쓰지 못하게 막아두었으므로(0002 보안 강화) 검증을 마친 서버가 쓴다
+  const { error } = await createAdminClient().from("profiles").upsert({
     id: userId,
     nickname,
     gender,
@@ -50,8 +51,9 @@ export async function saveAnswers(partial: Record<string, unknown>): Promise<{ o
   const userId = await getUserId();
   if (!userId) return { ok: false, done: false, error: "로그인이 풀렸어요. 다시 로그인해주세요." };
 
-  const supabase = await createClient();
-  const { data: existing } = await supabase
+  if (!(await allow(`answers:${userId}`, 120, 3600))) return { ok: false, done: false, error: TOO_MANY };
+  const admin = createAdminClient();
+  const { data: existing } = await admin
     .from("test_answers")
     .select("answers")
     .eq("user_id", userId)
@@ -62,7 +64,7 @@ export async function saveAnswers(partial: Record<string, unknown>): Promise<{ o
   const done = firstIncompleteStep(merged) === STEPS.length;
   const now = new Date().toISOString();
 
-  const { error } = await supabase.from("test_answers").upsert({
+  const { error } = await admin.from("test_answers").upsert({
     user_id: userId,
     version: TEST_VERSION,
     answers: merged,
@@ -73,7 +75,6 @@ export async function saveAnswers(partial: Record<string, unknown>): Promise<{ o
 
   if (done) {
     const scores = computeScores(merged);
-    const admin = createAdminClient();
     const { error: scoreError } = await admin
       .from("test_scores")
       .upsert({ user_id: userId, version: TEST_VERSION, scores, computed_at: now });
@@ -88,8 +89,8 @@ export async function getOrCreateInvite(): Promise<string | null> {
   const userId = await getUserId();
   if (!userId) return null;
 
-  const supabase = await createClient();
-  const { data: existing } = await supabase
+  const admin = createAdminClient();
+  const { data: existing } = await admin
     .from("friend_invites")
     .select("token")
     .eq("user_id", userId)
@@ -97,12 +98,20 @@ export async function getOrCreateInvite(): Promise<string | null> {
   if (existing?.token) return existing.token;
 
   const token = randomBytes(12).toString("base64url");
-  const { error } = await supabase.from("friend_invites").insert({ token, user_id: userId });
+  const { error } = await admin.from("friend_invites").insert({ token, user_id: userId });
   return error ? null : token;
 }
 
 /** 친구가 남긴 평가를 저장한다. 로그인 없이 링크로 들어온 사람이 쓴다. */
 export async function submitFriendRating(token: string, input: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
+  if (typeof token !== "string" || !/^[A-Za-z0-9_-]{8,64}$/.test(token) || !input || typeof input !== "object") {
+    return { ok: false, error: "링크가 올바르지 않아요." };
+  }
+  // 로그인 없이 쓰는 기능이라 IP와 링크 단위로 횟수를 제한한다
+  const ip = await clientIp();
+  if (!(await allow(`friend:ip:${ip}`, 10, 3600)) || !(await allow(`friend:token:${token}`, 20, 86400))) {
+    return { ok: false, error: TOO_MANY };
+  }
   const admin = createAdminClient();
   const { data: invite } = await admin.from("friend_invites").select("user_id").eq("token", token).maybeSingle();
   if (!invite) return { ok: false, error: "링크가 올바르지 않아요." };
@@ -132,6 +141,9 @@ export async function deleteAccount(): Promise<{ ok: boolean; error?: string }> 
   if (!userId) return { ok: false, error: "로그인이 풀렸어요. 다시 로그인해주세요." };
 
   const admin = createAdminClient();
+  // Storage의 사진 파일은 DB cascade로 지워지지 않으므로 먼저 지운다
+  const { data: files } = await admin.storage.from("photos").list(userId, { limit: 1000 });
+  if (files?.length) await admin.storage.from("photos").remove(files.map((f) => `${userId}/${f.name}`));
   const { error } = await admin.auth.admin.deleteUser(userId);
   if (error) return { ok: false, error: "탈퇴하지 못했어요. 잠시 후 다시 시도해주세요." };
 

@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { signOut } from "@/app/actions";
 import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
+import { AppNav } from "@/components/ui";
 import type { Answers } from "@/lib/items";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
 import { buildReport } from "@/lib/report";
@@ -16,15 +16,7 @@ const MIN_FRIEND_RATINGS = 3;
 
 export default function ReportPage() {
   return (
-    <Shell
-      right={
-        <form action={signOut}>
-          <button type="submit" className="text-sm text-muted underline underline-offset-4">
-            로그아웃
-          </button>
-        </form>
-      }
-    >
+    <Shell right={<AppNav current="report" />}>
       <Suspense fallback={<Loading />}>
         <ReportGate />
       </Suspense>

@@ -11,8 +11,8 @@ const STEPS = [
     body: "나의 연애 결과, 상대와 다를 때 오해가 생기기 쉬운 순간을 알려드려요.",
   },
   {
-    title: "친구에게 물어보기",
-    body: "친구가 보는 나와 내가 보는 나를 나란히 비교해요.",
+    title: "추천받기",
+    body: "매일 결이 맞는 3명을 추천해요. 서로 관심을 보내면 사진이, 서로 수락하면 연락처가 공개돼요.",
   },
 ];
 
@@ -28,8 +28,8 @@ export default function Home() {
           맞는 사람
         </h1>
         <p className="mt-5 max-w-[34ch] text-[17px] leading-relaxed text-ink-soft">
-          한결은 가치관 검사로 나와 결이 맞는 사람을 찾는 소개팅 서비스예요. 지금은 검사와 리포트를 먼저 열었고,
-          매칭은 사람들이 모이면 시작해요.
+          한결은 가치관 검사로 나와 결이 맞는 사람을 찾는 소개팅 서비스예요. 사진보다 검사 결과를 먼저 보고, 서로
+          관심이 있을 때 사진을 공개해요.
         </p>
       </section>
 
@@ -64,10 +64,6 @@ export default function Home() {
           함께 지내면 매일 마주치는 부분부터 맞춰봐요.
         </p>
       </section>
-
-      <div className="mt-14">
-        <PrimaryLink href="/start">내 연애 결 알아보기</PrimaryLink>
-      </div>
     </Shell>
   );
 }

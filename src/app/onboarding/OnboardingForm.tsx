@@ -47,13 +47,13 @@ export function OnboardingForm({ years }: { years: number[] }) {
             </option>
           ))}
         </select>
-        <span className="mt-2 block text-sm text-muted">만 19세 이상만 이용할 수 있어요. 매칭이 열리면 본인인증을 한 번 더 해요.</span>
+        <span className="mt-2 block text-sm text-muted">만 19세 이상만 이용할 수 있어요.</span>
       </label>
 
       <div className="rounded-xl bg-mist px-4 py-4 text-sm text-ink-soft">
         <p>
-          수집 항목: 이메일, 닉네임, 성별, 출생연도, 검사 응답, 친구가 남긴 평가. 리포트 제공과 이후 매칭에 쓰고, 탈퇴하면
-          바로 지워요.
+          수집 항목: 이메일, 닉네임, 성별, 출생연도, 검사 응답, 친구가 남긴 평가. 리포트와 매칭 추천에 쓰고, 탈퇴하면 바로
+          지워요.
         </p>
         <label className="mt-3 flex items-start gap-3 text-ink">
           <input type="checkbox" name="agreePrivacy" required className="mt-1 h-5 w-5 accent-[var(--color-indigo)]" />

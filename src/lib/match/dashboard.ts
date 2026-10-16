@@ -1,0 +1,131 @@
+import "server-only";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { kstDay } from "@/lib/day";
+import { profileChips, recommendationReason, talkingPoint } from "@/lib/match/explain";
+import { pairStage, type Pair, type PairStage } from "@/lib/match/server";
+import type { Scores } from "@/lib/scoring";
+
+export type PersonCard = {
+  id: string;
+  nickname: string;
+  birthYear: number;
+  region: string;
+  height: number;
+  intro: string;
+  chips: string[];
+  reason: string;
+  talkingPoint: string | null;
+  stage: PairStage;
+  /** 상대가 먼저 관심을 보냄 */
+  likedMe: boolean;
+};
+
+export type Dashboard = {
+  today: PersonCard[];
+  photos: PersonCard[];
+  waitingAccept: PersonCard[];
+  connected: (PersonCard & { needsFeedback: boolean })[];
+  waitingInterest: number;
+  contactNotFound: boolean;
+};
+
+type ReactionRow = { from_user: string; to_user: string; interest: boolean; accept: boolean | null; accept_at: string | null };
+
+/** 연락처 공개 후 며칠 뒤에 만남 피드백을 묻는지 */
+const FEEDBACK_AFTER_DAYS = 3;
+/** "아직 못 만났어요"라고 답한 뒤 다시 묻기까지 */
+const FEEDBACK_REASK_DAYS = 7;
+
+export async function loadDashboard(admin: SupabaseClient, me: string, myScores: Scores): Promise<Dashboard> {
+  const day = kstDay();
+  const [todayRecs, allRecs, reactions, blocks, myFeedback, contact, notFound] = await Promise.all([
+    admin.from("recommendations").select("target_id, reason, score").eq("user_id", me).eq("day", day).order("score", { ascending: false }),
+    admin.from("recommendations").select("target_id").eq("user_id", me),
+    admin.from("reactions").select("from_user, to_user, interest, accept, accept_at").or(`from_user.eq.${me},to_user.eq.${me}`),
+    admin.from("blocks").select("blocker, blocked").or(`blocker.eq.${me},blocked.eq.${me}`),
+    admin.from("meeting_feedback").select("to_user, outcome, updated_at").eq("from_user", me),
+    admin.from("contacts").select("updated_at").eq("user_id", me).maybeSingle(),
+    admin.from("reports").select("created_at").eq("target", me).eq("reason", "contact_not_found").order("created_at", { ascending: false }).limit(1),
+  ]);
+
+  const rows = (reactions.data ?? []) as ReactionRow[];
+  const mine = new Map(rows.filter((r) => r.from_user === me).map((r) => [r.to_user, r]));
+  const theirs = new Map(rows.filter((r) => r.to_user === me).map((r) => [r.from_user, r]));
+  const blocked = new Set((blocks.data ?? []).map((b) => (b.blocker === me ? b.blocked : b.blocker)));
+  const recommended = new Set((allRecs.data ?? []).map((r) => r.target_id));
+  const todayReason = new Map((todayRecs.data ?? []).map((r) => [r.target_id, r.reason as string]));
+
+  const pairOf = (other: string): Pair => {
+    const m = mine.get(other);
+    const t = theirs.get(other);
+    return {
+      mine: m ? { interest: m.interest, accept: m.accept, accept_at: m.accept_at } : null,
+      theirs: t ? { interest: t.interest, accept: t.accept, accept_at: t.accept_at } : null,
+      blocked: blocked.has(other),
+      recommended: recommended.has(other),
+    };
+  };
+
+  const ids = [...new Set([...todayReason.keys(), ...mine.keys(), ...theirs.keys()])];
+  const stages = new Map(ids.map((id) => [id, pairStage(pairOf(id))]));
+  const visible = ids.filter((id) => stages.get(id) !== "hidden");
+
+  const [profiles, matchProfiles, scores] = visible.length
+    ? await Promise.all([
+        admin.from("profiles").select("id, nickname, birth_year").in("id", visible),
+        admin.from("match_profiles").select("user_id, region, height, intro").in("user_id", visible),
+        admin.from("test_scores").select("user_id, scores").in("user_id", visible),
+      ])
+    : [{ data: [] }, { data: [] }, { data: [] }];
+
+  const profileById = new Map((profiles.data ?? []).map((p) => [p.id, p]));
+  const mpById = new Map((matchProfiles.data ?? []).map((p) => [p.user_id, p]));
+  const scoreById = new Map((scores.data ?? []).map((s) => [s.user_id, s.scores as Scores]));
+
+  const card = (id: string): PersonCard | null => {
+    const p = profileById.get(id);
+    const mp = mpById.get(id);
+    const s = scoreById.get(id);
+    if (!p || !mp || !s) return null; // 탈퇴했거나 정보를 지운 사람
+    return {
+      id,
+      nickname: p.nickname,
+      birthYear: p.birth_year,
+      region: mp.region,
+      height: mp.height,
+      intro: mp.intro,
+      chips: profileChips(s),
+      reason: todayReason.get(id) ?? recommendationReason(myScores, s),
+      talkingPoint: talkingPoint(myScores, s),
+      stage: stages.get(id)!,
+      likedMe: theirs.get(id)?.interest === true,
+    };
+  };
+
+  const feedbackByUser = new Map((myFeedback.data ?? []).map((f) => [f.to_user, f]));
+  const now = Date.now();
+  const daysSince = (iso: string | null | undefined) => (iso ? (now - new Date(iso).getTime()) / 86_400_000 : 0);
+
+  const cards = visible.map(card).filter((c): c is PersonCard => c !== null);
+  const today = cards.filter((c) => todayReason.has(c.id) && (c.stage === "new" || c.stage === "waiting_interest"));
+  const byStage = (s: PairStage) => cards.filter((c) => c.stage === s);
+
+  const connected = byStage("connected").map((c) => {
+    const acceptedAt = [mine.get(c.id)?.accept_at, theirs.get(c.id)?.accept_at].sort().at(-1);
+    const fb = feedbackByUser.get(c.id);
+    const needsFeedback = fb
+      ? fb.outcome === "not_yet" && daysSince(fb.updated_at) >= FEEDBACK_REASK_DAYS
+      : daysSince(acceptedAt) >= FEEDBACK_AFTER_DAYS;
+    return { ...c, needsFeedback };
+  });
+
+  const lastNotFound = notFound.data?.[0]?.created_at;
+  return {
+    today,
+    photos: byStage("photos"),
+    waitingAccept: byStage("waiting_accept"),
+    connected,
+    waitingInterest: byStage("waiting_interest").filter((c) => !todayReason.has(c.id)).length,
+    contactNotFound: Boolean(lastNotFound && contact.data && lastNotFound > contact.data.updated_at),
+  };
+}

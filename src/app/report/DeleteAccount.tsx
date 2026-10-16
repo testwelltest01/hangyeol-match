@@ -8,7 +8,7 @@ export function DeleteAccount() {
   const [pending, startTransition] = useTransition();
 
   function onDelete() {
-    const ok = window.confirm("탈퇴하면 검사 결과와 친구 평가가 모두 바로 지워지고 되돌릴 수 없어요. 탈퇴할까요?");
+    const ok = window.confirm("탈퇴하면 검사 결과, 친구 평가, 사진, 연락처, 매칭 기록이 모두 바로 지워지고 되돌릴 수 없어요. 탈퇴할까요?");
     if (!ok) return;
     setError(null);
     startTransition(async () => {

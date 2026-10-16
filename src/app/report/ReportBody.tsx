@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { TraitBar, ValueTrack } from "@/components/ReportParts";
+import { PrimaryLink } from "@/components/Shell";
 import type { Trait } from "@/lib/items";
 import type { Report } from "@/lib/report";
-import { DeleteAccount } from "./DeleteAccount";
 import { InviteBox } from "./InviteBox";
 import { ShareService } from "./ShareService";
 
@@ -35,7 +35,7 @@ export function ReportParts({
     <article>
       <h1 className="font-serif text-[2rem] font-bold leading-tight">{nickname}님의 연애 결</h1>
       <p className="mt-3 text-ink-soft">
-        검사 답을 바탕으로 정리했어요. 매칭이 열리면 이 결과로 결이 맞는 사람을 추천해요.
+        검사 답을 바탕으로 정리했어요. 이 결과로 결이 맞는 사람을 추천해요.
       </p>
 
       <Section
@@ -109,11 +109,12 @@ export function ReportParts({
         </dl>
       </Section>
 
-      <Section title="매칭은 곧 열려요" lead="사용자가 모이면 이 결과로 결이 맞는 사람을 하루 3명씩 추천해요. 친구에게 알려주면 더 빨리 열려요.">
-        <ShareService />
+      <Section title="이제 추천받기" lead="이 결과로 결이 맞는 사람을 매일 3명씩 추천해요. 지역과 조건, 사진 2장, 연락처를 채우면 바로 시작돼요.">
+        <PrimaryLink href="/match">매칭 시작하기</PrimaryLink>
+        <div className="mt-6">
+          <ShareService />
+        </div>
       </Section>
-
-      <DeleteAccount />
     </article>
   );
 }
