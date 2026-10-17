@@ -3,7 +3,7 @@ import { normalizeInstagram, normalizeKakao } from "@/lib/contact";
 import { daysBefore, kstDay } from "@/lib/day";
 import { ALL_REGION_KEYS, PROVINCES, isRegionKey, regionLabel } from "@/lib/regions";
 import { checkPassword } from "@/lib/password";
-import { PHOTO_UPLOADS_PER_DAY, remainingUploads } from "@/lib/photo/rules";
+import { PHOTO_UPLOADS_PER_ACCOUNT, remainingUploads } from "@/lib/photo/rules";
 import { computeOverall, postprocess } from "@/lib/photo/score";
 import { sniffImage } from "@/lib/sniff";
 import { allocate, gateFactor, type Edge } from "./allocate";
@@ -202,8 +202,8 @@ describe("추천 배분", () => {
 });
 
 describe("사진", () => {
-  it("하루 20번까지: 등록·거절은 세고, AI 장애로 실패한 시도는 세지 않는다", () => {
-    expect(PHOTO_UPLOADS_PER_DAY).toBe(20);
+  it("계정당 20번까지: 등록·거절은 세고, AI 장애로 실패한 시도는 세지 않는다", () => {
+    expect(PHOTO_UPLOADS_PER_ACCOUNT).toBe(20);
     expect(remainingUploads([])).toBe(20);
     expect(remainingUploads(["registered", "rejected", "error"])).toBe(18);
     expect(remainingUploads(Array(25).fill("rejected"))).toBe(0);

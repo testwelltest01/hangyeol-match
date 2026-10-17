@@ -14,12 +14,10 @@ import { buildReport } from "@/lib/report";
 import { aggregateFriendRatings, type Scores } from "@/lib/scoring";
 import { UUID_RE } from "@/lib/sniff";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { kstDay } from "@/lib/day";
 import { myChatRooms } from "@/lib/chat/server";
 import { extraCards } from "@/lib/extra/cards";
 import { loadExtraResults } from "@/lib/extra/server";
 import { EXTRA_TESTS } from "@/lib/extra/tests";
-import { kstDayStartIso } from "@/lib/photo/rules";
 import { ResolveButton, SuspendButton } from "../../AdminButtons";
 import { PhotoHistory, type AttemptEntry, type PhotoEntry } from "./PhotoHistory";
 import { AdminLoading, AdminShell, Chip, Empty, Panel, TableWrap, td, th } from "../../ui";
@@ -161,7 +159,6 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
     deleted_at: string | null;
   }[];
   const illusUrls = await signedPhotoUrls(illusRows.flatMap((r) => (r.path && !r.deleted_at ? [r.path] : [])));
-  const todayStart = kstDayStartIso(kstDay());
 
   const pairs = otherIds
     .filter((o) => rx.some((r) => r.from_user === o || r.to_user === o))
@@ -257,7 +254,6 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
       <PhotoHistory
         photos={photoHistory.map(({ path, ...p }) => ({ ...p, url: p.purged_at ? null : (urls.get(path) ?? null) }))}
         attempts={attemptRows}
-        todayResults={attemptRows.filter((a) => a.created_at >= todayStart).map((a) => a.result)}
       />
 
       {!illus.error && (

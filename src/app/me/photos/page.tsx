@@ -4,8 +4,7 @@ import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
 import { PageTitle, SecondaryLink } from "@/components/ui";
 import { loadMySetup, nextSetupPath, signedPhotoUrls } from "@/lib/match/me";
-import { kstDay } from "@/lib/day";
-import { kstDayStartIso, PHOTO_UPLOADS_PER_DAY, remainingUploads } from "@/lib/photo/rules";
+import { COUNTED_RESULTS, PHOTO_UPLOADS_PER_ACCOUNT, remainingUploads } from "@/lib/photo/rules";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
 import { getUserId } from "@/lib/supabase/server";
@@ -42,7 +41,7 @@ async function PhotosGate() {
       .from("photo_attempts")
       .select("result")
       .eq("user_id", userId!)
-      .gte("created_at", kstDayStartIso(kstDay())),
+      .in("result", [...COUNTED_RESULTS]),
   ]);
   const remaining = remainingUploads((attempts ?? []).map((a) => a.result));
   const done = Boolean(face && body);
@@ -66,7 +65,7 @@ async function PhotosGate() {
         needsConsent={!setup.consents.photoOverseas}
       />
       <p className="text-sm text-muted">
-        사진은 얼굴·전신을 합쳐 하루 {PHOTO_UPLOADS_PER_DAY}번까지 올릴 수 있어요(기준에 맞지 않아 거절된 사진 포함). 오늘 {remaining}번
+        사진은 얼굴·전신을 합쳐 계정당 {PHOTO_UPLOADS_PER_ACCOUNT}번까지 올릴 수 있어요(기준에 맞지 않아 거절된 사진 포함). {remaining}번
         남았어요. 바꾼 이전 사진은 30일 뒤 지워져요. AI 점수는 사진 개선 안내에만 쓰고 추천
         순위에는 쓰지 않아요.
       </p>

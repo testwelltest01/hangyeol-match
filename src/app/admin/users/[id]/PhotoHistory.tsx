@@ -1,6 +1,6 @@
 import { kstTime } from "@/lib/admin/data";
 import type { Internal, UserView } from "@/lib/photo/score";
-import { PHOTO_UPLOADS_PER_DAY } from "@/lib/photo/rules";
+import { PHOTO_UPLOADS_PER_ACCOUNT } from "@/lib/photo/rules";
 import { Chip, Empty, Panel } from "../../ui";
 import { ZoomImage } from "@/components/ZoomImage";
 
@@ -118,13 +118,13 @@ function AttemptCard({ a }: { a: AttemptEntry }) {
   );
 }
 
-export function PhotoHistory({ photos, attempts, todayResults }: { photos: PhotoEntry[]; attempts: AttemptEntry[]; todayResults: string[] }) {
+export function PhotoHistory({ photos, attempts }: { photos: PhotoEntry[]; attempts: AttemptEntry[] }) {
   const failed = attempts.filter((a) => a.result !== "registered");
   const items: Item[] = [
     ...photos.map((p): Item => ({ kind: "photo", at: p.created_at, photo: p })),
     ...failed.map((a): Item => ({ kind: "attempt", at: a.created_at, attempt: a })),
   ].sort((a, b) => (a.at < b.at ? 1 : -1));
-  const counted = todayResults.filter((r) => r === "registered" || r === "rejected").length;
+  const counted = attempts.filter((a) => a.result === "registered" || a.result === "rejected").length;
 
   return (
     <Panel
@@ -137,7 +137,7 @@ export function PhotoHistory({ photos, attempts, todayResults }: { photos: Photo
         <Chip tone="alert">거절 {failed.filter((a) => a.result === "rejected").length}</Chip>
         <Chip>오류 {failed.filter((a) => a.result !== "rejected").length}</Chip>
         <Chip tone="moss">
-          오늘 {counted}/{PHOTO_UPLOADS_PER_DAY}번 사용
+          {counted}/{PHOTO_UPLOADS_PER_ACCOUNT}번 사용 (계정당)
         </Chip>
       </p>
       {items.length === 0 ? (

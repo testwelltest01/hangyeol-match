@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { normalizeInstagram, normalizeKakao } from "@/lib/contact";
 import { encryptText } from "@/lib/crypto";
-import { kstDay, kstYear } from "@/lib/day";
+import { kstYear } from "@/lib/day";
 import {
   checkIntro,
   defaultFilters,
@@ -18,7 +18,7 @@ import {
 import { loadMySetup, nextSetupPath } from "@/lib/match/me";
 import { countMutualMatches, loadPool } from "@/lib/match/server";
 import { analyzePhoto, type Improvement, type PhotoSlot, type UserView } from "@/lib/photo/feedback";
-import { kstDayStartIso, PHOTO_UPLOADS_PER_DAY, remainingUploads } from "@/lib/photo/rules";
+import { COUNTED_RESULTS, PHOTO_UPLOADS_PER_ACCOUNT, remainingUploads } from "@/lib/photo/rules";
 import { isRegionKey } from "@/lib/regions";
 import { allow, sniffImage, TOO_MANY } from "@/lib/security";
 import type { Scores } from "@/lib/scoring";
@@ -219,14 +219,14 @@ export async function uploadPhoto(formData: FormData): Promise<UploadResult> {
     if (error) return { ok: false, error: "저장하지 못했어요. 다시 시도해주세요." };
   }
 
-  // 하루 20번 제한 (얼굴·전신 합산, 거절된 사진 포함, 한국 날짜 기준)
+  // 계정당 20번 제한 (평생, 얼굴·전신 합산, 거절된 사진 포함)
   const { data: attempts } = await admin
     .from("photo_attempts")
     .select("result")
     .eq("user_id", userId)
-    .gte("created_at", kstDayStartIso(kstDay()));
+    .in("result", [...COUNTED_RESULTS]);
   if (remainingUploads((attempts ?? []).map((a) => a.result)) === 0) {
-    return { ok: false, error: `사진은 하루 ${PHOTO_UPLOADS_PER_DAY}번까지 올릴 수 있어요. 내일 다시 시도해주세요.` };
+    return { ok: false, error: `사진은 계정당 ${PHOTO_UPLOADS_PER_ACCOUNT}번까지 올릴 수 있어요. 지금 등록된 사진은 그대로 쓸 수 있어요.` };
   }
 
   const image = Buffer.from(await file.arrayBuffer());
@@ -237,7 +237,7 @@ export async function uploadPhoto(formData: FormData): Promise<UploadResult> {
   const previous: Improvement[] = current?.feedback?.improvements ?? [];
   const result = await analyzePhoto({ image, mimeType, slot, gender: setup.gender, previous });
 
-  // 시도 기록은 하루 20번 제한에 쓰이므로 꼭 남긴다. 사유 칸(0004)이 없으면 사유 없이 다시 남긴다
+  // 시도 기록은 계정당 20번 제한에 쓰이므로 꼭 남긴다. 사유 칸(0004)이 없으면 사유 없이 다시 남긴다
   const logAttempt = async (r: string, detail?: string) => {
     const row = { user_id: userId, slot, result: r };
     if (detail) {

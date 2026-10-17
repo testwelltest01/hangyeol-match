@@ -137,7 +137,7 @@ export function PhotoSlot({
             {busy
               ? "AI가 사진을 보는 중"
               : locked
-                ? "오늘은 모두 올렸어요"
+                ? "올릴 수 있는 횟수를 다 썼어요"
                 : current
                   ? slot === "face"
                     ? "다시 찍기"
