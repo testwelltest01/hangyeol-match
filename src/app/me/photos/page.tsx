@@ -4,7 +4,8 @@ import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
 import { AppNav, PageTitle, SecondaryLink } from "@/components/ui";
 import { loadMySetup, nextSetupPath, signedPhotoUrls } from "@/lib/match/me";
-import { canUploadToday } from "@/lib/photo/rules";
+import { kstDay } from "@/lib/day";
+import { kstDayStartIso, PHOTO_UPLOADS_PER_DAY, remainingUploads } from "@/lib/photo/rules";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
 import { getUserId } from "@/lib/supabase/server";
@@ -35,12 +36,15 @@ async function PhotosGate() {
   if (!setup) redirect("/start");
 
   const { face, body } = setup.photos;
-  const [urls, { data: history }] = await Promise.all([
+  const [urls, { data: attempts }] = await Promise.all([
     signedPhotoUrls([face?.path, body?.path].filter((p): p is string => Boolean(p))),
-    createAdminClient().from("photos").select("slot, created_at").eq("user_id", userId!),
+    createAdminClient()
+      .from("photo_attempts")
+      .select("result")
+      .eq("user_id", userId!)
+      .gte("created_at", kstDayStartIso(kstDay())),
   ]);
-  const canUpload = (slot: "face" | "body") =>
-    canUploadToday((history ?? []).filter((h) => h.slot === slot).map((h) => h.created_at));
+  const remaining = remainingUploads((attempts ?? []).map((a) => a.result));
   const done = Boolean(face && body);
 
   return (
@@ -50,7 +54,7 @@ async function PhotosGate() {
         title="얼굴 사진"
         tip="버튼을 누르면 카메라가 열려요. 거울 앞에서 2배 줌으로 찍으면 얼굴이 덜 왜곡되고, 창문을 마주 보면 얼굴이 밝게 나와요."
         current={face ? { url: urls.get(face.path) ?? null, feedback: face.feedback } : null}
-        canUpload={canUpload("face")}
+        canUpload={remaining > 0}
         needsConsent={!setup.consents.photoOverseas}
       />
       <PhotoSlot
@@ -58,11 +62,12 @@ async function PhotosGate() {
         title="전신 사진"
         tip="다른 사람이 찍어준 사진을 갤러리에서 골라주세요. 최소 무릎 위까지 나와야 해요."
         current={body ? { url: urls.get(body.path) ?? null, feedback: body.feedback } : null}
-        canUpload={canUpload("body")}
+        canUpload={remaining > 0}
         needsConsent={!setup.consents.photoOverseas}
       />
       <p className="text-sm text-muted">
-        사진은 하루에 한 번 바꿀 수 있어요(처음 등록은 제외). 바꾼 이전 사진은 30일 뒤 지워져요. AI 점수는 사진 개선 안내에만 쓰고 추천
+        사진은 얼굴·전신을 합쳐 하루 {PHOTO_UPLOADS_PER_DAY}번까지 올릴 수 있어요(기준에 맞지 않아 거절된 사진 포함). 오늘 {remaining}번
+        남았어요. 바꾼 이전 사진은 30일 뒤 지워져요. AI 점수는 사진 개선 안내에만 쓰고 추천
         순위에는 쓰지 않아요.
       </p>
       {done && <SecondaryLink href={nextSetupPath(setup, "photos")}>다음</SecondaryLink>}

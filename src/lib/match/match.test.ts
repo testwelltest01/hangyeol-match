@@ -3,7 +3,7 @@ import { normalizeInstagram, normalizeKakao } from "@/lib/contact";
 import { daysBefore, kstDay } from "@/lib/day";
 import { ALL_REGION_KEYS, PROVINCES, isRegionKey, regionLabel } from "@/lib/regions";
 import { checkPassword } from "@/lib/password";
-import { canUploadToday } from "@/lib/photo/rules";
+import { PHOTO_UPLOADS_PER_DAY, remainingUploads } from "@/lib/photo/rules";
 import { computeOverall, postprocess } from "@/lib/photo/score";
 import { sniffImage } from "@/lib/sniff";
 import { allocate, gateFactor, type Edge } from "./allocate";
@@ -202,13 +202,11 @@ describe("추천 배분", () => {
 });
 
 describe("사진", () => {
-  it("처음 등록은 횟수에 넣지 않고, 교체는 한국 날짜 기준 하루 한 번", () => {
-    const now = new Date("2026-10-17T03:00:00Z"); // 한국 12시
-    expect(canUploadToday([], now)).toBe(true);
-    expect(canUploadToday(["2026-10-17T01:00:00Z"], now)).toBe(true); // 오늘 처음 등록 → 한 번 더 교체 가능
-    expect(canUploadToday(["2026-10-17T01:00:00Z", "2026-10-17T02:00:00Z"], now)).toBe(false);
-    expect(canUploadToday(["2026-10-10T01:00:00Z", "2026-10-16T15:30:00Z"], now)).toBe(false); // 한국 10/17 00:30에 교체함
-    expect(canUploadToday(["2026-10-10T01:00:00Z", "2026-10-16T14:30:00Z"], now)).toBe(true); // 한국 10/16 23:30 → 어제
+  it("하루 20번까지: 등록·거절은 세고, AI 장애로 실패한 시도는 세지 않는다", () => {
+    expect(PHOTO_UPLOADS_PER_DAY).toBe(20);
+    expect(remainingUploads([])).toBe(20);
+    expect(remainingUploads(["registered", "rejected", "error"])).toBe(18);
+    expect(remainingUploads(Array(25).fill("rejected"))).toBe(0);
   });
 
   it("종합 점수는 코드에서 가중합으로 계산하고, 50 미만이면 다시 찍기를 권한다", () => {

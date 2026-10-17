@@ -30,7 +30,7 @@ function FeedbackCard({ feedback, fresh }: { feedback: UserView; fresh: boolean 
         </ol>
       )}
       {feedback.suggest_retake && (
-        <p className="mt-3 rounded-lg bg-mist px-3 py-2 text-[15px]">위 팁을 반영해서 내일 한 번 더 찍어보시겠어요? 사진이 바뀌면 첫인상이 크게 달라져요.</p>
+        <p className="mt-3 rounded-lg bg-mist px-3 py-2 text-[15px]">위 팁을 반영해서 한 번 더 찍어보시겠어요? 사진이 바뀌면 첫인상이 크게 달라져요.</p>
       )}
     </div>
   );
@@ -138,7 +138,7 @@ export function PhotoSlot({
             {busy
               ? "AI가 사진을 보는 중"
               : locked
-                ? "내일 바꿀 수 있어요"
+                ? "오늘은 모두 올렸어요"
                 : current
                   ? slot === "face"
                     ? "다시 찍기"

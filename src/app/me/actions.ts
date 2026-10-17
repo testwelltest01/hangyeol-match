@@ -18,7 +18,7 @@ import {
 import { loadMySetup, nextSetupPath } from "@/lib/match/me";
 import { countMutualMatches, loadPool } from "@/lib/match/server";
 import { analyzePhoto, type Improvement, type PhotoSlot, type UserView } from "@/lib/photo/feedback";
-import { canUploadToday } from "@/lib/photo/rules";
+import { kstDayStartIso, PHOTO_UPLOADS_PER_DAY, remainingUploads } from "@/lib/photo/rules";
 import { isRegionKey } from "@/lib/regions";
 import { allow, sniffImage, TOO_MANY } from "@/lib/security";
 import type { Scores } from "@/lib/scoring";
@@ -185,8 +185,6 @@ export async function saveContact(_prev: FormState, formData: FormData): Promise
 // 사진
 // ---------------------------------------------------------------------------
 
-/** 하루에 AI 사진 분석을 시도할 수 있는 횟수 (거절된 사진 포함, 비용 보호용) */
-const MAX_ATTEMPTS_PER_DAY = 10;
 const MAX_BYTES = 3 * 1024 * 1024;
 const MIME_EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
@@ -221,22 +219,14 @@ export async function uploadPhoto(formData: FormData): Promise<UploadResult> {
     if (error) return { ok: false, error: "저장하지 못했어요. 다시 시도해주세요." };
   }
 
-  // 하루 1회 교체: 처음 등록은 횟수에 넣지 않고, 교체만 한국 날짜 기준 하루 한 번
-  const today = kstDay();
-  const { data: history } = await admin.from("photos").select("created_at").eq("user_id", userId).eq("slot", slot);
-  if (!canUploadToday((history ?? []).map((p) => p.created_at))) {
-    return { ok: false, error: "사진은 하루에 한 번 바꿀 수 있어요. 내일 다시 바꿔주세요." };
-  }
-
-  // 시도 횟수 제한
-  const since = new Date(`${today}T00:00:00+09:00`).toISOString();
-  const { count } = await admin
+  // 하루 20번 제한 (얼굴·전신 합산, 거절된 사진 포함, 한국 날짜 기준)
+  const { data: attempts } = await admin
     .from("photo_attempts")
-    .select("id", { count: "exact", head: true })
+    .select("result")
     .eq("user_id", userId)
-    .gte("created_at", since);
-  if ((count ?? 0) >= MAX_ATTEMPTS_PER_DAY) {
-    return { ok: false, error: "오늘은 사진 분석을 많이 시도했어요. 내일 다시 시도해주세요." };
+    .gte("created_at", kstDayStartIso(kstDay()));
+  if (remainingUploads((attempts ?? []).map((a) => a.result)) === 0) {
+    return { ok: false, error: `사진은 하루 ${PHOTO_UPLOADS_PER_DAY}번까지 올릴 수 있어요. 내일 다시 시도해주세요.` };
   }
 
   const image = Buffer.from(await file.arrayBuffer());
