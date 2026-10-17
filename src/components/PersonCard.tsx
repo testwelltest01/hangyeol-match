@@ -25,9 +25,8 @@ export function PersonCardView({
   return (
     <article className="overflow-hidden rounded-2xl border border-line bg-surface">
       {card.illustrationUrl && (
-        <div className="relative aspect-[4/3] bg-mist">
+        <div className="aspect-[4/3] bg-mist">
           <ZoomImage src={card.illustrationUrl} alt={`${card.nickname}님의 그림 프로필`} className="h-full w-full object-cover object-top" />
-          <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-paper/90 px-2.5 py-1 text-xs font-semibold text-ink-soft">AI 그림</span>
         </div>
       )}
       <div className="px-5 py-5">
