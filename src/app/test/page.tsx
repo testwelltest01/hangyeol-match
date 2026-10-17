@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
-import { firstIncompleteStep, type Answers } from "@/lib/items";
+import { firstIncompleteStep, type Answers, type TestGender } from "@/lib/items";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
 import { createClient, getUserId } from "@/lib/supabase/server";
 import { TestRunner } from "./TestRunner";
@@ -24,8 +24,12 @@ async function TestGate() {
   if (progress !== "test") redirect(PROGRESS_PATH[progress]);
 
   const supabase = await createClient();
-  const { data } = await supabase.from("test_answers").select("answers").eq("user_id", userId!).maybeSingle();
+  const [{ data }, { data: profile }] = await Promise.all([
+    supabase.from("test_answers").select("answers").eq("user_id", userId!).maybeSingle(),
+    supabase.from("profiles").select("gender").eq("id", userId!).single(),
+  ]);
   const answers = (data?.answers as Answers) ?? {};
+  const gender: TestGender = profile?.gender === "female" ? "female" : "male";
 
-  return <TestRunner initialAnswers={answers} initialStep={firstIncompleteStep(answers)} />;
+  return <TestRunner initialAnswers={answers} initialStep={firstIncompleteStep(answers, gender)} gender={gender} />;
 }

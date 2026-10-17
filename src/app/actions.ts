@@ -60,8 +60,12 @@ export async function saveAnswers(partial: Record<string, unknown>): Promise<{ o
     .maybeSingle();
 
   // 사용자는 RLS상 자기 응답 행을 직접 고칠 수도 있으므로, 저장돼 있던 값까지 다시 검증한다.
+  const { data: profile } = await admin.from("profiles").select("gender").eq("id", userId).maybeSingle();
+  const gender = profile?.gender;
+  if (gender !== "male" && gender !== "female") return { ok: false, done: false, error: "프로필을 먼저 만들어주세요." };
+
   const merged: Answers = sanitizeAnswers({ ...((existing?.answers as Record<string, unknown>) ?? {}), ...partial });
-  const done = firstIncompleteStep(merged) === STEPS.length;
+  const done = firstIncompleteStep(merged, gender) === STEPS.length;
   const now = new Date().toISOString();
 
   const { error } = await admin.from("test_answers").upsert({
@@ -74,7 +78,7 @@ export async function saveAnswers(partial: Record<string, unknown>): Promise<{ o
   if (error) return { ok: false, done: false, error: "저장하지 못했어요. 다시 시도해주세요." };
 
   if (done) {
-    const scores = computeScores(merged);
+    const scores = computeScores(merged, gender);
     const { error: scoreError } = await admin
       .from("test_scores")
       .upsert({ user_id: userId, version: TEST_VERSION, scores, computed_at: now });

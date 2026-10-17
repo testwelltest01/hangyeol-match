@@ -8,9 +8,11 @@ import {
   TRAITS,
   VALUE_ITEMS,
   GROOMING_ITEMS,
+  GENDER_GROOMING_ITEM_ID,
   HYGIENE_ITEMS,
   type Answers,
   type Domain,
+  type TestGender,
   type Trait,
 } from "./items";
 
@@ -54,7 +56,8 @@ export function scoreBigFive(answers: Answers, items = PERSONALITY_ITEMS): Recor
 }
 
 /** 전체 응답으로 점수를 계산한다. 필수 문항이 비어 있으면 에러를 던진다. */
-export function computeScores(answers: Answers): Scores {
+export function computeScores(answers: Answers, gender: TestGender): Scores {
+  const genderItem = GENDER_GROOMING_ITEM_ID[gender];
   const missing = [
     ...VALUE_ITEMS,
     ...IMPORTANCE_ITEMS,
@@ -63,7 +66,7 @@ export function computeScores(answers: Answers): Scores {
     ...GROOMING_ITEMS,
   ]
     .map((i) => i.id)
-    .concat(["D1", "D2", "D3", "P1", "P2"])
+    .concat(["D1", "D2", "D3", "P1", "P2", genderItem])
     .filter((id) => answers[id] === undefined);
   if (missing.length) throw new Error(`응답이 빠진 문항: ${missing.join(", ")}`);
 
@@ -86,7 +89,8 @@ export function computeScores(answers: Answers): Scores {
     bigFive: scoreBigFive(answers),
     hygiene: HYGIENE_ITEMS.reduce((sum, i) => sum + num(answers, i.id), 0),
     grooming: {
-      self: round2(mean(GROOMING_ITEMS.map((i) => num(answers, i.id)))),
+      // G1~G6과 성별 문항(남 면도·수염, 여 메이크업)의 평균
+      self: round2(mean([...GROOMING_ITEMS.map((i) => num(answers, i.id)), num(answers, genderItem)])),
       preferred: preferred === 0 ? null : preferred,
       importance: num(answers, "P2"),
     },

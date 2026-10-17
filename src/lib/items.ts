@@ -1,7 +1,7 @@
 // 한결 검사 문항 (기획서 '척도 문항 초안' 탭과 같은 내용)
 // 문항을 고치면 TEST_VERSION을 올려서, 어떤 버전으로 응답했는지 구분한다.
 
-export const TEST_VERSION = "2026-10-v1";
+export const TEST_VERSION = "2026-10-v2";
 
 export type Domain =
   | "marriage"
@@ -53,12 +53,16 @@ export type ImportanceItem = {
 
 export type Option = { value: number | string; label: string };
 
+export type TestGender = "male" | "female";
+
 export type SingleItem = {
   kind: "single";
   id: string;
   question: string;
   options: Option[];
   required: boolean;
+  /** 이 성별에게만 묻는 문항. 없으면 모두에게 묻는다 */
+  gender?: TestGender;
 };
 
 export type LikertItem = {
@@ -211,7 +215,8 @@ export const HYGIENE_ITEMS: SingleItem[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// 꾸밈·스타일 관심도: 본인 수준 G1~G6(1~4), 선택 문항 S1~S4(점수 미포함), 원하는 수준 P1~P2
+// 꾸밈·스타일 관심도: 본인 수준 G1~G6(1~4), 성별 문항(남 S1 면도·수염, 여 S3 메이크업, 1~4),
+// 공통 S2 눈썹·S4 퍼스널컬러(점수 미포함), 원하는 수준 P1~P2. 모두 필수
 // ---------------------------------------------------------------------------
 
 const FREQ: Option[] = [
@@ -230,12 +235,39 @@ export const GROOMING_ITEMS: SingleItem[] = [
   { kind: "single", id: "G6", question: "평소 외출 준비 시간", required: true, options: [{ value: 1, label: "15분 이내" }, { value: 2, label: "15~30분" }, { value: 3, label: "30분~1시간" }, { value: 4, label: "1시간 이상" }] },
 ];
 
-export const GROOMING_OPTIONAL_ITEMS: SingleItem[] = [
-  { kind: "single", id: "S1", question: "면도나 수염 정돈을 얼마나 자주 하나요?", required: false, options: [{ value: "daily", label: "매일" }, { value: "often", label: "자주" }, { value: "sometimes", label: "가끔" }, { value: "na", label: "해당 없음" }] },
-  { kind: "single", id: "S2", question: "눈썹을 정리하나요?", required: false, options: [{ value: "regular", label: "정기적으로" }, { value: "sometimes", label: "가끔" }, { value: "no", label: "안 함" }] },
-  { kind: "single", id: "S3", question: "메이크업을 얼마나 자주 하나요?", required: false, options: [{ value: "daily", label: "매일" }, { value: "often", label: "자주" }, { value: "sometimes", label: "가끔" }, { value: "no", label: "안 함" }] },
-  { kind: "single", id: "S4", question: "나에게 맞는 퍼스널컬러(쿨톤·웜톤)를 알고 있나요?", required: false, options: [{ value: "yes", label: "알고 있다" }, { value: "roughly", label: "대충 안다" }, { value: "no", label: "모른다" }] },
+export const GROOMING_EXTRA_ITEMS: SingleItem[] = [
+  {
+    kind: "single",
+    id: "S1",
+    gender: "male",
+    question: "면도나 수염 정돈(모양 다듬기 포함)을 얼마나 자주 하나요?",
+    required: true,
+    options: [
+      { value: 4, label: "매일" },
+      { value: 3, label: "2~3일에 한 번" },
+      { value: 2, label: "일주일에 한 번쯤" },
+      { value: 1, label: "거의 안 함" },
+    ],
+  },
+  {
+    kind: "single",
+    id: "S3",
+    gender: "female",
+    question: "외출할 때 메이크업을 얼마나 자주 하나요?",
+    required: true,
+    options: [
+      { value: 4, label: "매번" },
+      { value: 3, label: "자주" },
+      { value: 2, label: "가끔" },
+      { value: 1, label: "거의 안 함" },
+    ],
+  },
+  { kind: "single", id: "S2", question: "눈썹을 정리하나요?", required: true, options: [{ value: "regular", label: "정기적으로" }, { value: "sometimes", label: "가끔" }, { value: "no", label: "안 함" }] },
+  { kind: "single", id: "S4", question: "나에게 맞는 퍼스널컬러(쿨톤·웜톤)를 알고 있나요?", required: true, options: [{ value: "yes", label: "알고 있다" }, { value: "roughly", label: "대충 안다" }, { value: "no", label: "모른다" }] },
 ];
+
+/** 성별 문항: 본인 꾸밈 수준 점수에 G1~G6과 함께 들어간다 */
+export const GENDER_GROOMING_ITEM_ID: Record<TestGender, string> = { male: "S1", female: "S3" };
 
 export const GROOMING_PREF_ITEMS: (SingleItem | ImportanceItem)[] = [
   {
@@ -304,8 +336,8 @@ export const STEPS: Step[] = [
   {
     id: "grooming",
     title: "꾸밈과 스타일",
-    guide: "평소 모습 기준으로 답해주세요. 아래 선택 문항은 건너뛰어도 돼요.",
-    items: [...GROOMING_ITEMS, ...GROOMING_OPTIONAL_ITEMS, ...GROOMING_PREF_ITEMS],
+    guide: "평소 모습 기준으로 답해주세요. 이 답은 다른 사람에게 그대로 보이지 않아요.",
+    items: [...GROOMING_ITEMS, ...GROOMING_EXTRA_ITEMS, ...GROOMING_PREF_ITEMS],
   },
 ];
 
@@ -317,14 +349,24 @@ export function isRequired(item: Item): boolean {
   return item.kind === "single" ? item.required : true;
 }
 
+/** 이 사람에게 묻는 문항인지 (성별 문항은 해당 성별에게만) */
+export function appliesTo(item: Item, gender: TestGender): boolean {
+  return item.kind !== "single" || !item.gender || item.gender === gender;
+}
+
+/** 한 단계에서 이 사람에게 보여줄 문항 */
+export function visibleItems(step: Step, gender: TestGender): Item[] {
+  return step.items.filter((item) => appliesTo(item, gender));
+}
+
 /** 한 단계의 필수 문항에 모두 답했는지 */
-export function isStepComplete(step: Step, answers: Answers): boolean {
-  return step.items.every((item) => !isRequired(item) || answers[item.id] !== undefined);
+export function isStepComplete(step: Step, answers: Answers, gender: TestGender): boolean {
+  return visibleItems(step, gender).every((item) => !isRequired(item) || answers[item.id] !== undefined);
 }
 
 /** 처음으로 덜 끝난 단계의 번호. 모두 끝났으면 STEPS.length */
-export function firstIncompleteStep(answers: Answers): number {
-  const i = STEPS.findIndex((s) => !isStepComplete(s, answers));
+export function firstIncompleteStep(answers: Answers, gender: TestGender): number {
+  const i = STEPS.findIndex((s) => !isStepComplete(s, answers, gender));
   return i === -1 ? STEPS.length : i;
 }
 
