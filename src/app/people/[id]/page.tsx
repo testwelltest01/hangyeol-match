@@ -9,6 +9,7 @@ import { PrimaryLink, Shell } from "@/components/Shell";
 import { Notice } from "@/components/ui";
 import { getChatRoom, unreadCounts } from "@/lib/chat/server";
 import { decryptText } from "@/lib/crypto";
+import { shownIllustrationUrls } from "@/lib/illustration/server";
 import { loadExtraResults, sharedScores } from "@/lib/extra/server";
 import { EXTRA_TESTS, extraCommonalities, summarizeExtra } from "@/lib/extra/tests";
 import { domainComparison, profileChips, recommendationReason, talkingPoint } from "@/lib/match/explain";
@@ -65,6 +66,7 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
     loadExtraResults(admin, id),
     loadExtraResults(admin, userId!),
   ]);
+  const illustrationUrl = (await shownIllustrationUrls(admin, [id])).get(id) ?? null;
   if (!profile.data || !mp.data || !theirScores.data) notFound();
 
   const mine = myScores.data!.scores as Scores;
@@ -119,6 +121,20 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
 
       <p className="mt-6 border-l-2 border-indigo pl-3 font-serif text-[1.05rem] leading-relaxed">{reason}</p>
       {talk && <p className="mt-3 text-ink-soft">{talk}</p>}
+
+      {!showPhotos && illustrationUrl && (
+        <section className="mt-8">
+          <h2 className="sr-only">그림 프로필</h2>
+          <div className="mx-auto aspect-[2/3] max-w-xs overflow-hidden rounded-2xl bg-mist">
+            {/* 10분짜리 서명 주소라 next/image 최적화 대신 그대로 보여준다 */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={illustrationUrl} alt={`${name}님의 그림 프로필`} className="h-full w-full object-cover" />
+          </div>
+          <p className="mt-2 text-center text-sm text-muted">
+            AI가 실제 사진과 자기소개로 그린 그림이에요. 실제 사진은 서로 관심을 보내면 공개돼요.
+          </p>
+        </section>
+      )}
 
       {showPhotos && (
         <section className="mt-8">

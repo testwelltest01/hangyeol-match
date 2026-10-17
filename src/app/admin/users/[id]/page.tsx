@@ -79,7 +79,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
   const user = authData?.user;
   if (!user) notFound();
 
-  const [setup, scoreRow, flag, ratings, reactions, reports, feedback, recsReceived, recsShown, allPhotos, attempts, extra, chats] = await Promise.all([
+  const [setup, scoreRow, flag, ratings, reactions, reports, feedback, recsReceived, recsShown, allPhotos, attempts, extra, chats, illus] = await Promise.all([
     loadMySetup(id),
     admin.from("test_scores").select("scores, version, computed_at").eq("user_id", id).maybeSingle(),
     admin.from("user_flags").select("suspended_at, reason").eq("user_id", id).maybeSingle(),
@@ -105,6 +105,12 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
     admin.from("photo_attempts").select("*").eq("user_id", id).order("created_at", { ascending: false }).limit(300),
     loadExtraResults(admin, id),
     myChatRooms(admin, id),
+    admin
+      .from("illustrations")
+      .select("id, status, path, model, prompt_version, features, error, shown, created_at, completed_at, deleted_at")
+      .eq("user_id", id)
+      .order("created_at", { ascending: false })
+      .limit(20),
   ]);
 
   // 관계·신고에 나오는 다른 사람의 닉네임
@@ -141,6 +147,19 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
   // 지금 사진과, 아직 파일이 남아 있는 교체된 사진의 서명 주소를 한 번에 만든다
   const urls = await signedPhotoUrls([...new Set([...photoRows.map((p) => p.path), ...photoHistory.filter((p) => !p.purged_at).map((p) => p.path)])]);
   const attemptRows = (attempts.data ?? []) as AttemptEntry[];
+  const illusRows = (illus.data ?? []) as {
+    id: string;
+    status: string;
+    path: string | null;
+    model: string;
+    prompt_version: string;
+    features: Record<string, unknown>;
+    error: string | null;
+    shown: boolean;
+    created_at: string;
+    deleted_at: string | null;
+  }[];
+  const illusUrls = await signedPhotoUrls(illusRows.flatMap((r) => (r.path && !r.deleted_at ? [r.path] : [])));
   const todayStart = kstDayStartIso(kstDay());
 
   const pairs = otherIds
@@ -241,6 +260,45 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
         attempts={attemptRows}
         todayResults={attemptRows.filter((a) => a.created_at >= todayStart).map((a) => a.result)}
       />
+
+      {!illus.error && (
+        <Panel className="mt-4" title={`그림 프로필 ${illusRows.length}건`} lead="회원이 만든 AI 그림과 그림에 쓴 정보예요. 추천 카드에는 회원이 '보여주기'를 켠 그림만 보여요.">
+          {illusRows.length === 0 ? (
+            <Empty>아직 그림을 만들지 않았어요.</Empty>
+          ) : (
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {illusRows.map((r) => {
+                const url = r.path && !r.deleted_at ? illusUrls.get(r.path) : undefined;
+                return (
+                  <li key={r.id} className="text-sm">
+                    <div className="flex aspect-[2/3] items-center justify-center overflow-hidden rounded-xl bg-mist text-muted">
+                      {url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={url} alt="AI 그림 프로필" className="h-full w-full object-cover" />
+                      ) : (
+                        <span>{r.status === "pending" ? "그리는 중" : r.status === "failed" ? "실패" : "지움"}</span>
+                      )}
+                    </div>
+                    <p className="mt-2 flex flex-wrap gap-1.5">
+                      {r.shown && !r.deleted_at && <Chip tone="moss">추천 카드에 보이는 중</Chip>}
+                      {r.deleted_at && <Chip>지움</Chip>}
+                      {r.status === "failed" && <Chip tone="alert">실패</Chip>}
+                    </p>
+                    <p className="mt-1 tabular-nums text-muted">
+                      {kstTime(r.created_at)} · {r.model} · {r.prompt_version}
+                    </p>
+                    {r.error && <p className="mt-1 text-alert">{r.error}</p>}
+                    <details className="mt-1">
+                      <summary className="cursor-pointer text-muted">그림에 쓴 정보</summary>
+                      <pre className="mt-1 whitespace-pre-wrap break-words rounded-lg bg-paper p-2 text-xs">{JSON.stringify(r.features, null, 2)}</pre>
+                    </details>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Panel>
+      )}
 
       <Panel className="mt-4" title={`관심·수락 기록 ${pairs.length}명`}>
         {pairs.length === 0 ? (

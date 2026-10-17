@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { chatState, myChatRooms, unreadCounts } from "@/lib/chat/server";
 import { kstDay } from "@/lib/day";
+import { shownIllustrationUrls } from "@/lib/illustration/server";
 import { profileChips, recommendationReason, talkingPoint } from "@/lib/match/explain";
 import { pairStage, type Pair, type PairStage } from "@/lib/match/server";
 import type { Scores } from "@/lib/scoring";
@@ -19,6 +20,8 @@ export type PersonCard = {
   stage: PairStage;
   /** 상대가 먼저 관심을 보냄 */
   likedMe: boolean;
+  /** 상대가 추천 카드에 보여주기로 한 그림 프로필 (10분 서명 주소) */
+  illustrationUrl: string | null;
 };
 
 /** 연결된 사람과의 대화방 요약 */
@@ -97,6 +100,7 @@ export async function loadDashboard(admin: SupabaseClient, me: string, myScores:
       ])
     : [{ data: [] }, { data: [] }, { data: [] }];
 
+  const illustrations = await shownIllustrationUrls(admin, visible);
   const profileById = new Map((profiles.data ?? []).map((p) => [p.id, p]));
   const mpById = new Map((matchProfiles.data ?? []).map((p) => [p.user_id, p]));
   const scoreById = new Map((scores.data ?? []).map((s) => [s.user_id, s.scores as Scores]));
@@ -118,6 +122,7 @@ export async function loadDashboard(admin: SupabaseClient, me: string, myScores:
       talkingPoint: talkingPoint(myScores, s),
       stage: stages.get(id)!,
       likedMe: theirs.get(id)?.interest === true,
+      illustrationUrl: illustrations.get(id) ?? null,
     };
   };
 

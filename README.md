@@ -30,6 +30,7 @@
 | `/me/profile` | 사는 지역, 키, 자기소개, 종교(선택, 민감정보 동의) |
 | `/me/filters` | 원하는 상대 조건 (꼭/되도록), 실시간 맞는 사람 수 |
 | `/me/photos` | 얼굴(카메라)·전신(갤러리) 사진과 AI 피드백 |
+| `/me/illustration` | 그림 프로필(선택): 사진 2장과 자기소개·성향으로 AI 그림, 보여주기를 켜면 추천 카드에 |
 | `/me/contact` | 인스타그램·카카오톡 ID (암호화 저장) |
 | `/privacy` | 개인정보처리방침 |
 | `/letter` | 만든 사람의 편지 (상단 메뉴 '편지') |
@@ -71,6 +72,8 @@
 | `OPENAI_API_KEY`, `OPENAI_VISION_MODEL` | 사진 피드백. 모델은 테스트한 `gpt-6-luna` |
 | `CONTACT_ENCRYPTION_KEY` | 연락처 암호화 키. 한 번 정하면 바꾸지 말고 따로 보관 |
 | `CRON_SECRET` | 매일 추천 계산 주소를 보호하는 비밀값 |
+| `OPENAI_IMAGE_MODEL` / `OPENAI_IMAGE_QUALITY` | (선택) 그림 프로필 모델·품질. 기본 `gpt-image-2.5-sunburst`, `medium` |
+| `ILLUSTRATION_DAILY_CAP` | (선택) 서비스 전체 하루 그림 상한. 기본 300 |
 | `ADMIN_EMAILS` | (선택) 관리자 이메일, 쉼표로 여러 개. 없으면 `testwelltest01@gmail.com` |
 
 비밀값 만들기 (Node가 설치된 아무 터미널):

@@ -52,6 +52,14 @@ async function MeGate() {
         ))}
       </ul>
 
+      <Link href="/me/illustration" className="mt-4 flex items-center justify-between gap-4 border-b border-line pb-4">
+        <span>
+          그림 프로필 <span className="ml-1 text-sm text-muted">선택</span>
+          <span className="mt-0.5 block text-sm text-muted">사진과 자기소개로 그린 그림을 추천 카드에 보여줘요</span>
+        </span>
+        <span className="shrink-0 text-sm text-indigo">보기</span>
+      </Link>
+
       {setup.matchProfile && (
         <section className="mt-10">
           <h2 className="font-serif text-xl font-bold">매칭 쉬기</h2>
