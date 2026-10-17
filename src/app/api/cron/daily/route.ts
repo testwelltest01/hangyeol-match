@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { CHAT_BODY_RETENTION_DAYS } from "@/lib/chat/rules";
 import { kstDay } from "@/lib/day";
 import { generateRecommendations } from "@/lib/match/server";
 import { safeEqual } from "@/lib/security";
@@ -45,8 +46,10 @@ export async function GET(request: Request) {
 
   // 하루 지난 요청 횟수 기록 정리
   await admin.from("rate_limits").delete().lt("window_start", new Date(Date.now() - 86_400_000).toISOString());
+  // 대화 내용은 마지막 대화 후 90일이 지나면 지운다 (확인 중인 신고가 있으면 남김, 0005 전이면 조용히 실패)
+  const { data: chatPurged } = await admin.rpc("purge_chat_bodies", { p_days: CHAT_BODY_RETENTION_DAYS });
   // 방문 기록은 처리방침의 '접속 로그 3개월'에 맞춰 90일 뒤 지운다 (0003 전이면 조용히 실패)
   await admin.from("activity_events").delete().lt("created_at", new Date(Date.now() - 90 * 86_400_000).toISOString());
 
-  return Response.json({ day, created, purged });
+  return Response.json({ day, created, purged, chatPurged: chatPurged ?? 0 });
 }

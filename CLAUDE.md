@@ -10,7 +10,7 @@
 - `npm run dev` / `npm test` (vitest, `src/**/*.test.ts`) / `npx tsc --noEmit` / `npx eslint .` / `npx next build`
 - 라우트 타입(`PageProps<"/경로">`)이 없다는 오류가 나면 `npx next typegen`
 - 배포: GitHub `main`에 push하면 Vercel이 자동 배포 (https://hangyeol-match.vercel.app, 함수 리전 `icn1`)
-- DB 변경은 `supabase/migrations/000N_*.sql`을 새로 만들고, 사용자가 Supabase SQL Editor에서 직접 실행한다 (0001, 0002 실행 완료 기준. 0003 방문 기록, 0004 추가 검사·사진 거절 사유는 작성만 됨)
+- DB 변경은 `supabase/migrations/000N_*.sql`을 새로 만들고, 사용자가 Supabase SQL Editor에서 직접 실행한다 (0001, 0002 실행 완료 기준. 0003 방문 기록, 0004 추가 검사·사진 거절 사유, 0005 대화방은 작성만 됨)
 
 ## Next.js 16 주의 (cacheComponents + partialPrefetching 켜짐)
 
@@ -44,7 +44,8 @@
 
 ## 확정된 기획 결정
 
-- 하루 3명 추천 → 서로 관심이면 사진 공개 → 서로 수락이면 인스타그램/카카오톡 ID 공개. 앱 내 채팅 없음
+- 하루 3명 추천 → 서로 관심이면 사진 공개 → 서로 수락이면 대화방(`/chat/[id]`, 한 사람당 49개 = '서로 50회 미만', 500자, `src/lib/chat/rules.ts`) → 둘 다 '연락처 전달'을 누르면 인스타그램/카카오톡 ID 공개 (2026-10-17 변경, 이전엔 수락 즉시 공개)
+- 대화: 테이블 서버 전용(0005), 보내기·연락처 전달은 서버 액션 + DB 함수(방 잠금으로 한도·순번 보장), 새 메시지는 `GET /api/chat/[id]?after=` 폴링(서버 액션은 순차 실행이라 받기와 분리, 대화 중 2.5초→조용하면 15초, 화면 가리면 멈춤). 대화창에 연락처·아이디 모양은 막는다. 내용은 마지막 대화 후 90일 뒤 크론이 지우고 메타데이터(순번, 말차례, 글자 수, 응답 초)는 남긴다. 관리자는 신고가 있는 대화만 내용 열람, 엑셀은 메타데이터만. 0005 전에는 예전처럼 수락 즉시 연락처 공개(`getChatRoom().available`)
 - 친구 평가가 1명 이상 있어야 매칭에 참여 (리포트의 매칭 시작 버튼, /match 준비 목록, 후보 풀 모두 같은 기준 `src/lib/match/rules.ts`)
 - 사진 2장: 얼굴은 화면에서 촬영(`capture="user"`), 전신은 갤러리. 사진 올리기는 사람마다 하루 20번까지(얼굴·전신 합산, 거절 포함, `src/lib/photo/rules.ts`). AI 피드백 없이는 등록 불가, 미리보기 피드백 없음
 - 지역은 시·군·구 직접 선택(양방향), 종교는 선택 입력 + 민감정보 별도 동의

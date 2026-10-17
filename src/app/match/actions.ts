@@ -1,27 +1,14 @@
 "use server";
 
+import { closeChatRoom, getChatRoom, openChatRoom } from "@/lib/chat/server";
+import { pairContext } from "@/lib/match/context";
 import { loadPair, pairStage, type PairStage } from "@/lib/match/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserId } from "@/lib/supabase/server";
 import { REPORT_REASONS, type ReportReason } from "@/lib/match/safety";
-import { allow, TOO_MANY, UUID_RE } from "@/lib/security";
+import { allow, TOO_MANY } from "@/lib/security";
 
 type Result = { ok: true; stage?: PairStage } | { ok: false; error: string };
 
-// 서버 액션은 누구나 직접 호출할 수 있는 공개 주소다. 타입, 로그인, 관계, 횟수를 매번 다시 확인한다.
-async function context(targetId: unknown) {
-  const userId = await getUserId();
-  if (!userId) return { error: "로그인이 풀렸어요. 다시 로그인해주세요." } as const;
-  if (typeof targetId !== "string" || !UUID_RE.test(targetId) || targetId === userId) {
-    return { error: "잘못된 요청이에요." } as const;
-  }
-  if (!(await allow(`match:${userId}`, 300, 3600))) return { error: TOO_MANY } as const;
-  const admin = createAdminClient();
-  const { data: flag } = await admin.from("user_flags").select("suspended_at").eq("user_id", userId).maybeSingle();
-  if (flag?.suspended_at) return { error: "신고가 접수되어 지금은 이용할 수 없어요." } as const;
-  const pair = await loadPair(admin, userId, targetId);
-  return { userId, admin, pair, stage: pairStage(pair) } as const;
-}
+const context = (targetId: unknown) => pairContext(targetId);
 
 /** 관심 있어요 / 넘기기 / 수락 / 거절 */
 const KINDS = ["interest", "pass", "accept", "decline"] as const;
@@ -49,7 +36,10 @@ export async function react(targetId: string, kind: (typeof KINDS)[number]): Pro
     if (error) return { ok: false, error: "저장하지 못했어요. 다시 시도해주세요." };
   }
   const after = await loadPair(admin, userId, targetId);
-  return { ok: true, stage: pairStage(after) };
+  const stageAfter = pairStage(after);
+  // 서로 수락하면 대화방이 열린다 (0005 SQL 전이면 조용히 넘어간다)
+  if (stageAfter === "connected") await openChatRoom(admin, userId, targetId);
+  return { ok: true, stage: stageAfter };
 }
 
 /** 차단: 서로 더 이상 추천되지 않고, 진행 중인 연결도 양쪽에서 사라진다 */
@@ -57,7 +47,9 @@ export async function blockUser(targetId: string): Promise<Result> {
   const ctx = await context(targetId);
   if ("error" in ctx) return { ok: false, error: ctx.error! };
   const { error } = await ctx.admin.from("blocks").upsert({ blocker: ctx.userId, blocked: targetId });
-  return error ? { ok: false, error: "차단하지 못했어요. 다시 시도해주세요." } : { ok: true };
+  if (error) return { ok: false, error: "차단하지 못했어요. 다시 시도해주세요." };
+  await closeChatRoom(ctx.admin, ctx.userId, targetId, "blocked");
+  return { ok: true };
 }
 
 /** 신고 3건이 쌓이면 운영자가 확인할 때까지 매칭을 자동으로 멈춘다 */
@@ -73,7 +65,12 @@ export async function reportUser(targetId: string, reason: ReportReason, detail:
   if (!(await allow(`report:${userId}`, 20, 86400))) return { ok: false, error: TOO_MANY };
   // 추천받았거나 관심·수락으로 이어진 사람만 신고할 수 있다
   if (!pair.recommended && !pair.mine && !pair.theirs) return { ok: false, error: "신고할 수 없는 사람이에요." };
-  if (reason === "contact_not_found" && stage !== "connected") return { ok: false, error: "연락처가 공개된 뒤에 알려주세요." };
+  if (reason === "contact_not_found") {
+    // 대화방이 있으면 연락처를 서로 전달한 뒤에만, 없으면(0005 전) 서로 수락한 뒤에만
+    const room = await getChatRoom(admin, userId, targetId);
+    const exchanged = room.available ? Boolean(room.room?.exchanged_at) : stage === "connected";
+    if (!exchanged) return { ok: false, error: "연락처가 공개된 뒤에 알려주세요." };
+  }
 
   const { error } = await admin
     .from("reports")
@@ -83,6 +80,7 @@ export async function reportUser(targetId: string, reason: ReportReason, detail:
   // "ID로 찾을 수 없어요"는 상대가 고치면 되는 일이라 차단하지 않는다
   if (reason !== "contact_not_found") {
     await admin.from("blocks").upsert({ blocker: userId, blocked: targetId });
+    await closeChatRoom(admin, userId, targetId, "reported");
     const { data: reports } = await admin
       .from("reports")
       .select("reporter")

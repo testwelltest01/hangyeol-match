@@ -51,6 +51,36 @@ export async function loadExportData(admin: SupabaseClient): Promise<ExportData>
     extras = [];
   }
 
+  // 대화는 0005 SQL을 실행해야 생긴다. 메시지 내용(body)은 읽지 않는다
+  let chatRooms: ExportData["chatRooms"] = [];
+  let chatMessages: ExportData["chatMessages"] = [];
+  let chatEvents: ExportData["chatEvents"] = [];
+  try {
+    [chatRooms, chatMessages, chatEvents] = await Promise.all([
+      fetchAll<ExportData["chatRooms"][number]>((a, b) =>
+        admin
+          .from("chat_rooms")
+          .select("id, user_a, user_b, opened_at, first_message_at, last_message_at, count_a, count_b, contact_a_at, contact_b_at, exchanged_at, closed_at, close_reason")
+          .order("opened_at")
+          .range(a, b),
+      ),
+      fetchAll<ExportData["chatMessages"][number]>((a, b) =>
+        admin
+          .from("chat_messages")
+          .select("id, room_id, sender, room_seq, sender_seq, turn, char_count, response_seconds, created_at")
+          .order("id")
+          .range(a, b),
+      ),
+      fetchAll<ExportData["chatEvents"][number]>((a, b) =>
+        admin.from("chat_events").select("id, room_id, user_id, kind, created_at").order("id").range(a, b),
+      ),
+    ]);
+  } catch {
+    chatRooms = [];
+    chatMessages = [];
+    chatEvents = [];
+  }
+
   return {
     generatedAt: new Date(),
     members,
@@ -62,6 +92,9 @@ export async function loadExportData(admin: SupabaseClient): Promise<ExportData>
     recommendationDays: RECOMMENDATION_DAYS,
     feedback,
     reports,
+    chatRooms,
+    chatMessages,
+    chatEvents,
     extras,
   };
 }

@@ -46,7 +46,7 @@ const nextConfig: NextConfig = {
       { source: "/:path*", headers: SECURITY_HEADERS },
       // 로그인 후 화면과 친구 평가 링크는 검색에 노출하지 않는다
       {
-        source: "/:dir(f|me|match|people|report|test|onboarding|admin|extra)/:path*",
+        source: "/:dir(f|me|match|people|report|test|onboarding|admin|extra|chat)/:path*",
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
     ];

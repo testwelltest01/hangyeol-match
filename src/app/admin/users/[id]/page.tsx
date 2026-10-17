@@ -15,6 +15,7 @@ import { aggregateFriendRatings, type Scores } from "@/lib/scoring";
 import { UUID_RE } from "@/lib/sniff";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { kstDay } from "@/lib/day";
+import { myChatRooms } from "@/lib/chat/server";
 import { extraCards } from "@/lib/extra/cards";
 import { loadExtraResults } from "@/lib/extra/server";
 import { EXTRA_TESTS } from "@/lib/extra/tests";
@@ -78,7 +79,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
   const user = authData?.user;
   if (!user) notFound();
 
-  const [setup, scoreRow, flag, ratings, reactions, reports, feedback, recsReceived, recsShown, allPhotos, attempts, extra] = await Promise.all([
+  const [setup, scoreRow, flag, ratings, reactions, reports, feedback, recsReceived, recsShown, allPhotos, attempts, extra, chats] = await Promise.all([
     loadMySetup(id),
     admin.from("test_scores").select("scores, version, computed_at").eq("user_id", id).maybeSingle(),
     admin.from("user_flags").select("suspended_at, reason").eq("user_id", id).maybeSingle(),
@@ -103,6 +104,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
     // 사유 칸(detail)은 0004 SQL 뒤에 생기므로 * 로 읽는다
     admin.from("photo_attempts").select("*").eq("user_id", id).order("created_at", { ascending: false }).limit(300),
     loadExtraResults(admin, id),
+    myChatRooms(admin, id),
   ]);
 
   // 관계·신고에 나오는 다른 사람의 닉네임
@@ -272,6 +274,60 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
           </TableWrap>
         )}
       </Panel>
+
+      {chats.available && (
+        <Panel className="mt-4" title={`대화방 ${chats.rooms.length}개`} lead="내용은 두 사람 사이에 신고가 있을 때만 열 수 있어요.">
+          {chats.rooms.length === 0 ? (
+            <Empty>아직 대화방이 없어요.</Empty>
+          ) : (
+            <TableWrap>
+              <thead>
+                <tr>
+                  <th className={th}>상대</th>
+                  <th className={th}>열린 시각</th>
+                  <th className={`${th} text-right`}>메시지 (회원/상대)</th>
+                  <th className={th}>연락처</th>
+                  <th className={th}>마지막 메시지</th>
+                  <th className={th} />
+                </tr>
+              </thead>
+              <tbody className="tabular-nums">
+                {chats.rooms
+                  .sort((a, b) => ((a.last_message_at ?? a.opened_at) < (b.last_message_at ?? b.opened_at) ? 1 : -1))
+                  .map((r) => {
+                    const isA = r.user_a === id;
+                    const other = isA ? r.user_b : r.user_a;
+                    const mineAt = isA ? r.contact_a_at : r.contact_b_at;
+                    const theirsAt = isA ? r.contact_b_at : r.contact_a_at;
+                    return (
+                      <tr key={r.id}>
+                        <td className={td}>
+                          <Link href={`/admin/users/${other}`} className="font-semibold underline underline-offset-4">
+                            {otherName(other)}
+                          </Link>
+                          {r.closed_at && <span className="ml-1.5"><Chip tone="alert">닫힘</Chip></span>}
+                        </td>
+                        <td className={`${td} whitespace-nowrap`}>{kstTime(r.opened_at)}</td>
+                        <td className={`${td} text-right`}>
+                          {isA ? r.count_a : r.count_b}/{isA ? r.count_b : r.count_a}
+                        </td>
+                        <td className={`${td} whitespace-nowrap`}>
+                          {r.exchanged_at ? "교환됨" : mineAt ? "회원이 누름" : theirsAt ? "상대가 누름" : "–"}
+                        </td>
+                        <td className={`${td} whitespace-nowrap text-muted`}>{kstTime(r.last_message_at)}</td>
+                        <td className={td}>
+                          <Link href={`/admin/chats/${r.id}`} className="text-sm underline underline-offset-4">
+                            보기
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </TableWrap>
+          )}
+        </Panel>
+      )}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <Panel title={`신고 ${reportRows.length}건`} lead="받은 신고와 이 회원이 한 신고">

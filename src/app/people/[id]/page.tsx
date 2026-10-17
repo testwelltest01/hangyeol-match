@@ -5,8 +5,9 @@ import { LikedBadge } from "@/components/LikedBadge";
 import { Loading } from "@/components/Loading";
 import { personLine } from "@/components/PersonCard";
 import { ReactButtons } from "@/components/ReactButtons";
-import { Shell } from "@/components/Shell";
+import { PrimaryLink, Shell } from "@/components/Shell";
 import { Notice } from "@/components/ui";
+import { getChatRoom, unreadCounts } from "@/lib/chat/server";
 import { decryptText } from "@/lib/crypto";
 import { loadExtraResults, sharedScores } from "@/lib/extra/server";
 import { EXTRA_TESTS, extraCommonalities, summarizeExtra } from "@/lib/extra/tests";
@@ -82,9 +83,16 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
     photos = rows.flatMap((r) => (urls.get(r.path) ? [{ slot: r.slot, url: urls.get(r.path)! }] : []));
   }
 
+  // 대화방: 서로 수락하면 열린다. 연락처는 둘 다 '연락처 전달'을 눌러야 보인다.
+  // 0005 SQL 전(대화방 없음)이면 예전처럼 서로 수락하면 바로 연락처를 보여준다
+  const chat = stage === "connected" || stage === "photos" || stage === "waiting_accept" ? await getChatRoom(admin, userId!, id) : null;
+  const chatAvailable = chat?.available ?? false;
+  const exchanged = stage === "connected" && (!chatAvailable || Boolean(chat?.room?.exchanged_at));
+  const unread = chatAvailable && chat?.room ? ((await unreadCounts(admin, [chat.room], userId!)).get(chat.room.id) ?? 0) : 0;
+
   let contact: { instagram: string | null; kakao: string | null } | null = null;
   let feedback: { outcome: string } | null = null;
-  if (stage === "connected") {
+  if (exchanged) {
     const [{ data: c }, { data: fb }] = await Promise.all([
       admin.from("contacts").select("instagram, kakao").eq("user_id", id).maybeSingle(),
       admin.from("meeting_feedback").select("outcome").eq("from_user", userId!).eq("to_user", id).maybeSingle(),
@@ -193,15 +201,32 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
         )}
         {stage === "photos" && (
           <>
-            <p className="mb-4 text-ink-soft">사진을 보고 마음에 들면 수락해주세요. 서로 수락하면 연락처가 공개돼요.</p>
+            <p className="mb-4 text-ink-soft">
+              사진을 보고 마음에 들면 수락해주세요. {chatAvailable ? "서로 수락하면 대화방이 열려요." : "서로 수락하면 연락처가 공개돼요."}
+            </p>
             <ReactButtons targetId={id} mode="accept" />
           </>
         )}
         {stage === "waiting_accept" && <Notice>수락했어요. {name}님의 답을 기다리고 있어요.</Notice>}
-        {stage === "connected" && contact && (
+        {stage === "connected" && chatAvailable && (
+          <div className="mb-10">
+            <h2 className="font-serif text-xl font-bold">대화</h2>
+            <p className="mt-2 text-ink-soft">
+              {chat?.room?.closed_at
+                ? "대화가 닫혔어요."
+                : exchanged
+                  ? "연락처를 주고받았어요. 대화방도 남은 메시지만큼 계속 쓸 수 있어요."
+                  : "서로 수락해서 대화방이 열렸어요. 편하게 이야기해보고, 둘 다 '연락처 전달'을 누르면 여기에 연락처가 보여요."}
+            </p>
+            <div className="mt-4">
+              <PrimaryLink href={`/chat/${id}`}>{unread ? `대화방 열기 · 새 메시지 ${unread}` : "대화방 열기"}</PrimaryLink>
+            </div>
+          </div>
+        )}
+        {exchanged && contact && (
           <>
             <h2 className="font-serif text-xl font-bold">연락처</h2>
-            <p className="mt-2 text-ink-soft">서로 수락했어요. 먼저 인사를 건네보세요.</p>
+            <p className="mt-2 text-ink-soft">{chatAvailable ? "둘 다 연락처 전달을 눌렀어요." : "서로 수락했어요. 먼저 인사를 건네보세요."}</p>
             <dl className="mt-4 space-y-3">
               {contact.instagram && (
                 <div className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3">
@@ -237,7 +262,7 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
         )}
       </section>
 
-      <SafetyActions targetId={id} name={name} connected={stage === "connected"} />
+      <SafetyActions targetId={id} name={name} connected={exchanged} />
     </article>
   );
 }

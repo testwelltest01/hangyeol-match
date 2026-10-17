@@ -54,10 +54,16 @@ export const loadMatch = cache(async (): Promise<MatchData> => {
   return { setup, ready, d };
 });
 
+/** 연결 탭에서 내가 봐야 할 사람: 새 메시지, 상대의 연락처 전달 요청, 만남 피드백 */
+export function needsAttention(c: Dashboard["connected"][number]): boolean {
+  const chat = c.chat;
+  return c.needsFeedback || Boolean(chat && !chat.closed && (chat.unread > 0 || (chat.contactTheirs && !chat.contactMine && !chat.exchanged)));
+}
+
 /** 탭 옆 숫자: 내가 답해야 할 사람 수 */
 async function TabCount({ tab }: { tab: MatchTab }) {
   const { d } = await loadMatch();
-  const n = tab === "interest" ? d.photos.length : tab === "connected" ? d.connected.filter((c) => c.needsFeedback).length : 0;
+  const n = tab === "interest" ? d.photos.length : tab === "connected" ? d.connected.filter(needsAttention).length : 0;
   if (!n) return null;
   return (
     <>
@@ -147,15 +153,28 @@ export function Section({ title, lead, children }: { title: string; lead?: strin
 }
 
 /** 목록 한 줄. 내가 할 일이 있으면 쪽빛, 기다리는 중이면 회색으로 적는다 */
-export function PairRow({ card, note, waiting = false }: { card: PersonCard; note: string; waiting?: boolean }) {
+export function PairRow({
+  card,
+  note,
+  waiting = false,
+  href,
+  sub,
+}: {
+  card: PersonCard;
+  note: string;
+  waiting?: boolean;
+  href?: string;
+  /** 둘째 줄. 없으면 나이·지역·키 */
+  sub?: string;
+}) {
   return (
     <Link
-      href={`/people/${card.id}`}
+      href={href ?? `/people/${card.id}`}
       className="flex items-center justify-between gap-4 rounded-2xl border border-line bg-surface px-5 py-4"
     >
       <span className="min-w-0">
         <span className="font-semibold">{card.nickname}</span>
-        <span className="mt-0.5 block text-sm text-muted">{personLine(card)}</span>
+        <span className="mt-0.5 block text-sm text-muted">{sub ?? personLine(card)}</span>
       </span>
       <span className={`shrink-0 text-sm ${waiting ? "text-muted" : "font-semibold text-indigo"}`}>{note}</span>
     </Link>

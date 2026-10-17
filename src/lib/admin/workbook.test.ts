@@ -83,6 +83,28 @@ function sample(): ExportData {
       { id: 3, reporter: B, target: A, reason: "rude", detail: "=HYPERLINK(\"x\")", created_at: "2026-10-17T03:00:00Z", resolved_at: null },
     ],
     extras: [talkRow],
+    chatRooms: [
+      {
+        id: "room-1",
+        user_a: A,
+        user_b: B,
+        opened_at: "2026-10-17T03:00:00Z",
+        first_message_at: "2026-10-17T03:05:00Z",
+        last_message_at: "2026-10-17T03:07:00Z",
+        count_a: 1,
+        count_b: 1,
+        contact_a_at: "2026-10-17T03:10:00Z",
+        contact_b_at: null,
+        exchanged_at: null,
+        closed_at: null,
+        close_reason: null,
+      },
+    ],
+    chatMessages: [
+      { id: 1, room_id: "room-1", sender: B, room_seq: 1, sender_seq: 1, turn: 1, char_count: 5, response_seconds: null, created_at: "2026-10-17T03:05:00Z" },
+      { id: 2, room_id: "room-1", sender: A, room_seq: 2, sender_seq: 1, turn: 2, char_count: 9, response_seconds: 120, created_at: "2026-10-17T03:07:00Z" },
+    ],
+    chatEvents: [{ id: 1, room_id: "room-1", user_id: A, kind: "contact_request", created_at: "2026-10-17T03:10:00Z" }],
   };
 }
 
@@ -100,7 +122,14 @@ describe("buildWorkbook", () => {
     expect(wb.worksheets.map((w) => w.name)).toEqual([
       "안내", "회원", "검사 점수", "문항 응답", "문항 목록", "친구 평가", "관심·수락", "추천", "만남 피드백", "신고",
       "추가 · 마음이 전해지는 순간", "추가 · 위로가 필요할 때", "추가 · 대화 코드",
+      "대화방", "대화 메시지", "대화 이벤트",
     ]);
+    const rooms = wb.getWorksheet("대화방")!;
+    const roomHeader = rooms.getRow(1).values as unknown[];
+    expect(rooms.getRow(2).getCell(roomHeader.indexOf("먼저 말 건 성별")).value).toBe("여");
+    expect(rooms.getRow(2).getCell(roomHeader.indexOf("첫 답장까지(초)")).value).toBe(120);
+    expect(wb.getWorksheet("대화 메시지")!.rowCount).toBe(3);
+    expect(wb.getWorksheet("대화 이벤트")!.getRow(2).getCell(5).value).toBe("연락처 전달 누름");
     const talkSheet = wb.getWorksheet("추가 · 대화 코드")!;
     expect(talkSheet.rowCount).toBe(2);
     // T08은 역문항: 응답 4 → 점수에는 2로 들어가서 말하기 점수 = (4 + 2) / 2 = 3

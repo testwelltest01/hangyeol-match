@@ -1,5 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { chatState, myChatRooms, unreadCounts } from "@/lib/chat/server";
 import { kstDay } from "@/lib/day";
 import { profileChips, recommendationReason, talkingPoint } from "@/lib/match/explain";
 import { pairStage, type Pair, type PairStage } from "@/lib/match/server";
@@ -20,6 +21,18 @@ export type PersonCard = {
   likedMe: boolean;
 };
 
+/** 연결된 사람과의 대화방 요약 */
+export type ChatSummary = {
+  unread: number;
+  myCount: number;
+  theirCount: number;
+  contactMine: boolean;
+  contactTheirs: boolean;
+  exchanged: boolean;
+  closed: boolean;
+  lastMessageAt: string | null;
+};
+
 export type Dashboard = {
   /** 오늘 추천받은 사람. 관심·수락이 진행돼도 하루 동안은 그대로 보여준다 */
   today: PersonCard[];
@@ -29,7 +42,9 @@ export type Dashboard = {
   waitingAccept: PersonCard[];
   /** 내가 관심, 상대 답 기다림 */
   sentInterest: PersonCard[];
-  connected: (PersonCard & { needsFeedback: boolean })[];
+  connected: (PersonCard & { needsFeedback: boolean; chat: ChatSummary | null })[];
+  /** 0005 SQL을 실행했는지 (대화방이 있는지) */
+  chatAvailable: boolean;
   contactNotFound: boolean;
 };
 
@@ -114,14 +129,28 @@ export async function loadDashboard(admin: SupabaseClient, me: string, myScores:
   const today = cards.filter((c) => todayReason.has(c.id));
   const byStage = (s: PairStage) => cards.filter((c) => c.stage === s);
 
-  const connected = byStage("connected").map((c) => {
-    const acceptedAt = [mine.get(c.id)?.accept_at, theirs.get(c.id)?.accept_at].sort().at(-1);
-    const fb = feedbackByUser.get(c.id);
-    const needsFeedback = fb
-      ? fb.outcome === "not_yet" && daysSince(fb.updated_at) >= FEEDBACK_REASK_DAYS
-      : daysSince(acceptedAt) >= FEEDBACK_AFTER_DAYS;
-    return { ...c, needsFeedback };
-  });
+  const { available: chatAvailable, rooms } = await myChatRooms(admin, me);
+  const roomByOther = new Map(rooms.map((r) => [r.user_a === me ? r.user_b : r.user_a, r]));
+  const unread = await unreadCounts(admin, rooms, me);
+
+  const connected = byStage("connected")
+    .map((c) => {
+      const room = roomByOther.get(c.id) ?? null;
+      // 만남은 연락처를 주고받은 뒤에 묻는다. 대화방이 없던 때(0005 전)는 서로 수락한 시각부터
+      const since = chatAvailable ? (room?.exchanged_at ?? null) : [mine.get(c.id)?.accept_at, theirs.get(c.id)?.accept_at].sort().at(-1);
+      const fb = feedbackByUser.get(c.id);
+      const needsFeedback = since
+        ? fb
+          ? fb.outcome === "not_yet" && daysSince(fb.updated_at) >= FEEDBACK_REASK_DAYS
+          : daysSince(since) >= FEEDBACK_AFTER_DAYS
+        : false;
+      const chat: ChatSummary | null = room
+        ? { ...chatState(room, me), unread: unread.get(room.id) ?? 0, lastMessageAt: room.last_message_at }
+        : null;
+      return { ...c, needsFeedback, chat };
+    })
+    // 최근에 대화한 방이 위로
+    .sort((a, b) => ((a.chat?.lastMessageAt ?? "") < (b.chat?.lastMessageAt ?? "") ? 1 : -1));
 
   const lastNotFound = notFound.data?.[0]?.created_at;
   return {
@@ -130,6 +159,7 @@ export async function loadDashboard(admin: SupabaseClient, me: string, myScores:
     waitingAccept: byStage("waiting_accept"),
     sentInterest: byStage("waiting_interest"),
     connected,
+    chatAvailable,
     contactNotFound: Boolean(lastNotFound && contact.data && lastNotFound > contact.data.updated_at),
   };
 }

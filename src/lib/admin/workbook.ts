@@ -4,6 +4,7 @@ import ExcelJS from "exceljs";
 import type { MemberRow, ReportRow } from "@/lib/admin/data";
 import { REPORT_REASON_LABEL, OUTCOME_LABEL } from "@/lib/admin/labels";
 import { STAGE_LABEL, type ReactionRow } from "@/lib/admin/stats";
+import { kstParts, WEEKDAYS } from "@/lib/admin/trends";
 import {
   ALL_ITEMS,
   DEALBREAKER_ITEMS,
@@ -15,6 +16,7 @@ import {
   type Answers,
   type Item,
 } from "@/lib/items";
+import { roomMetrics, type ChatMessageMeta, type ChatRoomMeta } from "@/lib/chat/metrics";
 import { EXTRA_TESTS, type ExtraAnswers, type ExtraScores } from "@/lib/extra/tests";
 import { regionLabel } from "@/lib/regions";
 import { scoreBigFive, type Scores } from "@/lib/scoring";
@@ -41,6 +43,10 @@ export type ExportData = {
     updated_at: string;
   }[];
   reports: ReportRow[];
+  /** 대화 (0005 SQL 전이면 빈 배열). 메시지는 내용 없이 메타데이터만 */
+  chatRooms: ChatRoomMeta[];
+  chatMessages: ChatMessageMeta[];
+  chatEvents: { id: number; room_id: string; user_id: string | null; kind: string; created_at: string }[];
   /** 추가 검사 (0004 SQL 전이면 빈 배열) */
   extras: { user_id: string; test_id: string; version: string; answers: ExtraAnswers; scores: ExtraScores; share: boolean; completed_at: string }[];
 };
@@ -128,6 +134,9 @@ export async function buildWorkbook(d: ExportData): Promise<Buffer> {
     ["만남 피드백", "연락처 공개 뒤 남긴 만남 결과와 1~5점 평가 (상대에게는 보이지 않음)"],
     ["신고", "신고 기록과 확인 완료 시각"],
     ["추가 · …", "한결 시범 검사(선택) 응답 원자료와 하위척도 평균. 역문항은 응답 칸에는 원래 값, 점수에는 뒤집은 값이 들어가요."],
+    ["대화방", "서로 수락한 두 사람의 대화방 하나에 한 줄. 메시지 수, 말차례, 평균 글자 수, 응답 시간 중앙값, 연락처 전달, 만남 결과"],
+    ["대화 메시지", "메시지 하나에 한 줄. 대화 내용은 넣지 않고 순번, 말차례, 글자 수, 응답까지 걸린 초, 시각만 넣어요."],
+    ["대화 이벤트", "방 열림, 연락처 전달 누름·취소, 연락처 교환, 메시지 한도 도달, 닫힘"],
   ];
   for (const [k, v] of infoRows) {
     const row = info.addRow([k, v]);
@@ -300,6 +309,66 @@ export async function buildWorkbook(d: ExportData): Promise<Buffer> {
       { 0: 38, 4: 17 },
     );
   }
+
+  // 대화: 내용 없이 분석용 정보만
+  const outcome = new Map(d.feedback.map((f) => [`${f.from_user}|${f.to_user}`, OUTCOME_LABEL[f.outcome] ?? f.outcome]));
+  const genderOf = (id: string) => {
+    const g = memberById.get(id)?.gender;
+    return g ? GENDER[g] : null;
+  };
+  addSheet(
+    wb,
+    "대화방",
+    [
+      "방ID", "A 사용자ID", "A 닉네임", "A 성별", "B 사용자ID", "B 닉네임", "B 성별",
+      "열린 시각", "첫 메시지", "마지막 메시지", "A 메시지 수", "B 메시지 수", "말차례 수",
+      "A 평균 글자", "B 평균 글자", "A 응답 중앙값(초)", "B 응답 중앙값(초)",
+      "첫 메시지까지(초)", "첫 답장까지(초)", "먼저 말 건 쪽", "먼저 말 건 성별",
+      "A 연락처 전달", "B 연락처 전달", "연락처 교환", "교환까지(초)", "닫힘", "닫힌 이유",
+      "A→B 만남 결과", "B→A 만남 결과",
+    ],
+    d.chatRooms.map((r) => {
+      const mt = roomMetrics(r, d.chatMessages);
+      const first = mt.firstSender === "a" ? r.user_a : mt.firstSender === "b" ? r.user_b : null;
+      return [
+        r.id, r.user_a, nickOf(r.user_a), genderOf(r.user_a), r.user_b, nickOf(r.user_b), genderOf(r.user_b),
+        kst(r.opened_at), kst(r.first_message_at), kst(r.last_message_at), r.count_a, r.count_b, mt.turns,
+        mt.avgCharsA, mt.avgCharsB, mt.medianResponseA, mt.medianResponseB,
+        mt.secondsToFirstMessage, mt.secondsToFirstReply, mt.firstSender?.toUpperCase() ?? null, first ? genderOf(first) : null,
+        kst(r.contact_a_at), kst(r.contact_b_at), kst(r.exchanged_at), mt.secondsToExchange, kst(r.closed_at),
+        r.close_reason === "blocked" ? "차단" : r.close_reason === "reported" ? "신고" : null,
+        outcome.get(`${r.user_a}|${r.user_b}`) ?? null, outcome.get(`${r.user_b}|${r.user_a}`) ?? null,
+      ];
+    }),
+    { 0: 38, 1: 38, 4: 38, 7: 17, 8: 17, 9: 17, 21: 17, 22: 17, 23: 17, 25: 17 },
+  );
+
+  addSheet(
+    wb,
+    "대화 메시지",
+    ["메시지ID", "방ID", "보낸 사람ID", "성별", "방 순번", "보낸 사람 순번", "말차례", "글자 수", "응답까지(초)", "보낸 시각", "시(0~23)", "요일"],
+    d.chatMessages.map((m) => {
+      const p = kstParts(m.created_at);
+      return [m.id, m.room_id, m.sender, genderOf(m.sender), m.room_seq, m.sender_seq, m.turn, m.char_count, m.response_seconds, kst(m.created_at), p.hour, WEEKDAYS[p.weekday]];
+    }),
+    { 1: 38, 2: 38, 9: 17 },
+  );
+
+  const EVENT_LABEL: Record<string, string> = {
+    opened: "방 열림",
+    contact_request: "연락처 전달 누름",
+    contact_cancel: "연락처 전달 취소",
+    contact_exchanged: "연락처 교환",
+    limit_reached: "메시지 한도 도달",
+    closed: "대화 닫힘",
+  };
+  addSheet(
+    wb,
+    "대화 이벤트",
+    ["이벤트ID", "방ID", "사용자ID", "성별", "종류", "시각"],
+    d.chatEvents.map((e) => [e.id, e.room_id, e.user_id, e.user_id ? genderOf(e.user_id) : null, EVENT_LABEL[e.kind] ?? e.kind, kst(e.created_at)]),
+    { 1: 38, 2: 38, 5: 17 },
+  );
 
   return Buffer.from(await wb.xlsx.writeBuffer());
 }
