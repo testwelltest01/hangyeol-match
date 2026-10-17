@@ -1,11 +1,52 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { TraitBar, ValueTrack } from "@/components/ReportParts";
 import { PrimaryLink } from "@/components/Shell";
+import type { ExtraCard } from "@/lib/extra/cards";
 import { MIN_FRIENDS_FOR_MATCHING } from "@/lib/match/rules";
 import type { Trait } from "@/lib/items";
 import type { Report } from "@/lib/report";
 import { InviteBox } from "./InviteBox";
 import { ShareService } from "./ShareService";
+
+function ExtraCards({ cards, admin }: { cards: ExtraCard[]; admin: boolean }) {
+  return (
+    <ul className="space-y-3">
+      {cards.map((c) => (
+        <li key={c.id} className="rounded-2xl border border-line bg-surface px-5 py-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <h3 className="font-semibold">{c.title}</h3>
+            <span className="shrink-0 text-sm text-muted">약 {c.minutes}분</span>
+          </div>
+          {c.result ? (
+            <>
+              <p className="mt-2 font-serif leading-relaxed">{c.result.headline}</p>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="text-muted">{c.result.share ? "추천받은 상대에게 요약이 보여요" : "나만 볼 수 있어요"}</span>
+                {!admin && (
+                  <Link href={`/extra/${c.id}`} className="text-muted underline underline-offset-4">
+                    다시 하기
+                  </Link>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[15px] text-ink-soft">{c.short}</p>
+              {admin ? (
+                <span className="text-sm text-muted">아직 안 했어요</span>
+              ) : (
+                <Link href={`/extra/${c.id}`} className="shrink-0 rounded-full border border-ink px-4 py-1.5 text-sm font-semibold text-ink hover:bg-ink hover:text-white">
+                  시작하기
+                </Link>
+              )}
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 function Section({ id, title, lead, children }: { id?: string; title: string; lead?: string; children: ReactNode }) {
   return (
@@ -25,6 +66,7 @@ export function ReportParts({
   minFriendCount,
   inviteToken,
   viewer = "owner",
+  extras = null,
 }: {
   nickname: string;
   report: Report;
@@ -34,6 +76,8 @@ export function ReportParts({
   inviteToken: string | null;
   /** admin이면 관리자 화면 안에서 읽기 전용으로 보여준다 (초대·공유·매칭 버튼 없음) */
   viewer?: "owner" | "admin";
+  /** 추가 검사 카드. null이면 섹션을 숨긴다 (0004 SQL 전) */
+  extras?: ExtraCard[] | null;
 }) {
   const admin = viewer === "admin";
   return (
@@ -108,6 +152,16 @@ export function ReportParts({
           <InviteBox initialToken={inviteToken} count={friendCount} minCount={minFriendCount} />
         )}
       </Section>
+
+      {extras && (
+        <Section
+          id="extra"
+          title="더 알아보기"
+          lead="한결이 직접 만든 짧은 시범 검사예요. 하고 싶은 것만 골라서 해보세요. 추천 계산에는 쓰지 않아요."
+        >
+          <ExtraCards cards={extras} admin={admin} />
+        </Section>
+      )}
 
       <Section title="꾸밈과 조건">
         <dl className="grid grid-cols-[6.5rem_1fr] gap-y-3 text-[15px]">

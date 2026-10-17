@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { LikedBadge } from "@/components/LikedBadge";
@@ -7,6 +8,8 @@ import { ReactButtons } from "@/components/ReactButtons";
 import { Shell } from "@/components/Shell";
 import { Notice } from "@/components/ui";
 import { decryptText } from "@/lib/crypto";
+import { loadExtraResults, sharedScores } from "@/lib/extra/server";
+import { EXTRA_TESTS, extraCommonalities, summarizeExtra } from "@/lib/extra/tests";
 import { domainComparison, profileChips, recommendationReason, talkingPoint } from "@/lib/match/explain";
 import { signedPhotoUrls } from "@/lib/match/me";
 import { FIRST_MEETING_GUIDE } from "@/lib/match/safety";
@@ -52,12 +55,14 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
   // 추천받았거나 관심·수락으로 이어진 사람만 볼 수 있다. 그 밖에는 있는지조차 알려주지 않는다
   if (stage === "hidden") notFound();
 
-  const [profile, mp, theirScores, myScores, rec] = await Promise.all([
+  const [profile, mp, theirScores, myScores, rec, theirExtra, myExtra] = await Promise.all([
     admin.from("profiles").select("nickname, birth_year").eq("id", id).maybeSingle(),
     admin.from("match_profiles").select("region, height, intro").eq("user_id", id).maybeSingle(),
     admin.from("test_scores").select("scores").eq("user_id", id).maybeSingle(),
     admin.from("test_scores").select("scores").eq("user_id", userId!).single(),
     admin.from("recommendations").select("reason").eq("user_id", userId!).eq("target_id", id).order("day", { ascending: false }).limit(1),
+    loadExtraResults(admin, id),
+    loadExtraResults(admin, userId!),
   ]);
   if (!profile.data || !mp.data || !theirScores.data) notFound();
 
@@ -89,6 +94,13 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
   }
 
   const name = profile.data.nickname;
+  // 추가 검사: 상대가 보여주기로 한 결과만. 공통점은 내 결과(보여주기 여부와 상관없이)와 비교한다
+  const theirShared = sharedScores(theirExtra.rows);
+  const extraChips = EXTRA_TESTS.flatMap((t) => (theirShared[t.id] ? summarizeExtra(t, theirShared[t.id]!).chips : []));
+  const mineExtra = Object.fromEntries(Object.values(myExtra.rows).map((r) => [r!.test_id, r!.scores]));
+  const extraCommon = extraCommonalities(mineExtra, theirShared, name);
+  const canCompare = EXTRA_TESTS.some((t) => theirShared[t.id] && mineExtra[t.id]);
+
   return (
     <article>
       <div className="flex items-center justify-between gap-3">
@@ -129,6 +141,35 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
           </ul>
         )}
       </section>
+
+      {extraChips.length > 0 && (
+        <section className="mt-8">
+          <h2 className="text-sm font-semibold text-muted">더 알아본 {name}님</h2>
+          {extraCommon.length > 0 && (
+            <ul className="mt-3 space-y-1.5 rounded-xl bg-mist px-4 py-3 text-[15px]">
+              {extraCommon.map((c) => (
+                <li key={c}>{c}</li>
+              ))}
+            </ul>
+          )}
+          <ul className="mt-3 flex flex-wrap gap-2" aria-label="추가 검사 결과">
+            {extraChips.map((c) => (
+              <li key={c} className="rounded-full border border-line px-3 py-1 text-sm text-ink-soft">
+                {c}
+              </li>
+            ))}
+          </ul>
+          {!canCompare && (
+            <p className="mt-3 text-sm text-muted">
+              나도{" "}
+              <Link href="/report#extra" className="underline underline-offset-4">
+                더 알아보기
+              </Link>
+              를 하면 공통점을 볼 수 있어요.
+            </p>
+          )}
+        </section>
+      )}
 
       <section className="mt-8">
         <h2 className="text-sm font-semibold text-muted">나와 비슷한 정도</h2>

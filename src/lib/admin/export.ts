@@ -41,6 +41,16 @@ export async function loadExportData(admin: SupabaseClient): Promise<ExportData>
         .range(a, b),
     ),
   ]);
+  // 추가 검사는 0004 SQL을 실행해야 생긴다
+  let extras: ExportData["extras"] = [];
+  try {
+    extras = await fetchAll<ExportData["extras"][number]>((a, b) =>
+      admin.from("extra_results").select("user_id, test_id, version, answers, scores, share, completed_at").order("completed_at").range(a, b),
+    );
+  } catch {
+    extras = [];
+  }
+
   return {
     generatedAt: new Date(),
     members,
@@ -52,5 +62,6 @@ export async function loadExportData(admin: SupabaseClient): Promise<ExportData>
     recommendationDays: RECOMMENDATION_DAYS,
     feedback,
     reports,
+    extras,
   };
 }

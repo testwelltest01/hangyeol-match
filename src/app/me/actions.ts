@@ -237,21 +237,29 @@ export async function uploadPhoto(formData: FormData): Promise<UploadResult> {
   const previous: Improvement[] = current?.feedback?.improvements ?? [];
   const result = await analyzePhoto({ image, mimeType, slot, gender: setup.gender, previous });
 
-  const logAttempt = (r: string) => admin.from("photo_attempts").insert({ user_id: userId, slot, result: r });
+  // 시도 기록은 하루 20번 제한에 쓰이므로 꼭 남긴다. 사유 칸(0004)이 없으면 사유 없이 다시 남긴다
+  const logAttempt = async (r: string, detail?: string) => {
+    const row = { user_id: userId, slot, result: r };
+    if (detail) {
+      const { error } = await admin.from("photo_attempts").insert({ ...row, detail: detail.slice(0, 500) });
+      if (!error) return;
+    }
+    await admin.from("photo_attempts").insert(row);
+  };
 
   if (!result.ok) {
-    await logAttempt("error");
+    await logAttempt("error", result.error);
     return { ok: false, error: `${result.error} 피드백 없이는 등록되지 않아요.` };
   }
   if (!result.valid) {
-    await logAttempt("rejected");
+    await logAttempt("rejected", result.rejectReason);
     return { ok: false, rejected: true, error: result.rejectReason };
   }
 
   const path = `${userId}/${slot}-${randomUUID()}.${MIME_EXT[mimeType]}`;
   const { error: uploadError } = await admin.storage.from("photos").upload(path, image, { contentType: mimeType });
   if (uploadError) {
-    await logAttempt("error");
+    await logAttempt("error", "사진 파일 저장 실패");
     return { ok: false, error: "사진을 저장하지 못했어요. 다시 시도해주세요." };
   }
 
@@ -264,7 +272,7 @@ export async function uploadPhoto(formData: FormData): Promise<UploadResult> {
     // 되돌리기: 이전 사진을 다시 쓰고, 방금 올린 파일은 지운다
     if (current) await admin.from("photos").update({ replaced_at: null }).eq("id", current.id);
     await admin.storage.from("photos").remove([path]);
-    await logAttempt("error");
+    await logAttempt("error", "사진 정보 저장 실패");
     return { ok: false, error: "사진을 저장하지 못했어요. 다시 시도해주세요." };
   }
   await logAttempt("registered");

@@ -2,6 +2,7 @@ import ExcelJS from "exceljs";
 import { describe, expect, it } from "vitest";
 import type { MemberRow } from "@/lib/admin/data";
 import { ALL_ITEMS, isRequired, OBSERVER_ITEMS, type Answers } from "@/lib/items";
+import { findExtraTest, scoreExtra } from "@/lib/extra/tests";
 import { computeScores } from "@/lib/scoring";
 import { buildWorkbook, type ExportData } from "./workbook";
 
@@ -49,6 +50,18 @@ const member = (id: string, nickname: string, gender: "male" | "female"): Member
   stage: "ready",
 });
 
+const talk = findExtraTest("talk")!;
+const talkAnswers = Object.fromEntries(talk.items.map((i) => [i.id, 4]));
+const talkRow = {
+  user_id: A,
+  test_id: "talk",
+  version: talk.version,
+  answers: talkAnswers,
+  scores: scoreExtra(talk, talkAnswers),
+  share: true,
+  completed_at: "2026-10-17T05:00:00Z",
+};
+
 function sample(): ExportData {
   const answers = fullAnswers();
   const scores = computeScores(answers, "male");
@@ -69,6 +82,7 @@ function sample(): ExportData {
     reports: [
       { id: 3, reporter: B, target: A, reason: "rude", detail: "=HYPERLINK(\"x\")", created_at: "2026-10-17T03:00:00Z", resolved_at: null },
     ],
+    extras: [talkRow],
   };
 }
 
@@ -85,7 +99,13 @@ describe("buildWorkbook", () => {
     const wb = await read(buf);
     expect(wb.worksheets.map((w) => w.name)).toEqual([
       "안내", "회원", "검사 점수", "문항 응답", "문항 목록", "친구 평가", "관심·수락", "추천", "만남 피드백", "신고",
+      "추가 · 마음이 전해지는 순간", "추가 · 위로가 필요할 때", "추가 · 대화 코드",
     ]);
+    const talkSheet = wb.getWorksheet("추가 · 대화 코드")!;
+    expect(talkSheet.rowCount).toBe(2);
+    // T08은 역문항: 응답 4 → 점수에는 2로 들어가서 말하기 점수 = (4 + 2) / 2 = 3
+    const talkHeader = talkSheet.getRow(1).values as unknown[];
+    expect(talkSheet.getRow(2).getCell(talkHeader.indexOf("점수_이야기를 꺼내는 쪽")).value).toBe(3);
 
     const members = wb.getWorksheet("회원")!;
     expect(members.rowCount).toBe(3);
@@ -102,7 +122,7 @@ describe("buildWorkbook", () => {
     expect(answers.getRow(1).cellCount).toBe(4 + ALL_ITEMS.length);
 
     const items = wb.getWorksheet("문항 목록")!;
-    expect(items.rowCount).toBe(1 + ALL_ITEMS.length);
+    expect(items.rowCount).toBe(1 + ALL_ITEMS.length + 29);
 
     const friends = wb.getWorksheet("친구 평가")!;
     expect(friends.getRow(2).getCell(1).value).toBe(7);

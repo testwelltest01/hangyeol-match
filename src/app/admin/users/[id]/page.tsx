@@ -14,7 +14,13 @@ import { buildReport } from "@/lib/report";
 import { aggregateFriendRatings, type Scores } from "@/lib/scoring";
 import { UUID_RE } from "@/lib/sniff";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { kstDay } from "@/lib/day";
+import { extraCards } from "@/lib/extra/cards";
+import { loadExtraResults } from "@/lib/extra/server";
+import { EXTRA_TESTS } from "@/lib/extra/tests";
+import { kstDayStartIso } from "@/lib/photo/rules";
 import { ResolveButton, SuspendButton } from "../../AdminButtons";
+import { PhotoHistory, type AttemptEntry, type PhotoEntry } from "./PhotoHistory";
 import { AdminLoading, AdminShell, Chip, Empty, Panel, TableWrap, td, th } from "../../ui";
 
 export const metadata: Metadata = { title: "회원 상세 | 한결 관리", robots: { index: false, follow: false } };
@@ -72,7 +78,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
   const user = authData?.user;
   if (!user) notFound();
 
-  const [setup, scoreRow, flag, ratings, reactions, reports, feedback, recsReceived, recsShown] = await Promise.all([
+  const [setup, scoreRow, flag, ratings, reactions, reports, feedback, recsReceived, recsShown, allPhotos, attempts, extra] = await Promise.all([
     loadMySetup(id),
     admin.from("test_scores").select("scores, version, computed_at").eq("user_id", id).maybeSingle(),
     admin.from("user_flags").select("suspended_at, reason").eq("user_id", id).maybeSingle(),
@@ -89,6 +95,14 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
     admin.from("meeting_feedback").select("outcome, photo_match, cleanliness, manners, again").eq("to_user", id),
     admin.from("recommendations").select("target_id", { count: "exact", head: true }).eq("user_id", id),
     admin.from("recommendations").select("user_id", { count: "exact", head: true }).eq("target_id", id),
+    admin
+      .from("photos")
+      .select("id, slot, path, feedback, internal, created_at, replaced_at, purged_at")
+      .eq("user_id", id)
+      .order("created_at", { ascending: false }),
+    // 사유 칸(detail)은 0004 SQL 뒤에 생기므로 * 로 읽는다
+    admin.from("photo_attempts").select("*").eq("user_id", id).order("created_at", { ascending: false }).limit(300),
+    loadExtraResults(admin, id),
   ]);
 
   // 관계·신고에 나오는 다른 사람의 닉네임
@@ -121,7 +135,11 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
   });
 
   const photoRows = setup ? [setup.photos.face, setup.photos.body].filter((p) => p !== null) : [];
-  const urls = await signedPhotoUrls(photoRows.map((p) => p.path));
+  const photoHistory = (allPhotos.data ?? []) as (Omit<PhotoEntry, "url"> & { path: string })[];
+  // 지금 사진과, 아직 파일이 남아 있는 교체된 사진의 서명 주소를 한 번에 만든다
+  const urls = await signedPhotoUrls([...new Set([...photoRows.map((p) => p.path), ...photoHistory.filter((p) => !p.purged_at).map((p) => p.path)])]);
+  const attemptRows = (attempts.data ?? []) as AttemptEntry[];
+  const todayStart = kstDayStartIso(kstDay());
 
   const pairs = otherIds
     .filter((o) => rx.some((r) => r.from_user === o || r.to_user === o))
@@ -215,6 +233,12 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
           )}
         </Panel>
       </div>
+
+      <PhotoHistory
+        photos={photoHistory.map(({ path, ...p }) => ({ ...p, url: p.purged_at ? null : (urls.get(path) ?? null) }))}
+        attempts={attemptRows}
+        todayResults={attemptRows.filter((a) => a.created_at >= todayStart).map((a) => a.result)}
+      />
 
       <Panel className="mt-4" title={`관심·수락 기록 ${pairs.length}명`}>
         {pairs.length === 0 ? (
@@ -358,6 +382,41 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
         </Panel>
       )}
 
+      {extra.available && (
+        <Panel className="mt-4" title="추가 검사 점수" lead="한결 시범 검사의 하위척도 평균 (1~5). 추천에는 쓰지 않아요.">
+          <div className="grid gap-6 lg:grid-cols-3">
+            {EXTRA_TESTS.map((t) => {
+              const r = extra.rows[t.id];
+              return (
+                <div key={t.id}>
+                  <h3 className="text-sm font-semibold text-muted">{t.title}</h3>
+                  {r ? (
+                    <>
+                      <ul className="mt-2 space-y-1 text-sm tabular-nums">
+                        {t.scales.map((sc) => (
+                          <li key={sc.id} className="flex justify-between gap-3 border-b border-line/70 py-1.5">
+                            <span>
+                              {sc.group === "want" ? "받고 싶은 위로 · " : sc.group === "give" ? "주는 위로 · " : ""}
+                              {sc.label}
+                            </span>
+                            <span>{r.scores.scales[sc.id]?.toFixed(2)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="mt-2 text-xs text-muted">
+                        {kstTime(r.completed_at)} · {r.version} · {r.share ? "상대에게 보여줌" : "나만 봄"}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="mt-2 text-sm text-muted">아직 안 했어요.</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Panel>
+      )}
+
       <section className="mt-10">
         <h2 className="text-lg font-semibold">회원이 보는 리포트</h2>
         {scores && setup ? (
@@ -370,6 +429,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
               friendCount={friends.count}
               minFriendCount={MIN_FRIEND_RATINGS_TO_SHOW}
               inviteToken={null}
+              extras={extra.available ? extraCards(extra.rows) : null}
             />
           </div>
         ) : (

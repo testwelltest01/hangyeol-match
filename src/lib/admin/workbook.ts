@@ -15,6 +15,7 @@ import {
   type Answers,
   type Item,
 } from "@/lib/items";
+import { EXTRA_TESTS, type ExtraAnswers, type ExtraScores } from "@/lib/extra/tests";
 import { regionLabel } from "@/lib/regions";
 import { scoreBigFive, type Scores } from "@/lib/scoring";
 
@@ -40,6 +41,8 @@ export type ExportData = {
     updated_at: string;
   }[];
   reports: ReportRow[];
+  /** 추가 검사 (0004 SQL 전이면 빈 배열) */
+  extras: { user_id: string; test_id: string; version: string; answers: ExtraAnswers; scores: ExtraScores; share: boolean; completed_at: string }[];
 };
 
 type Cell = string | number | boolean | Date | null | undefined;
@@ -124,6 +127,7 @@ export async function buildWorkbook(d: ExportData): Promise<Buffer> {
     ["추천", `최근 ${d.recommendationDays}일 동안의 추천 기록`],
     ["만남 피드백", "연락처 공개 뒤 남긴 만남 결과와 1~5점 평가 (상대에게는 보이지 않음)"],
     ["신고", "신고 기록과 확인 완료 시각"],
+    ["추가 · …", "한결 시범 검사(선택) 응답 원자료와 하위척도 평균. 역문항은 응답 칸에는 원래 값, 점수에는 뒤집은 값이 들어가요."],
   ];
   for (const [k, v] of infoRows) {
     const row = info.addRow([k, v]);
@@ -190,11 +194,24 @@ export async function buildWorkbook(d: ExportData): Promise<Buffer> {
   const stepOf = new Map(STEPS.flatMap((s) => s.items.map((i) => [i.id, s.title] as const)));
   const traitLabel = new Map(TRAITS.map((t) => [t.id, t.label]));
   const domainLabel = new Map<string, string>([...DOMAINS.map((x) => [x.id, x.label] as [string, string]), ["grooming", "꾸밈"]]);
+  const extraItemRows: Cell[][] = EXTRA_TESTS.flatMap((t) =>
+    t.items.map((i) => [
+      i.id,
+      `추가 · ${t.title}`,
+      i.options ? "선택" : "리커트 5점",
+      i.text,
+      (i.options ?? t.likert).map((o) => `${o.value}=${o.label}`).join(", "),
+      t.scales.find((sc) => sc.id === i.scale)?.label ?? null,
+      i.scale ? yesNo(Boolean(i.reverse)) : null,
+      null,
+      null,
+    ]),
+  );
   addSheet(
     wb,
     "문항 목록",
     ["문항ID", "단계", "종류", "문항", "척도·보기", "영역·특성", "역채점", "대상 성별", "친구 평가 문장"],
-    ALL_ITEMS.map((i) => [
+    [...ALL_ITEMS.map((i): Cell[] => [
       i.id,
       stepOf.get(i.id),
       { bipolar: "양극 6점", importance: "중요도 4점", single: "선택", likert: "리커트 5점" }[i.kind],
@@ -204,7 +221,7 @@ export async function buildWorkbook(d: ExportData): Promise<Buffer> {
       i.kind === "likert" ? yesNo(i.reverse) : null,
       i.kind === "single" && i.gender ? GENDER[i.gender] : null,
       i.kind === "likert" ? (i.observerText ?? null) : null,
-    ]),
+    ]), ...extraItemRows],
     { 3: 60, 4: 50, 8: 50 },
   );
 
@@ -265,6 +282,24 @@ export async function buildWorkbook(d: ExportData): Promise<Buffer> {
     ]),
     { 1: 17, 2: 38, 4: 38, 7: 50, 8: 17 },
   );
+
+  for (const t of EXTRA_TESTS) {
+    const rows = d.extras.filter((e) => e.test_id === t.id);
+    addSheet(
+      wb,
+      `추가 · ${t.title}`.slice(0, 31),
+      ["사용자ID", "닉네임", "성별", "검사 버전", "완료", "상대에게 보여주기", ...t.items.map((i) => i.id), ...t.scales.map((sc) => `점수_${sc.label}`)],
+      rows.map((e) => {
+        const m = memberById.get(e.user_id);
+        return [
+          e.user_id, m?.nickname, m?.gender ? GENDER[m.gender] : null, e.version, kst(e.completed_at), yesNo(e.share),
+          ...t.items.map((i) => e.answers[i.id] ?? null),
+          ...t.scales.map((sc) => e.scores.scales[sc.id] ?? null),
+        ];
+      }),
+      { 0: 38, 4: 17 },
+    );
+  }
 
   return Buffer.from(await wb.xlsx.writeBuffer());
 }

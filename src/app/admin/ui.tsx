@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-type AdminTab = "dashboard" | "users" | "trends" | "lpa";
+type AdminTab = "dashboard" | "users" | "trends" | "lpa" | "extra";
 
 /**
  * 관리자 화면 틀. 관리자 확인이 끝난 뒤에만 그린다(정적 껍데기에 넣지 않는다).
@@ -13,6 +13,7 @@ export function AdminShell({ current, children }: { current?: AdminTab; children
     { id: "users", href: "/admin/users", label: "회원" },
     { id: "trends", href: "/admin/trends", label: "추세" },
     { id: "lpa", href: "/admin/lpa", label: "LPA" },
+    { id: "extra", href: "/admin/extra", label: "추가 검사" },
   ];
   return (
     <div className="flex min-h-full flex-1 flex-col">

@@ -58,13 +58,19 @@ export function BipolarScale({ item, value, onChange }: { item: BipolarItem } & 
 }
 
 /** 성격 문항: 같은 크기 구슬 5개, 양 끝에만 글자를 붙인다. */
-export function LikertScale({ text, name, value, onChange }: { text: string; name: string } & ValueProps<number>) {
+export function LikertScale({
+  text,
+  name,
+  value,
+  onChange,
+  options = LIKERT_OPTIONS,
+}: { text: string; name: string; options?: Option[] } & ValueProps<number>) {
   return (
     <fieldset>
       <legend className="font-serif text-[1.1rem] leading-snug text-ink">{text}</legend>
       <div className="relative mt-4 flex items-center justify-between">
         <span aria-hidden className="absolute inset-x-5 top-1/2 h-px -translate-y-1/2 bg-line" />
-        {LIKERT_OPTIONS.map((o) => {
+        {options.map((o) => {
           const selected = value === o.value;
           return (
             <label key={o.value} className="relative z-10 flex h-11 w-11 cursor-pointer items-center justify-center">
@@ -86,8 +92,8 @@ export function LikertScale({ text, name, value, onChange }: { text: string; nam
         })}
       </div>
       <div className="mt-1 flex justify-between text-xs text-muted">
-        <span>{LIKERT_OPTIONS[0].label}</span>
-        <span>{LIKERT_OPTIONS[LIKERT_OPTIONS.length - 1].label}</span>
+        <span>{options[0].label}</span>
+        <span>{options[options.length - 1].label}</span>
       </div>
     </fieldset>
   );
