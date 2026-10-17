@@ -45,6 +45,11 @@ export default function Home() {
       <div>
         <PrimaryLink href="/start">검사 시작하기</PrimaryLink>
         <p className="mt-3 text-center text-sm text-muted">약 11분이면 끝나고, 무료예요.</p>
+        <p className="mt-4 text-center">
+          <Link href="/tour" className="text-[15px] text-ink underline underline-offset-4">
+            가입 전에 가상 매칭 둘러보기
+          </Link>
+        </p>
       </div>
 
       <section className="mt-16 border-t border-line pt-10">

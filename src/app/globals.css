@@ -84,3 +84,11 @@ body {
     transform: scale(0.94);
   }
 }
+
+/* 가상 매칭 둘러보기: 새로 나타나는 블록·메시지 */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}

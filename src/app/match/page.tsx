@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { PersonCardView } from "@/components/PersonCard";
 import { ReactButtons } from "@/components/ReactButtons";
+import { TourInvite } from "@/components/TourInvite";
 import { SecondaryLink } from "@/components/ui";
 import type { PersonCard } from "@/lib/match/dashboard";
 import { setupSteps } from "@/lib/match/me";
@@ -53,6 +54,9 @@ async function TodayGate() {
         <p className="mt-2 text-ink-soft">
           아래를 모두 채우면 바로 오늘의 추천이 열려요. 추천 카드에는 사진이 없고, 서로 관심을 보내면 사진이 공개돼요.
         </p>
+        <div className="mt-5">
+          <TourInvite title="준비를 마치면 이렇게 소개받아요" body="가상 인물과 추천부터 연락처 교환까지 미리 해보세요." />
+        </div>
         <ol className="mt-6 space-y-3">
           {steps.map((s, i) => (
             <li key={s.id}>

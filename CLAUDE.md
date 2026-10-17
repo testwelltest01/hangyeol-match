@@ -37,6 +37,7 @@
 - 지역: `src/lib/regions.ts` (2026-07 광주·전남 통합, 인천 제물포·영종·검단구 반영)
 - 사진 AI 피드백: `src/lib/photo/feedback.ts` (OpenAI Chat Completions + JSON schema). 내부 점수는 추천에 쓰지 않는다
 - 인증: `/signup`(이메일 코드 → 비밀번호), `/login`(비밀번호), `/reset`(코드 → 새 비밀번호), `/set-password`. `user_metadata.password_set`이 없으면 `/start`가 비밀번호 만들기로 보낸다
+- 가상 매칭 둘러보기 `/tour`: 첫 소개까지 길게 느껴지는 걸 덜려고 가입 직후부터(로그인 없이도) 체험. 가상 인물 2명은 `src/lib/tour/personas.ts`(남성에게 여성 '윤슬', 여성에게 남성 '도담'), 사진은 `public/tour/`. 화면 안에서만 진행하고 서버 액션·DB 쓰기 없음. 성별을 모르면(가입 직후·로그인 전) 화면에서 고르고 저장하지 않는다. 끝에 진짜 소개까지 남은 단계(`setupSteps`와 같은 목록)와 다음 단계 버튼. 들어오는 곳은 `TourInvite`(/onboarding, /test, /match 준비 중)와 첫 화면 링크
 - 매일 크론: `/api/cron/daily` (`CRON_SECRET`, 15:00 UTC)
 - 관리자: `/admin`(대시보드), `/admin/users`(목록), `/admin/users/[id]`(상세·리포트), `/admin/export`(엑셀, exceljs). 판별은 `src/lib/admin/auth.ts`(`ADMIN_EMAILS`, 기본 testwelltest01@gmail.com, `password_set` 필수), 관리자가 아니면 `notFound()`. `/start`는 관리자를 `/admin`으로 보낸다. 관리자 화면 틀은 Suspense 안 Gate에서 확인 뒤에 그린다(정적 껍데기에 메뉴를 넣지 않는다). 계산은 `stats.ts`(순수), 데이터는 `data.ts`, 엑셀은 `workbook.ts`(순수)·`export.ts`
 - 관리자 추세 `/admin/trends`: `trends.ts`(순수)·`trendData.ts`. 방문 기록은 `activity_events`(0003)에 `getUserId`/`getAuth`가 `trackVisit`(`after` + `log_visit` RPC, 30분 간격, 관리자 제외)로 남기고 크론이 90일 뒤 지운다
@@ -56,6 +57,7 @@
 - 그림 프로필(선택, `/me/illustration`): 사진 2장 + 성별·나이대·키·자기소개·성향·생활·꾸밈·추가 검사 요약으로 OpenAI Images Edits(`OPENAI_IMAGE_MODEL`, 기본 gpt-image-2.5-sunburst, medium, 1024x1536 webp). 이름·지역·종교·연락처·위생·조건은 넣지 않는다(`src/lib/illustration/prompt.ts`, 바꾸면 PROMPT_VERSION). 특정 스튜디오·작가 이름은 프롬프트에 쓰지 않고 화풍을 묘사한다. 별도 동의(consents 'illustration'), 한 계정당 3번(평생, 실패 제외, 지운 그림 포함 `ILLUSTRATIONS_PER_ACCOUNT`), 서비스 전체 하루 상한, 응답 뒤 after()로 생성(페이지 maxDuration 300). 회원이 '추천 카드에 보여주기'를 켠 그림만 추천 카드·자세히 보기(사진 공개 전)에 보인다
 - 사진 시도 기록(`photo_attempts.detail`)에 거절 사유를 남긴다. 거절된 사진 파일은 저장하지 않는다. 관리자 회원 상세에 사진별 피드백·내부 점수 기록
 - 개인정보 보호책임자: 최현석, testwelltest01@gmail.com. 교체 사진 1년 보관 (크론 `KEEP_REPLACED_DAYS`)
+- 둘러보기의 가상 인물에는 항상 '가상 인물' 표시와 '실제 회원이 아니에요' 안내를 붙인다. 가상 인물을 추천·후보 풀에 섞지 않는다
 - 본인인증(휴대폰)은 사업자등록이 필요해 보류. 공개 전에 초대제 비공개 테스트 권장
 
 ## UI 문구
