@@ -53,4 +53,5 @@
 ## UI 문구
 
 - 친근한 존댓말, 짧고 구체적으로. 같은 행동을 하는 버튼을 한 화면에 두 번 두지 않는다
+- 상단 메뉴: 로그인 후 `추천 / 내 결 / 내 정보 / 편지`(`<Shell nav="…">` → `AppNav`), 로그인 전 `편지`(+ `right`로 로그인 등). 시험 기간이라 만든 사람의 편지(`/letter`)는 하단이 아니라 상단 메뉴에 둔다
 - 디자인 토큰은 `src/app/globals.css` (paper, ink, indigo, moss). 본문 Pretendard, 제목 Gowun Batang

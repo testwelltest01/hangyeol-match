@@ -5,7 +5,7 @@ import { cache, Suspense, type ReactNode } from "react";
 import { Loading } from "@/components/Loading";
 import { personLine } from "@/components/PersonCard";
 import { Shell } from "@/components/Shell";
-import { AppNav, Notice } from "@/components/ui";
+import { Notice } from "@/components/ui";
 import { kstDay } from "@/lib/day";
 import { loadDashboard, type Dashboard, type PersonCard } from "@/lib/match/dashboard";
 import { isReady, loadMySetup, type MySetup } from "@/lib/match/me";
@@ -75,7 +75,7 @@ async function TabCount({ tab }: { tab: MatchTab }) {
 /** 추천 화면 공통 틀: 상단 메뉴, 오늘·관심·연결 탭. 탭은 정적이고 숫자와 본문만 나중에 채운다 */
 export function MatchFrame({ current, title, children }: { current: MatchTab; title: string; children: ReactNode }) {
   return (
-    <Shell right={<AppNav current="match" />}>
+    <Shell nav="match">
       <h1 className="sr-only">{title}</h1>
       <nav aria-label="추천 보기" className="sticky top-0 z-10 grid grid-cols-3 border-b border-line bg-paper">
         {TABS.map((t) => {

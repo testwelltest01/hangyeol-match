@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
-import { AppNav, PageTitle } from "@/components/ui";
+import { PageTitle } from "@/components/ui";
 import { decryptText } from "@/lib/crypto";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -11,7 +11,7 @@ import { ContactForm } from "./ContactForm";
 
 export default function ContactPage() {
   return (
-    <Shell right={<AppNav current="me" />}>
+    <Shell nav="me">
       <PageTitle
         title="연락처"
         lead="한결에는 채팅이 없어요. 서로 수락하면 이 아이디가 상대에게 공개되고, 그때부터 직접 연락해요."

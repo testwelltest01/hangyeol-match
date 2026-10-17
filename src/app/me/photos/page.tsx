@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
-import { AppNav, PageTitle, SecondaryLink } from "@/components/ui";
+import { PageTitle, SecondaryLink } from "@/components/ui";
 import { loadMySetup, nextSetupPath, signedPhotoUrls } from "@/lib/match/me";
 import { kstDay } from "@/lib/day";
 import { kstDayStartIso, PHOTO_UPLOADS_PER_DAY, remainingUploads } from "@/lib/photo/rules";
@@ -16,7 +16,7 @@ export const maxDuration = 60;
 
 export default function PhotosPage() {
   return (
-    <Shell right={<AppNav current="me" />}>
+    <Shell nav="me">
       <PageTitle
         title="사진 2장"
         lead="사진은 서로 관심을 보낸 사람에게만 보여요. 올리면 AI가 분위기를 중심으로 더 좋은 사진을 찍는 방법을 알려줘요."

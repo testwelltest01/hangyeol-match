@@ -5,7 +5,7 @@ import { Loading } from "@/components/Loading";
 import { personLine } from "@/components/PersonCard";
 import { ReactButtons } from "@/components/ReactButtons";
 import { Shell } from "@/components/Shell";
-import { AppNav, Notice } from "@/components/ui";
+import { Notice } from "@/components/ui";
 import { decryptText } from "@/lib/crypto";
 import { domainComparison, profileChips, recommendationReason, talkingPoint } from "@/lib/match/explain";
 import { signedPhotoUrls } from "@/lib/match/me";
@@ -22,7 +22,7 @@ import { SafetyActions } from "./SafetyActions";
 
 export default function PersonPage({ params }: PageProps<"/people/[id]">) {
   return (
-    <Shell right={<AppNav current="match" />}>
+    <Shell nav="match">
       <Suspense fallback={<Loading />}>
         <PersonGate params={params} />
       </Suspense>

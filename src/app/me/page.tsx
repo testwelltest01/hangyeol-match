@@ -5,7 +5,7 @@ import { signOut } from "@/app/actions";
 import { DeleteAccount } from "@/app/report/DeleteAccount";
 import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
-import { AppNav, Notice, PageTitle } from "@/components/ui";
+import { Notice, PageTitle } from "@/components/ui";
 import { loadMySetup, setupSteps } from "@/lib/match/me";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
 import { getUserId } from "@/lib/supabase/server";
@@ -13,7 +13,7 @@ import { PauseToggle } from "./PauseToggle";
 
 export default function MePage() {
   return (
-    <Shell right={<AppNav current="me" />}>
+    <Shell nav="me">
       <Suspense fallback={<Loading />}>
         <MeGate />
       </Suspense>

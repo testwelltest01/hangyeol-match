@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import Link from "next/link";
+import { Suspense, type ReactNode } from "react";
 import { CopyText } from "@/components/CopyText";
 import { GrainMark } from "@/components/GrainMark";
 import { Shell } from "@/components/Shell";
+import { AppNav, PublicNav } from "@/components/ui";
+import { getUserId } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "만든 사람의 편지 | 한결",
@@ -31,9 +34,28 @@ function Reason({ n, title, children }: { n: number; title: string; children: Re
   );
 }
 
+/** 편지는 누구나 읽을 수 있다. 로그인했으면 평소 메뉴를, 아니면 편지와 로그인만 보여준다 */
+async function LetterNav() {
+  const userId = await getUserId();
+  if (userId) return <AppNav current="letter" />;
+  return (
+    <PublicNav current="letter">
+      <Link href="/login" className="text-muted hover:text-ink">
+        로그인
+      </Link>
+    </PublicNav>
+  );
+}
+
 export default function LetterPage() {
   return (
-    <Shell>
+    <Shell
+      header={
+        <Suspense fallback={<PublicNav current="letter" />}>
+          <LetterNav />
+        </Suspense>
+      }
+    >
       <article className="rounded-2xl border border-line bg-surface px-6 py-10 font-serif text-[17px] leading-[1.9] text-ink-soft shadow-[0_1px_0_rgba(31,47,92,0.04)] sm:px-10">
         <p className="font-sans text-sm text-muted">한결을 만든 사람의 편지</p>
         <h1 className="mt-2 text-[1.7rem] font-bold leading-snug text-ink">

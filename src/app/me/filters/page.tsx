@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
-import { AppNav, PageTitle } from "@/components/ui";
+import { PageTitle } from "@/components/ui";
 import { kstYear } from "@/lib/day";
 import { ageOf } from "@/lib/match/filters";
 import { loadMySetup } from "@/lib/match/me";
@@ -12,7 +12,7 @@ import { FiltersForm } from "./FiltersForm";
 
 export default function FiltersPage({ searchParams }: PageProps<"/me/filters">) {
   return (
-    <Shell right={<AppNav current="me" />}>
+    <Shell nav="me">
       <PageTitle
         title="원하는 상대 조건"
         lead="조건마다 '꼭'과 '되도록'을 고를 수 있어요. '꼭'이 어긋나면 서로 추천하지 않고, '되도록'은 추천은 하되 순서를 뒤로 미뤄요."
