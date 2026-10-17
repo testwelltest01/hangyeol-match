@@ -4,7 +4,7 @@ import { Shell } from "@/components/Shell";
 // 항목이 바뀌면 시행일을 고치고, 시행 7일 전에 알린다.
 
 const ROWS = [
-  { purpose: "로그인과 계정 관리", items: "이메일", period: "탈퇴 시 파기" },
+  { purpose: "로그인과 계정 관리", items: "이메일, 비밀번호(복원할 수 없는 해시로 저장)", period: "탈퇴 시 파기" },
   { purpose: "만 19세 이상 확인, 추천 카드와 친구 평가 화면 표시", items: "닉네임, 성별, 출생연도", period: "탈퇴 시 파기" },
   { purpose: "리포트 제공과 매칭 추천", items: "검사 응답과 점수", period: "탈퇴 시 파기" },
   { purpose: "리포트의 '친구가 보는 나'", items: "친구가 입력한 평가 응답 (평가한 친구의 개인정보는 받지 않음)", period: "탈퇴 시 파기" },

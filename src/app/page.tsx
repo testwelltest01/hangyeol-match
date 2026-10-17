@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { GrainMark } from "@/components/GrainMark";
 import { PrimaryLink, Shell } from "@/components/Shell";
 
@@ -18,7 +19,13 @@ const STEPS = [
 
 export default function Home() {
   return (
-    <Shell>
+    <Shell
+      right={
+        <Link href="/login" className="text-[15px] text-muted hover:text-ink">
+          로그인
+        </Link>
+      }
+    >
       <section>
         <h1 className="font-serif text-[2.1rem] font-bold leading-[1.3] tracking-tight text-ink sm:text-[2.6rem]">
           외모보다 먼저,

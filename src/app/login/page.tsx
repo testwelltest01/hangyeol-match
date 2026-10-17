@@ -1,18 +1,21 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { PasswordLoginForm } from "@/components/auth/PasswordLoginForm";
 import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
 import { getUserId } from "@/lib/supabase/server";
-import { LoginForm } from "./LoginForm";
 
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <Shell>
-      <h1 className="font-serif text-3xl font-bold">이메일로 시작하기</h1>
-      <p className="mt-3 text-ink-soft">
-        이메일로 받은 인증 코드를 입력하면 로그인돼요. 처음이면 계정이 자동으로 만들어져요.
-      </p>
-      <Suspense fallback={<div className="mt-8"><Loading /></div>}>
+      <h1 className="font-serif text-3xl font-bold">로그인</h1>
+      <Suspense
+        fallback={
+          <div className="mt-8">
+            <Loading />
+          </div>
+        }
+      >
         <LoginGate searchParams={searchParams} />
       </Suspense>
     </Shell>
@@ -27,10 +30,10 @@ async function LoginGate({ searchParams }: { searchParams: PageProps<"/login">["
     <>
       {error === "link" && (
         <p role="alert" className="mt-4 text-alert">
-          로그인 링크가 만료됐거나 다른 브라우저에서 열렸어요. 아래에서 코드를 다시 받아주세요.
+          메일의 링크가 만료됐거나 다른 브라우저에서 열렸어요. 비밀번호로 로그인하거나 코드를 다시 받아주세요.
         </p>
       )}
-      <LoginForm />
+      <PasswordLoginForm />
     </>
   );
 }

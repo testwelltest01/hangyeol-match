@@ -63,6 +63,9 @@ async function MeGate() {
       )}
 
       <section className="mt-12 border-t border-line pt-8 text-center">
+        <Link href="/set-password?mode=change" className="mb-5 block text-ink underline underline-offset-4">
+          비밀번호 바꾸기
+        </Link>
         <form action={signOut}>
           <button type="submit" className="text-ink underline underline-offset-4">
             로그아웃

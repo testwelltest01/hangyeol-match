@@ -267,6 +267,7 @@ export function FiltersForm({
           options={[
             { id: "any", label: "상관없음" },
             { id: "taller", label: `나보다 크면 좋음 (나: ${me.height}cm)` },
+            { id: "shorter", label: `나보다 작으면 좋음 (나: ${me.height}cm)` },
             { id: "range", label: "직접 범위 정하기" },
           ]}
         />

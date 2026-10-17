@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { normalizeInstagram, normalizeKakao } from "@/lib/contact";
 import { daysBefore, kstDay } from "@/lib/day";
 import { ALL_REGION_KEYS, PROVINCES, isRegionKey, regionLabel } from "@/lib/regions";
+import { checkPassword } from "@/lib/password";
 import { canUploadToday } from "@/lib/photo/rules";
 import { computeOverall, postprocess } from "@/lib/photo/score";
 import { sniffImage } from "@/lib/sniff";
@@ -73,6 +74,9 @@ describe("조건 검사", () => {
     const taller = person({ height: 165, filters: { height: { mode: "taller", min: 150, max: 190, strict: true } } });
     expect(meets("height", taller, person({ id: "b", height: 164 }), YEAR)).toBe(true);
     expect(meets("height", taller, person({ id: "b", height: 163 }), YEAR)).toBe(false);
+    const shorter = person({ height: 180, filters: { height: { mode: "shorter", min: 150, max: 190, strict: true } } });
+    expect(meets("height", shorter, person({ id: "b", height: 181 }), YEAR)).toBe(true);
+    expect(meets("height", shorter, person({ id: "b", height: 182 }), YEAR)).toBe(false);
   });
 
   it("흡연 조건", () => {
@@ -229,5 +233,14 @@ describe("사진", () => {
   it("한국 날짜 계산", () => {
     expect(kstDay(new Date("2026-10-16T15:00:00Z"))).toBe("2026-10-17");
     expect(daysBefore("2026-10-17", 14)).toBe("2026-10-03");
+  });
+});
+
+describe("비밀번호 규칙", () => {
+  it("8자 이상, 영문과 숫자", () => {
+    expect(checkPassword("abc12345")).toBeNull();
+    expect(checkPassword("abc1234")).not.toBeNull();
+    expect(checkPassword("abcdefgh")).not.toBeNull();
+    expect(checkPassword("12345678")).not.toBeNull();
   });
 });

@@ -12,7 +12,10 @@
 | 주소 | 내용 |
 | --- | --- |
 | `/` | 소개와 시작 버튼 |
-| `/login` | 이메일 인증 코드 로그인 (처음이면 계정 자동 생성) |
+| `/signup` | 가입: 이메일 인증 코드로 확인 → 비밀번호 만들기 |
+| `/login` | 이메일 + 비밀번호 로그인 |
+| `/reset` | 비밀번호 찾기: 이메일 인증 코드로 확인 → 새 비밀번호 |
+| `/set-password` | 비밀번호 만들기·바꾸기 (코드로만 가입한 예전 계정도 여기로 와서 한 번 만든다) |
 | `/onboarding` | 닉네임, 성별, 출생연도, 개인정보 동의 |
 | `/test` | 검사 13단계. 단계마다 저장돼서 이어하기 가능 |
 | `/report` | 리포트, 친구 평가 링크, 매칭 시작 버튼 |
@@ -37,7 +40,12 @@
    - Site URL: `https://hangyeol-match.vercel.app`
    - Redirect URLs: `http://localhost:3000/**`, `https://hangyeol-match.vercel.app/**`
 4. **외부 SMTP**(Gmail 앱 비밀번호)와 **메일 템플릿**(인증 코드 `{{ .Token }}` 포함)은 0단계에서 설정 완료.
-5. **Project Settings > API Keys**에서 URL, publishable key, secret key를 복사해둡니다.
+   - 이 메일(Magic link 템플릿)은 가입과 비밀번호 찾기에 함께 쓰이므로, 제목은 `한결 인증 코드`, 본문 첫 줄은 `한결 인증 코드`로 바꿔두면 자연스러워요.
+5. **Authentication > Providers > Email** (또는 Sign In / Providers)
+   - Email 로그인 켜짐 확인
+   - Minimum password length: `8`, Password requirements: `Letters and digits`
+   - Email OTP Expiration: `600`초(10분)
+6. **Project Settings > API Keys**에서 URL, publishable key, secret key를 복사해둡니다.
 
 ## 2. 환경 변수
 
@@ -70,7 +78,7 @@ npm test           # 단위 테스트
 
 ## 매칭 규칙 (기획서 '매칭 방식과 필터', '추천 알고리즘')
 
-- **1층 하드 필터** (`src/lib/match/filters.ts`): 나이, 지역(양방향), 키(±2cm 여유), 흡연, 결혼·자녀 정반대, 종교. 조건마다 "꼭/되도록". "꼭"이 하나라도 어긋나면 서로 노출하지 않음.
+- **1층 하드 필터** (`src/lib/match/filters.ts`): 나이, 지역(양방향), 키(상관없음/나보다 큼/나보다 작음/직접 범위, ±2cm 여유), 흡연, 결혼·자녀 정반대, 종교. 조건마다 "꼭/되도록". "꼭"이 하나라도 어긋나면 서로 노출하지 않음.
 - **2층 소프트 점수**: 가치관 유사도 조화평균(`scoring.ts`의 `mutualScore`) × "되도록" 조건이 어긋날 때마다 0.85.
 - **3층 행동 게이트** (`allocate.ts`의 `gateFactor`): 만남 후 평가가 나쁜 기록(노쇼, 사진 불일치·청결·매너 2점 이하)이 2건이면 노출 0.6배, 4건이면 0.3배.
 - **배분**: 후보가 적은 사람부터 한 명씩 고르는 라운드 로빈. 한 사람이 하루에 다른 사람 추천에 들어가는 횟수는 최대 6번. 먼저 관심을 보낸 사람은 우선. 넘긴 사람은 다시 안 나오고, 답하지 않은 사람은 14일 뒤 다시 나올 수 있음.
@@ -81,6 +89,7 @@ npm test           # 단위 테스트
 **데이터 접근**
 - 1단계 테이블(사진, 연락처, 종교, 추천, 관심·수락, 신고, 만남 피드백)은 RLS를 켜고 정책을 두지 않았고, 브라우저 역할(anon, authenticated)의 권한도 뺐습니다. 브라우저에서는 어떤 방법으로도 직접 읽거나 쓸 수 없고, 서버가 로그인 사용자를 확인한 뒤 secret key로만 처리합니다.
 - 0단계 테이블(profiles, test_answers, friend_invites)도 브라우저에서 직접 쓰는 권한을 없앴습니다. 직접 쓸 수 있으면 출생연도를 바꿔 나이 확인을 건너뛸 수 있기 때문입니다. 본인 읽기만 남겼습니다.
+- 로그인은 이메일 + 비밀번호. 비밀번호는 Supabase가 해시로 저장하고, 틀렸을 때 "이메일이 없는지/비밀번호가 틀렸는지"를 구분해 알려주지 않습니다. 비밀번호 찾기도 가입 여부와 상관없이 같은 화면을 보여줍니다.
 - 다른 사람 화면(`/people/[id]`)은 추천받았거나 관심·수락으로 이어진 경우에만 열리고, 그 밖에는 존재 여부도 알려주지 않습니다(404). 사진은 서로 관심 후, 연락처는 서로 수락 후에만 서버가 꺼냅니다.
 
 **저장**
@@ -100,7 +109,8 @@ npm test           # 단위 테스트
 
 **운영자가 할 일**
 - [ ] Google, GitHub, Vercel, Supabase, OpenAI 계정 모두 2단계 인증 켜기 (가장 중요)
-- [ ] Supabase **Authentication > Providers > Email**: Email OTP Expiration을 `600`(10분)으로 줄이기
+- [ ] Supabase **Authentication > Providers > Email**: 비밀번호 8자 이상·영문과 숫자, Email OTP Expiration `600`(10분)
+- [ ] Supabase **Authentication > Rate Limits**: 로그인 시도 제한이 켜져 있는지 확인 (비밀번호 무차별 대입 방지)
 - [ ] OpenAI 대시보드에서 월 사용 한도(Usage limits) 정하기
 - [ ] GitHub 저장소 Settings > Code security에서 Dependabot alerts 켜기
 - [ ] 신고 확인: Supabase Table Editor의 `reports`(처리하면 `resolved_at` 채우기), 정지 해제는 `user_flags`의 `suspended_at` 비우기

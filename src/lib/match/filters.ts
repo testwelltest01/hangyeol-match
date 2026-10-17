@@ -17,7 +17,7 @@ export const RELIGION_LABEL = Object.fromEntries(RELIGIONS.map((r) => [r.id, r.l
 const RELIGION_IDS = new Set<string>(RELIGIONS.map((r) => r.id));
 export const isReligion = (v: unknown): v is Religion => typeof v === "string" && RELIGION_IDS.has(v);
 
-export type HeightMode = "any" | "taller" | "range";
+export type HeightMode = "any" | "taller" | "shorter" | "range";
 export type SmokingMode = "any" | "no_cigarette" | "none_only";
 export type ReligionMode = "any" | "same" | "specific";
 
@@ -88,6 +88,7 @@ export function meets(key: FilterKey, viewer: MatchPerson, cand: MatchPerson, ye
     case "height":
       if (f.height.mode === "any") return true;
       if (f.height.mode === "taller") return cand.height > viewer.height - HEIGHT_TOLERANCE;
+      if (f.height.mode === "shorter") return cand.height < viewer.height + HEIGHT_TOLERANCE;
       return cand.height >= f.height.min - HEIGHT_TOLERANCE && cand.height <= f.height.max + HEIGHT_TOLERANCE;
     case "smoking":
       if (f.smoking.mode === "any") return true;
@@ -161,7 +162,9 @@ export function sanitizeFilters(input: unknown, me: { religion: Religion | null 
   if (list.length === 0) return { error: "만날 수 있는 지역을 하나 이상 골라주세요." };
 
   const heightMode = raw.height?.mode;
-  if (heightMode !== "any" && heightMode !== "taller" && heightMode !== "range") return { error: "키 조건을 확인해주세요." };
+  if (heightMode !== "any" && heightMode !== "taller" && heightMode !== "shorter" && heightMode !== "range") {
+    return { error: "키 조건을 확인해주세요." };
+  }
   let hMin = int(raw.height?.min);
   let hMax = int(raw.height?.max);
   if (heightMode === "range") {
