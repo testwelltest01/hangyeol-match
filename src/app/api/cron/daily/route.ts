@@ -45,6 +45,8 @@ export async function GET(request: Request) {
 
   // 하루 지난 요청 횟수 기록 정리
   await admin.from("rate_limits").delete().lt("window_start", new Date(Date.now() - 86_400_000).toISOString());
+  // 방문 기록은 처리방침의 '접속 로그 3개월'에 맞춰 90일 뒤 지운다 (0003 전이면 조용히 실패)
+  await admin.from("activity_events").delete().lt("created_at", new Date(Date.now() - 90 * 86_400_000).toISOString());
 
   return Response.json({ day, created, purged });
 }

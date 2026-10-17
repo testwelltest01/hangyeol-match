@@ -2,6 +2,8 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
+import { trackVisit } from "@/lib/activity";
+import { isAdminEmail } from "@/lib/admin/emails";
 
 /** 서버 컴포넌트·서버 액션·라우트 핸들러용. 로그인한 사용자 권한(RLS)으로 동작한다. */
 export async function createClient() {
@@ -30,10 +32,17 @@ export async function createClient() {
   );
 }
 
+/** 로그인한 회원의 활동을 기록한다 (관리자 추세 화면용, 관리자 본인은 빼고) */
+function track(claims: Record<string, unknown> | undefined) {
+  const sub = claims?.sub;
+  if (typeof sub === "string" && !isAdminEmail(claims?.email)) trackVisit(sub);
+}
+
 /** 로그인한 사용자 id. 없으면 null */
 export async function getUserId(): Promise<string | null> {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
+  track(data?.claims);
   return (data?.claims?.sub as string | undefined) ?? null;
 }
 
@@ -46,6 +55,7 @@ export async function getAuth(): Promise<{ userId: string; passwordSet: boolean 
   const { data } = await supabase.auth.getClaims();
   const sub = data?.claims?.sub as string | undefined;
   if (!sub) return null;
+  track(data?.claims);
   const meta = (data?.claims?.user_metadata ?? {}) as Record<string, unknown>;
   return { userId: sub, passwordSet: meta.password_set === true };
 }

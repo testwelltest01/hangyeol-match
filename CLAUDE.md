@@ -10,7 +10,7 @@
 - `npm run dev` / `npm test` (vitest, `src/**/*.test.ts`) / `npx tsc --noEmit` / `npx eslint .` / `npx next build`
 - 라우트 타입(`PageProps<"/경로">`)이 없다는 오류가 나면 `npx next typegen`
 - 배포: GitHub `main`에 push하면 Vercel이 자동 배포 (https://hangyeol-match.vercel.app, 함수 리전 `icn1`)
-- DB 변경은 `supabase/migrations/000N_*.sql`을 새로 만들고, 사용자가 Supabase SQL Editor에서 직접 실행한다 (0001, 0002 실행 완료 기준)
+- DB 변경은 `supabase/migrations/000N_*.sql`을 새로 만들고, 사용자가 Supabase SQL Editor에서 직접 실행한다 (0001, 0002 실행 완료 기준. 0003 방문 기록은 작성만 됨)
 
 ## Next.js 16 주의 (cacheComponents + partialPrefetching 켜짐)
 
@@ -39,6 +39,8 @@
 - 인증: `/signup`(이메일 코드 → 비밀번호), `/login`(비밀번호), `/reset`(코드 → 새 비밀번호), `/set-password`. `user_metadata.password_set`이 없으면 `/start`가 비밀번호 만들기로 보낸다
 - 매일 크론: `/api/cron/daily` (`CRON_SECRET`, 15:00 UTC)
 - 관리자: `/admin`(대시보드), `/admin/users`(목록), `/admin/users/[id]`(상세·리포트), `/admin/export`(엑셀, exceljs). 판별은 `src/lib/admin/auth.ts`(`ADMIN_EMAILS`, 기본 testwelltest01@gmail.com, `password_set` 필수), 관리자가 아니면 `notFound()`. `/start`는 관리자를 `/admin`으로 보낸다. 관리자 화면 틀은 Suspense 안 Gate에서 확인 뒤에 그린다(정적 껍데기에 메뉴를 넣지 않는다). 계산은 `stats.ts`(순수), 데이터는 `data.ts`, 엑셀은 `workbook.ts`(순수)·`export.ts`
+- 관리자 추세 `/admin/trends`: `trends.ts`(순수)·`trendData.ts`. 방문 기록은 `activity_events`(0003)에 `getUserId`/`getAuth`가 `trackVisit`(`after` + `log_visit` RPC, 30분 간격, 관리자 제외)로 남기고 크론이 90일 뒤 지운다
+- 관리자 LPA `/admin/lpa`: `lpa.ts`(대각 공분산 가우시안 혼합 EM, 분산 같음=Mplus 기본/분산 다름, 고정 시드, 시작값 100/20을 데이터 크기에 맞춰 줄임, scikit-learn과 로그우도 대조 완료), `lpaSets.ts`(지표 묶음), `mplus.ts`(.dat/.inp/대응표). LMR·BLRT는 계산하지 않고 Mplus 파일로 넘긴다
 
 ## 확정된 기획 결정
 
