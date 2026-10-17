@@ -8,7 +8,7 @@ export const fieldClass =
 export function AppNav({ current }: { current?: "match" | "report" | "me" }) {
   const items = [
     { id: "match", href: "/match", label: "추천" },
-    { id: "report", href: "/report", label: "내 결과" },
+    { id: "report", href: "/report", label: "내 결" },
     { id: "me", href: "/me", label: "내 정보" },
   ] as const;
   return (
