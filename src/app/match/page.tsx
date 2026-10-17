@@ -16,7 +16,7 @@ export default function MatchPage() {
 }
 
 /** 오늘 추천받은 사람은 관심·수락이 진행돼도 하루 동안 카드에 남기고, 지금 단계를 한 줄로 알려준다 */
-function todayState(c: PersonCard, chatAvailable: boolean): { actions: ReactNode; detailLabel?: string } {
+function todayState(c: PersonCard, chatAvailable: boolean): { actions: ReactNode; detailLabel?: string; detailButton?: boolean } {
   const note = (text: string, strong = false) => (
     <p className={`text-sm ${strong ? "font-semibold text-indigo" : "text-moss"}`}>{text}</p>
   );
@@ -26,13 +26,15 @@ function todayState(c: PersonCard, chatAvailable: boolean): { actions: ReactNode
     case "waiting_interest":
       return { actions: note("관심을 보냈어요. 상대도 관심을 보내면 사진이 공개돼요.") };
     case "photos":
-      return { actions: note("서로 관심을 보냈어요. 사진이 공개됐어요.", true), detailLabel: "사진 보기" };
+      return { actions: note("서로 관심을 보냈어요. 사진이 공개됐어요.", true), detailLabel: "사진 보기", detailButton: true };
     case "waiting_accept":
       return { actions: note("수락했어요. 상대의 답을 기다리고 있어요.") };
     case "connected":
-      return chatAvailable
-        ? { actions: note("서로 수락했어요. 대화방이 열렸어요.", true) }
-        : { actions: note("서로 수락했어요. 연락처가 공개됐어요.", true), detailLabel: "연락처 보기" };
+      return {
+        actions: note(chatAvailable ? "서로 수락했어요. 대화방이 열렸어요." : "서로 수락했어요. 연락처가 공개됐어요.", true),
+        detailLabel: "프로필 보기",
+        detailButton: true,
+      };
     default:
       return { actions: null };
   }
@@ -84,8 +86,8 @@ async function TodayGate() {
           </>
         ) : (
           d.today.map((c) => {
-            const { actions, detailLabel } = todayState(c, d.chatAvailable);
-            return <PersonCardView key={c.id} card={c} actions={actions} detailLabel={detailLabel} />;
+            const { actions, detailLabel, detailButton } = todayState(c, d.chatAvailable);
+            return <PersonCardView key={c.id} card={c} actions={actions} detailLabel={detailLabel} detailButton={detailButton} />;
           })
         )}
       </div>

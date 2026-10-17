@@ -31,7 +31,7 @@ export function FriendForm({ token, items }: { token: string; items: { id: strin
       <div className="mt-10">
         <p className="font-serif text-2xl font-bold">고마워요. 답이 전달됐어요.</p>
         <p className="mt-3 text-ink-soft">
-          한결은 외모보다 먼저 연락 스타일과 주말이 맞는 사람을 찾는 소개팅 서비스예요. 11분 검사로 나의 연애 결도
+          한결은 연락 스타일과 주말이 맞는 사람을 찾는 소개팅 서비스예요. 11분 검사로 나의 연애 결도
           알아볼 수 있어요.
         </p>
         <div className="mt-8">

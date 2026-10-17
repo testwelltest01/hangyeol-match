@@ -130,7 +130,7 @@ export function PhotoHistory({ photos, attempts }: { photos: PhotoEntry[]; attem
     <Panel
       className="mt-4"
       title={`사진 업로드 기록 ${photos.length + failed.length}건`}
-      lead="올릴 때마다 받은 AI 피드백과 내부 점수예요. 내부 점수는 회원에게 보이지 않고 추천에도 쓰지 않아요. 교체한 사진 파일은 30일 뒤 지워져요. 사진은 신고 확인용으로만 보고 저장하지 말아주세요."
+      lead="올릴 때마다 받은 AI 피드백과 내부 점수예요. 내부 점수는 회원에게 보이지 않고 추천에도 쓰지 않아요. 교체한 사진 파일은 1년 뒤 지워져요. 사진은 신고 확인용으로만 보고 저장하지 말아주세요."
     >
       <p className="mb-4 flex flex-wrap gap-1.5">
         <Chip tone="indigo">등록 {photos.length}</Chip>

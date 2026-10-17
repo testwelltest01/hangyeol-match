@@ -8,7 +8,7 @@ export function ShareService() {
 
   async function share() {
     const url = window.location.origin;
-    const text = "외모보다 먼저 연락 스타일과 주말이 맞는 사람. 11분 가치관 검사 해봐.";
+    const text = "연락 스타일과 주말이 맞는 사람. 11분 가치관 검사 해봐.";
     if (navigator.share) {
       try {
         await navigator.share({ title: "한결", text, url });

@@ -28,8 +28,6 @@ export default function Home() {
     >
       <section>
         <h1 className="font-serif text-[2.1rem] font-bold leading-[1.3] tracking-tight text-ink sm:text-[2.6rem]">
-          외모보다 먼저,
-          <br />
           연락 스타일과 주말이
           <br />
           맞는 사람

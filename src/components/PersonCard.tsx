@@ -14,10 +14,13 @@ export function PersonCardView({
   card,
   actions,
   detailLabel = "자세히",
+  detailButton = false,
 }: {
   card: Card;
   actions?: ReactNode;
   detailLabel?: string;
+  /** 자세히 보기를 글자 링크 대신 버튼 모양으로 (다음에 할 일이 그 화면에 있을 때) */
+  detailButton?: boolean;
 }) {
   return (
     <article className="overflow-hidden rounded-2xl border border-line bg-surface">
@@ -50,7 +53,14 @@ export function PersonCardView({
 
         <div className="mt-5 flex items-center gap-3">
           <div className="flex-1">{actions}</div>
-          <Link href={`/people/${card.id}`} className="shrink-0 text-sm text-muted underline underline-offset-4">
+          <Link
+            href={`/people/${card.id}`}
+            className={
+              detailButton
+                ? "shrink-0 rounded-full border border-ink px-4 py-2 text-sm font-semibold text-ink transition-colors hover:bg-ink hover:text-white"
+                : "shrink-0 text-sm text-muted underline underline-offset-4"
+            }
+          >
             {detailLabel}
           </Link>
         </div>

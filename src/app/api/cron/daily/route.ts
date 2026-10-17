@@ -9,8 +9,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // CRON_SECRET 환경 변수를 넣어두면 Vercel이 Authorization: Bearer <값>을 붙여 보낸다. 다른 사람은 부를 수 없다.
 export const maxDuration = 300;
 
-/** 교체한 사진은 30일 뒤 파일을 지운다 (처리방침의 보관기간) */
-const KEEP_REPLACED_DAYS = 30;
+/** 교체한 사진은 1년 뒤 파일을 지운다 (처리방침의 보관기간, 신고 확인용) */
+const KEEP_REPLACED_DAYS = 365;
 
 export async function GET(request: Request) {
   await connection();
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
   const day = kstDay();
   const created = await generateRecommendations(admin, day);
 
-  // 30일 지난 교체 사진 파일 삭제
+  // 1년 지난 교체 사진 파일 삭제
   const cutoff = new Date(Date.now() - KEEP_REPLACED_DAYS * 86_400_000).toISOString();
   const { data: old } = await admin
     .from("photos")

@@ -66,7 +66,7 @@ async function PhotosGate() {
       />
       <p className="text-sm text-muted">
         사진은 얼굴·전신을 합쳐 계정당 {PHOTO_UPLOADS_PER_ACCOUNT}번까지 올릴 수 있어요(기준에 맞지 않아 거절된 사진 포함). {remaining}번
-        남았어요. 바꾼 이전 사진은 30일 뒤 지워져요. AI 점수는 사진 개선 안내에만 쓰고 추천
+        남았어요. 바꾼 이전 사진은 1년 뒤 지워져요. AI 점수는 사진 개선 안내에만 쓰고 추천
         순위에는 쓰지 않아요.
       </p>
       {done && <SecondaryLink href={nextSetupPath(setup, "photos")}>다음</SecondaryLink>}
