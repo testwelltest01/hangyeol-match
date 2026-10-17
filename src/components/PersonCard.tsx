@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { LikedBadge } from "@/components/LikedBadge";
 import type { PersonCard as Card } from "@/lib/match/dashboard";
 import { regionLabel } from "@/lib/regions";
+import { ZoomImage } from "@/components/ZoomImage";
 
 export function personLine(c: { birthYear: number; region: string; height: number }) {
   return `${String(c.birthYear).slice(2)}년생 · ${regionLabel(c.region)} · ${c.height}cm`;
@@ -22,10 +23,8 @@ export function PersonCardView({
     <article className="overflow-hidden rounded-2xl border border-line bg-surface">
       {card.illustrationUrl && (
         <div className="relative aspect-[4/3] bg-mist">
-          {/* 10분짜리 서명 주소라 next/image 최적화 대신 그대로 보여준다 */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={card.illustrationUrl} alt={`${card.nickname}님의 그림 프로필`} className="h-full w-full object-cover object-top" />
-          <span className="absolute left-3 top-3 rounded-full bg-paper/90 px-2.5 py-1 text-xs font-semibold text-ink-soft">AI 그림</span>
+          <ZoomImage src={card.illustrationUrl} alt={`${card.nickname}님의 그림 프로필`} className="h-full w-full object-cover object-top" />
+          <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-paper/90 px-2.5 py-1 text-xs font-semibold text-ink-soft">AI 그림</span>
         </div>
       )}
       <div className="px-5 py-5">

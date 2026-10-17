@@ -2,6 +2,7 @@ import { kstTime } from "@/lib/admin/data";
 import type { Internal, UserView } from "@/lib/photo/score";
 import { PHOTO_UPLOADS_PER_DAY } from "@/lib/photo/rules";
 import { Chip, Empty, Panel } from "../../ui";
+import { ZoomImage } from "@/components/ZoomImage";
 
 export type PhotoEntry = {
   id: string;
@@ -56,11 +57,9 @@ function PhotoCard({ p }: { p: PhotoEntry }) {
     <div className="flex gap-4">
       <div className="w-24 shrink-0">
         {p.url ? (
-          <a href={p.url} target="_blank" rel="noreferrer" className="block aspect-[3/4] overflow-hidden rounded-lg bg-mist">
-            {/* 10분짜리 서명 주소라 next/image 최적화 대신 그대로 보여준다 */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={p.url} alt={`${SLOT[p.slot]} 사진 (${kstTime(p.created_at)})`} className="h-full w-full object-cover" />
-          </a>
+          <div className="aspect-[3/4] overflow-hidden rounded-lg bg-mist">
+            <ZoomImage src={p.url} alt={`${SLOT[p.slot]} 사진 (${kstTime(p.created_at)})`} />
+          </div>
         ) : (
           <div className="flex aspect-[3/4] items-center justify-center rounded-lg bg-mist px-2 text-center text-xs text-muted">파일 없음</div>
         )}

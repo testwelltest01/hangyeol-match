@@ -6,6 +6,7 @@ import { useEffect, useState, useTransition } from "react";
 import { PrimaryButton } from "@/components/Shell";
 import { Notice } from "@/components/ui";
 import { createIllustration, deleteIllustration, setIllustrationShown } from "./actions";
+import { ZoomImage } from "@/components/ZoomImage";
 
 type Row = { id: string; status: "pending" | "done" | "failed"; url: string | null; error: string | null; shown: boolean; createdAt: string };
 
@@ -82,11 +83,7 @@ export function IllustrationPanel({ available, ready, consented, remaining, limi
           {done.map((r) => (
             <li key={r.id}>
               <div className="aspect-[2/3] overflow-hidden rounded-2xl bg-mist">
-                {r.url && (
-                  // 10분짜리 서명 주소라 next/image 최적화 대신 그대로 보여준다
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={r.url} alt="AI가 그린 내 그림 프로필" className="h-full w-full object-cover" />
-                )}
+                {r.url && <ZoomImage src={r.url} alt="AI가 그린 내 그림 프로필" />}
               </div>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                 {r.shown ? (

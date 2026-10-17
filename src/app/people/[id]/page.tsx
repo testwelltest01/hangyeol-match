@@ -24,6 +24,7 @@ import { getUserId } from "@/lib/supabase/server";
 import { CopyButton } from "./CopyButton";
 import { MeetingFeedbackForm } from "./MeetingFeedbackForm";
 import { SafetyActions } from "./SafetyActions";
+import { ZoomImage } from "@/components/ZoomImage";
 
 export default function PersonPage({ params }: PageProps<"/people/[id]">) {
   return (
@@ -126,9 +127,7 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
         <section className="mt-8">
           <h2 className="sr-only">그림 프로필</h2>
           <div className="mx-auto aspect-[2/3] max-w-xs overflow-hidden rounded-2xl bg-mist">
-            {/* 10분짜리 서명 주소라 next/image 최적화 대신 그대로 보여준다 */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={illustrationUrl} alt={`${name}님의 그림 프로필`} className="h-full w-full object-cover" />
+            <ZoomImage src={illustrationUrl} alt={`${name}님의 그림 프로필`} />
           </div>
           <p className="mt-2 text-center text-sm text-muted">
             AI가 실제 사진과 자기소개로 그린 그림이에요. 실제 사진은 서로 관심을 보내면 공개돼요.
@@ -142,9 +141,7 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
           <div className="grid grid-cols-2 gap-3">
             {photos.map((p) => (
               <div key={p.slot} className="aspect-[3/4] overflow-hidden rounded-xl bg-mist">
-                {/* 10분짜리 서명 주소라 next/image 최적화 대신 그대로 보여준다 */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.url} alt={`${name}님의 ${p.slot === "face" ? "얼굴" : "전신"} 사진`} className="h-full w-full object-cover" />
+                <ZoomImage src={p.url} alt={`${name}님의 ${p.slot === "face" ? "얼굴" : "전신"} 사진`} />
               </div>
             ))}
           </div>

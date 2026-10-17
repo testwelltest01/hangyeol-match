@@ -71,3 +71,16 @@ body {
   stroke-dasharray: 900;
   animation: draw-grain 1.8s ease-out both;
 }
+
+/* 사진 크게 보기 (ZoomImage) */
+@keyframes zoom-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}

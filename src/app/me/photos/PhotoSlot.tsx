@@ -6,6 +6,7 @@ import { ErrorText } from "@/components/ui";
 import type { UserView } from "@/lib/photo/score";
 import { resizeImage } from "@/lib/photo/resize";
 import { uploadPhoto } from "../actions";
+import { ZoomImage } from "@/components/ZoomImage";
 
 function FeedbackCard({ feedback, fresh }: { feedback: UserView; fresh: boolean }) {
   return (
@@ -95,9 +96,7 @@ export function PhotoSlot({
       <div className="mt-4 flex gap-4">
         <div className="aspect-[3/4] w-32 shrink-0 overflow-hidden rounded-xl bg-mist">
           {current?.url ? (
-            // 서명 주소(10분)라 next/image 최적화 대신 그대로 보여준다
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={current.url} alt={`내 ${title}`} className="h-full w-full object-cover" />
+            <ZoomImage src={current.url} alt={`내 ${title}`} />
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-muted">아직 없어요</div>
           )}

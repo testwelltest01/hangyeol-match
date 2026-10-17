@@ -23,6 +23,7 @@ import { kstDayStartIso } from "@/lib/photo/rules";
 import { ResolveButton, SuspendButton } from "../../AdminButtons";
 import { PhotoHistory, type AttemptEntry, type PhotoEntry } from "./PhotoHistory";
 import { AdminLoading, AdminShell, Chip, Empty, Panel, TableWrap, td, th } from "../../ui";
+import { ZoomImage } from "@/components/ZoomImage";
 
 export const metadata: Metadata = { title: "회원 상세 | 한결 관리", robots: { index: false, follow: false } };
 
@@ -244,9 +245,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
               {photoRows.map((p) =>
                 urls.get(p.path) ? (
                   <div key={p.id} className="aspect-[3/4] overflow-hidden rounded-xl bg-mist">
-                    {/* 10분짜리 서명 주소라 next/image 최적화 대신 그대로 보여준다 */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={urls.get(p.path)} alt={`${name}님의 ${p.slot === "face" ? "얼굴" : "전신"} 사진`} className="h-full w-full object-cover" />
+                    <ZoomImage src={urls.get(p.path)!} alt={`${name}님의 ${p.slot === "face" ? "얼굴" : "전신"} 사진`} />
                   </div>
                 ) : null,
               )}
@@ -273,8 +272,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
                   <li key={r.id} className="text-sm">
                     <div className="flex aspect-[2/3] items-center justify-center overflow-hidden rounded-xl bg-mist text-muted">
                       {url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={url} alt="AI 그림 프로필" className="h-full w-full object-cover" />
+                        <ZoomImage src={url} alt="AI 그림 프로필" />
                       ) : (
                         <span>{r.status === "pending" ? "그리는 중" : r.status === "failed" ? "실패" : "지움"}</span>
                       )}
