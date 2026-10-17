@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
+import { LikedBadge } from "@/components/LikedBadge";
 import { Loading } from "@/components/Loading";
 import { personLine } from "@/components/PersonCard";
 import { ReactButtons } from "@/components/ReactButtons";
@@ -90,7 +91,10 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
   const name = profile.data.nickname;
   return (
     <article>
-      <h1 className="font-serif text-[1.9rem] font-bold leading-tight">{name}</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="font-serif text-[1.9rem] font-bold leading-tight">{name}</h1>
+        {stage === "new" && pair.theirs?.interest === true && <LikedBadge />}
+      </div>
       <p className="mt-1 text-muted">{personLine({ birthYear: profile.data.birth_year, region: mp.data.region, height: mp.data.height })}</p>
 
       <p className="mt-6 border-l-2 border-indigo pl-3 font-serif text-[1.05rem] leading-relaxed">{reason}</p>

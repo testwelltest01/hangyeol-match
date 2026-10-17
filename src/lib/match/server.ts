@@ -4,6 +4,7 @@ import { daysBefore, kstYear } from "@/lib/day";
 import { allocate, gateFactor, type Edge, type FeedbackReceived } from "@/lib/match/allocate";
 import { recommendationReason } from "@/lib/match/explain";
 import { checkMutual, type Filters, type Gender, type MatchPerson, type Religion } from "@/lib/match/filters";
+import { MIN_FRIENDS_FOR_MATCHING } from "@/lib/match/rules";
 import { mutualScore, type Scores } from "@/lib/scoring";
 
 type Admin = SupabaseClient;
@@ -32,10 +33,10 @@ export type PoolEntry = {
 
 /**
  * 지금 매칭에 참여할 수 있는 사람 전체.
- * 조건: 검사 완료, 매칭 정보 입력, 사진 2장, 연락처, 매칭 쉬는 중 아님, 이용 정지 아님.
+ * 조건: 검사 완료, 친구 평가 1명 이상, 매칭 정보 입력, 사진 2장, 연락처, 매칭 쉬는 중 아님, 이용 정지 아님.
  */
 export async function loadPool(admin: Admin): Promise<Map<string, PoolEntry>> {
-  const [profiles, matchProfiles, scores, photos, contacts, flags, feedback] = await Promise.all([
+  const [profiles, matchProfiles, scores, photos, contacts, flags, feedback, friendRatings] = await Promise.all([
     fetchAll<{ id: string; gender: Gender; birth_year: number; nickname: string }>((a, b) =>
       admin.from("profiles").select("id, gender, birth_year, nickname").range(a, b),
     ),
@@ -53,6 +54,7 @@ export async function loadPool(admin: Admin): Promise<Map<string, PoolEntry>> {
     fetchAll<FeedbackReceived & { to_user: string }>((a, b) =>
       admin.from("meeting_feedback").select("to_user, outcome, photo_match, cleanliness, manners").range(a, b),
     ),
+    fetchAll<{ user_id: string }>((a, b) => admin.from("friend_ratings").select("user_id").range(a, b)),
   ]);
 
   const profileById = new Map(profiles.map((p) => [p.id, p]));
@@ -61,6 +63,8 @@ export async function loadPool(admin: Admin): Promise<Map<string, PoolEntry>> {
   for (const p of photos) photoSlots.set(p.user_id, (photoSlots.get(p.user_id) ?? new Set()).add(p.slot));
   const hasContact = new Set(contacts.map((c) => c.user_id));
   const suspended = new Set(flags.map((f) => f.user_id));
+  const friendCount = new Map<string, number>();
+  for (const r of friendRatings) friendCount.set(r.user_id, (friendCount.get(r.user_id) ?? 0) + 1);
   const feedbackByUser = new Map<string, FeedbackReceived[]>();
   for (const f of feedback) feedbackByUser.set(f.to_user, [...(feedbackByUser.get(f.to_user) ?? []), f]);
 
@@ -71,6 +75,7 @@ export async function loadPool(admin: Admin): Promise<Map<string, PoolEntry>> {
     const slots = photoSlots.get(mp.user_id);
     if (!profile || !s || !slots?.has("face") || !slots.has("body")) continue;
     if (!hasContact.has(mp.user_id) || suspended.has(mp.user_id)) continue;
+    if ((friendCount.get(mp.user_id) ?? 0) < MIN_FRIENDS_FOR_MATCHING) continue;
     pool.set(mp.user_id, {
       person: {
         id: mp.user_id,

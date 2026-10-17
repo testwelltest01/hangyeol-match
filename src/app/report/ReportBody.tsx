@@ -1,14 +1,15 @@
 import type { ReactNode } from "react";
 import { TraitBar, ValueTrack } from "@/components/ReportParts";
 import { PrimaryLink } from "@/components/Shell";
+import { MIN_FRIENDS_FOR_MATCHING } from "@/lib/match/rules";
 import type { Trait } from "@/lib/items";
 import type { Report } from "@/lib/report";
 import { InviteBox } from "./InviteBox";
 import { ShareService } from "./ShareService";
 
-function Section({ title, lead, children }: { title: string; lead?: string; children: ReactNode }) {
+function Section({ id, title, lead, children }: { id?: string; title: string; lead?: string; children: ReactNode }) {
   return (
-    <section className="mt-12 border-t border-line pt-8">
+    <section id={id} className="mt-12 scroll-mt-6 border-t border-line pt-8">
       <h2 className="font-serif text-2xl font-bold">{title}</h2>
       {lead && <p className="mt-2 text-ink-soft">{lead}</p>}
       <div className="mt-6">{children}</div>
@@ -90,7 +91,7 @@ export function ReportParts({
         </div>
       </Section>
 
-      <Section title="친구가 보는 나">
+      <Section id="friends" title="친구가 보는 나">
         <InviteBox initialToken={inviteToken} count={friendCount} minCount={minFriendCount} />
       </Section>
 
@@ -110,7 +111,14 @@ export function ReportParts({
       </Section>
 
       <Section title="이제 추천받기" lead="이 결과로 결이 맞는 사람을 매일 3명씩 추천해요. 지역과 조건, 사진 2장, 연락처를 채우면 바로 시작돼요.">
-        <PrimaryLink href="/match">매칭 시작하기</PrimaryLink>
+        {friendCount >= MIN_FRIENDS_FOR_MATCHING ? (
+          <PrimaryLink href="/match">매칭 시작하기</PrimaryLink>
+        ) : (
+          <p className="rounded-xl bg-mist px-4 py-3.5 text-[15px] text-ink-soft">
+            친구 {MIN_FRIENDS_FOR_MATCHING}명 이상이 위의 &quot;친구가 보는 나&quot;를 평가해주면 매칭을 시작할 수 있어요. 나를 아는 사람의
+            시선이 있어야 더 믿을 수 있는 추천이 돼요.
+          </p>
+        )}
         <div className="mt-6">
           <ShareService />
         </div>

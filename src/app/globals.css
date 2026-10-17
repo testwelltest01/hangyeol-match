@@ -13,6 +13,8 @@
   --color-indigo: #2e45a8;
   --color-moss: #5e7d63;
   --color-alert: #a8402e;
+  /* 받은 관심(하트)에만 쓴다 */
+  --color-rose: #c0405f;
 
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
     "Noto Sans KR", sans-serif;

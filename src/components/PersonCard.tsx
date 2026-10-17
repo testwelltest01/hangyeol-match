@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { LikedBadge } from "@/components/LikedBadge";
 import type { PersonCard as Card } from "@/lib/match/dashboard";
 import { regionLabel } from "@/lib/regions";
 
@@ -13,9 +14,7 @@ export function PersonCardView({ card, actions }: { card: Card; actions?: ReactN
     <article className="rounded-2xl border border-line bg-surface px-5 py-5">
       <div className="flex items-baseline justify-between gap-3">
         <h3 className="font-serif text-xl font-bold">{card.nickname}</h3>
-        {card.likedMe && card.stage === "new" && (
-          <span className="shrink-0 rounded-full bg-moss/10 px-2.5 py-1 text-xs font-semibold text-moss">먼저 관심을 보냈어요</span>
-        )}
+        {card.likedMe && card.stage === "new" && <LikedBadge />}
       </div>
       <p className="mt-1 text-sm text-muted">{personLine(card)}</p>
 

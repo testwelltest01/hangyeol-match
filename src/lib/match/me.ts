@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Improvement, UserView } from "@/lib/photo/feedback";
 import type { Filters, Gender, Religion } from "@/lib/match/filters";
+import { MIN_FRIENDS_FOR_MATCHING } from "@/lib/match/rules";
 
 export type PhotoRow = { id: string; slot: "face" | "body"; path: string; feedback: UserView; created_at: string };
 
@@ -22,12 +23,14 @@ export type MySetup = {
   contact: { instagram: boolean; kakao: boolean } | null;
   consents: { religion: boolean; photoOverseas: boolean };
   suspended: boolean;
+  /** 친구 평가 수 ('친구가 보는 나') */
+  friendCount: number;
 };
 
 /** 매칭 준비 상태. 서버에서 로그인 사용자를 확인한 뒤에만 부른다 */
 export async function loadMySetup(userId: string): Promise<MySetup | null> {
   const admin = createAdminClient();
-  const [profile, mp, photos, contact, consents, flag] = await Promise.all([
+  const [profile, mp, photos, contact, consents, flag, friends] = await Promise.all([
     admin.from("profiles").select("nickname, gender, birth_year").eq("id", userId).maybeSingle(),
     admin
       .from("match_profiles")
@@ -38,6 +41,7 @@ export async function loadMySetup(userId: string): Promise<MySetup | null> {
     admin.from("contacts").select("instagram, kakao").eq("user_id", userId).maybeSingle(),
     admin.from("consents").select("kind").eq("user_id", userId),
     admin.from("user_flags").select("suspended_at").eq("user_id", userId).maybeSingle(),
+    admin.from("friend_ratings").select("id", { count: "exact", head: true }).eq("user_id", userId),
   ]);
   if (!profile.data) return null;
 
@@ -53,13 +57,20 @@ export async function loadMySetup(userId: string): Promise<MySetup | null> {
     contact: contact.data ? { instagram: Boolean(contact.data.instagram), kakao: Boolean(contact.data.kakao) } : null,
     consents: { religion: kinds.has("religion"), photoOverseas: kinds.has("photo_overseas") },
     suspended: Boolean(flag.data?.suspended_at),
+    friendCount: friends.count ?? 0,
   };
 }
 
-export type SetupStep = { id: "profile" | "filters" | "photos" | "contact"; label: string; href: string; done: boolean };
+export type SetupStep = { id: "friends" | "profile" | "filters" | "photos" | "contact"; label: string; href: string; done: boolean };
 
 export function setupSteps(s: MySetup): SetupStep[] {
   return [
+    {
+      id: "friends",
+      label: `친구 평가 ${MIN_FRIENDS_FOR_MATCHING}명 이상 받기`,
+      href: "/report#friends",
+      done: s.friendCount >= MIN_FRIENDS_FOR_MATCHING,
+    },
     { id: "profile", label: "내 정보와 자기소개", href: "/me/profile", done: Boolean(s.matchProfile) },
     { id: "filters", label: "원하는 상대 조건", href: "/me/filters", done: Boolean(s.matchProfile) },
     { id: "photos", label: "사진 2장", href: "/me/photos", done: Boolean(s.photos.face && s.photos.body) },

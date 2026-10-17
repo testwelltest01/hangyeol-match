@@ -63,7 +63,7 @@ async function MatchGate() {
       <>
         <PageTitle
           title="매칭 준비"
-          lead="아래 네 가지를 채우면 바로 오늘의 추천이 열려요. 추천 카드에는 사진이 없고, 서로 관심을 보내면 사진이 공개돼요."
+          lead="아래를 모두 채우면 바로 오늘의 추천이 열려요. 추천 카드에는 사진이 없고, 서로 관심을 보내면 사진이 공개돼요."
         />
         <ol className="mt-8 space-y-3">
           {steps.map((s, i) => (
