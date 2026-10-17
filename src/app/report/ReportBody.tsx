@@ -24,6 +24,7 @@ export function ReportParts({
   friendCount,
   minFriendCount,
   inviteToken,
+  viewer = "owner",
 }: {
   nickname: string;
   report: Report;
@@ -31,10 +32,17 @@ export function ReportParts({
   friendCount: number;
   minFriendCount: number;
   inviteToken: string | null;
+  /** admin이면 관리자 화면 안에서 읽기 전용으로 보여준다 (초대·공유·매칭 버튼 없음) */
+  viewer?: "owner" | "admin";
 }) {
+  const admin = viewer === "admin";
   return (
     <article>
-      <h1 className="font-serif text-[2rem] font-bold leading-tight">{nickname}님의 연애 결</h1>
+      {admin ? (
+        <h2 className="font-serif text-[1.6rem] font-bold leading-tight">{nickname}님의 연애 결</h2>
+      ) : (
+        <h1 className="font-serif text-[2rem] font-bold leading-tight">{nickname}님의 연애 결</h1>
+      )}
       <p className="mt-3 text-ink-soft">
         검사 답을 바탕으로 정리했어요. 이 결과로 결이 맞는 사람을 추천해요.
       </p>
@@ -92,7 +100,13 @@ export function ReportParts({
       </Section>
 
       <Section id="friends" title="친구가 보는 나">
-        <InviteBox initialToken={inviteToken} count={friendCount} minCount={minFriendCount} />
+        {admin ? (
+          <p className="text-ink-soft">
+            친구 {friendCount}명이 평가했어요. 회원에게는 {minFriendCount}명 이상일 때부터 평균이 보여요.
+          </p>
+        ) : (
+          <InviteBox initialToken={inviteToken} count={friendCount} minCount={minFriendCount} />
+        )}
       </Section>
 
       <Section title="꾸밈과 조건">
@@ -110,19 +124,21 @@ export function ReportParts({
         </dl>
       </Section>
 
-      <Section title="이제 추천받기" lead="이 결과로 결이 맞는 사람을 매일 3명씩 추천해요. 지역과 조건, 사진 2장, 연락처를 채우면 바로 시작돼요.">
-        {friendCount >= MIN_FRIENDS_FOR_MATCHING ? (
-          <PrimaryLink href="/match">매칭 시작하기</PrimaryLink>
-        ) : (
-          <p className="rounded-xl bg-mist px-4 py-3.5 text-[15px] text-ink-soft">
-            친구 {MIN_FRIENDS_FOR_MATCHING}명 이상이 위의 &quot;친구가 보는 나&quot;를 평가해주면 매칭을 시작할 수 있어요. 나를 아는 사람의
-            시선이 있어야 더 믿을 수 있는 추천이 돼요.
-          </p>
-        )}
-        <div className="mt-6">
-          <ShareService />
-        </div>
-      </Section>
+      {!admin && (
+        <Section title="이제 추천받기" lead="이 결과로 결이 맞는 사람을 매일 3명씩 추천해요. 지역과 조건, 사진 2장, 연락처를 채우면 바로 시작돼요.">
+          {friendCount >= MIN_FRIENDS_FOR_MATCHING ? (
+            <PrimaryLink href="/match">매칭 시작하기</PrimaryLink>
+          ) : (
+            <p className="rounded-xl bg-mist px-4 py-3.5 text-[15px] text-ink-soft">
+              친구 {MIN_FRIENDS_FOR_MATCHING}명 이상이 위의 &quot;친구가 보는 나&quot;를 평가해주면 매칭을 시작할 수 있어요. 나를 아는 사람의
+              시선이 있어야 더 믿을 수 있는 추천이 돼요.
+            </p>
+          )}
+          <div className="mt-6">
+            <ShareService />
+          </div>
+        </Section>
+      )}
     </article>
   );
 }

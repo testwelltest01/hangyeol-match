@@ -10,7 +10,7 @@ import { mutualScore, type Scores } from "@/lib/scoring";
 type Admin = SupabaseClient;
 
 /** Supabase는 한 번에 1000행까지 주므로 끝까지 나눠 읽는다 */
-async function fetchAll<T>(
+export async function fetchAll<T>(
   make: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
 ): Promise<T[]> {
   const out: T[] = [];

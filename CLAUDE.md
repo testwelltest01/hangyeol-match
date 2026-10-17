@@ -25,6 +25,7 @@
 - 1단계 테이블(사진, 연락처, 종교, 추천, 관심·수락, 신고 등)은 RLS 정책 없음 + anon/authenticated 권한 회수. 서버만 접근.
 - 서버 액션은 공개 주소다: 로그인, 입력 타입, 두 사람의 관계(`pairStage`)를 매번 확인하고, `allow()`로 요청 횟수를 제한한다.
 - 연락처는 `src/lib/crypto.ts`(AES-256-GCM, `CONTACT_ENCRYPTION_KEY`)로 암호화. 사진은 비공개 버킷 + 10분 서명 주소.
+- 관리자 엑셀에는 이메일·연락처·종교·사진을 넣지 않는다. 회원은 사용자ID로 가리킨다.
 - 비밀값은 `server-only` 모듈에서만 읽는다. 순수 함수는 테스트할 수 있게 server-only가 아닌 파일로 나눈다(`sniff.ts`, `photo/score.ts`).
 - 로그인 실패·비밀번호 찾기에서 가입 여부를 드러내지 않는다.
 
@@ -37,6 +38,7 @@
 - 사진 AI 피드백: `src/lib/photo/feedback.ts` (OpenAI Chat Completions + JSON schema). 내부 점수는 추천에 쓰지 않는다
 - 인증: `/signup`(이메일 코드 → 비밀번호), `/login`(비밀번호), `/reset`(코드 → 새 비밀번호), `/set-password`. `user_metadata.password_set`이 없으면 `/start`가 비밀번호 만들기로 보낸다
 - 매일 크론: `/api/cron/daily` (`CRON_SECRET`, 15:00 UTC)
+- 관리자: `/admin`(대시보드), `/admin/users`(목록), `/admin/users/[id]`(상세·리포트), `/admin/export`(엑셀, exceljs). 판별은 `src/lib/admin/auth.ts`(`ADMIN_EMAILS`, 기본 testwelltest01@gmail.com, `password_set` 필수), 관리자가 아니면 `notFound()`. `/start`는 관리자를 `/admin`으로 보낸다. 관리자 화면 틀은 Suspense 안 Gate에서 확인 뒤에 그린다(정적 껍데기에 메뉴를 넣지 않는다). 계산은 `stats.ts`(순수), 데이터는 `data.ts`, 엑셀은 `workbook.ts`(순수)·`export.ts`
 
 ## 확정된 기획 결정
 

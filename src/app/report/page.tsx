@@ -3,15 +3,13 @@ import { Suspense } from "react";
 import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
 import type { Answers } from "@/lib/items";
+import { MIN_FRIEND_RATINGS_TO_SHOW } from "@/lib/match/rules";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
 import { buildReport } from "@/lib/report";
 import { aggregateFriendRatings, type Scores } from "@/lib/scoring";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient, getUserId } from "@/lib/supabase/server";
 import { ReportParts } from "./ReportBody";
-
-/** 친구 평가 평균을 보여주는 최소 인원. 한 명의 답이 드러나지 않게 한다. */
-const MIN_FRIEND_RATINGS = 3;
 
 export default function ReportPage() {
   return (
@@ -39,7 +37,7 @@ async function ReportGate() {
   const admin = createAdminClient();
   const { data: ratings } = await admin.from("friend_ratings").select("answers").eq("user_id", userId!);
   const friends = aggregateFriendRatings((ratings ?? []).map((r) => r.answers as Answers));
-  const showFriends = friends.count >= MIN_FRIEND_RATINGS;
+  const showFriends = friends.count >= MIN_FRIEND_RATINGS_TO_SHOW;
 
   return (
     <ReportParts
@@ -47,7 +45,7 @@ async function ReportGate() {
       report={buildReport(scoreRow!.scores as Scores)}
       friendBigFive={showFriends ? friends.bigFive : null}
       friendCount={friends.count}
-      minFriendCount={MIN_FRIEND_RATINGS}
+      minFriendCount={MIN_FRIEND_RATINGS_TO_SHOW}
       inviteToken={invite?.token ?? null}
     />
   );

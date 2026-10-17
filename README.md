@@ -30,6 +30,11 @@
 | `/me/photos` | 얼굴(카메라)·전신(갤러리) 사진과 AI 피드백 |
 | `/me/contact` | 인스타그램·카카오톡 ID (암호화 저장) |
 | `/privacy` | 개인정보처리방침 |
+| `/letter` | 만든 사람의 편지 (상단 메뉴 '편지') |
+| `/admin` | 관리자 대시보드: 가입·검사·매칭 숫자, 단계별 전환, 최근 14일, 성별·나이대, 신고 처리, 이용 정지 |
+| `/admin/users` | 관리자 회원 목록 (닉네임·이메일·ID 검색, 단계로 거르기) |
+| `/admin/users/[id]` | 관리자 회원 상세: 기본 정보, 매칭 준비, 자기소개·사진, 관심·수락 기록, 신고, 만남 피드백, 원점수, 회원이 보는 리포트 |
+| `/admin/export` | 관리자 엑셀 내려받기 (회원, 검사 점수, 문항 응답, 문항 목록, 친구 평가, 관심·수락, 최근 60일 추천, 만남 피드백, 신고) |
 | `/api/cron/daily` | 매일 자정(한국) 추천 계산과 오래된 사진 파일 삭제. Vercel Cron 전용 |
 
 ## 1. Supabase 설정
@@ -60,6 +65,7 @@
 | `OPENAI_API_KEY`, `OPENAI_VISION_MODEL` | 사진 피드백. 모델은 테스트한 `gpt-6-luna` |
 | `CONTACT_ENCRYPTION_KEY` | 연락처 암호화 키. 한 번 정하면 바꾸지 말고 따로 보관 |
 | `CRON_SECRET` | 매일 추천 계산 주소를 보호하는 비밀값 |
+| `ADMIN_EMAILS` | (선택) 관리자 이메일, 쉼표로 여러 개. 없으면 `testwelltest01@gmail.com` |
 
 비밀값 만들기 (Node가 설치된 아무 터미널):
 
@@ -104,6 +110,7 @@ npm test           # 단위 테스트
 - 요청 횟수 제한(`hit_rate_limit` DB 함수, `src/lib/security.ts`): 친구 평가 IP당 시간 10회·링크당 하루 20회, 조건 인원 세기 분당 40회, 관심·수락 시간당 300회, 신고 하루 20회, 사진 시간당 30회 등.
 - 신고 3건(서로 다른 신고자)이 쌓이면 운영자가 확인할 때까지 매칭이 자동으로 멈춥니다(`user_flags`).
 - Cron 주소는 `CRON_SECRET`이 없으면 401입니다.
+- 관리자 화면(`/admin`)은 로그인 이메일이 `ADMIN_EMAILS`에 있고 비밀번호까지 만든 계정만 열립니다. 아니면 404처럼 보여서 화면이 있다는 것도 드러내지 않습니다. 관리자 서버 액션도 매번 다시 확인하고 횟수를 제한합니다. 엑셀에는 이메일·연락처·종교·사진을 넣지 않습니다.
 
 **브라우저**
 - 보안 헤더(`next.config.ts`): CSP(불러올 수 있는 곳을 이 사이트, Supabase, 폰트 CDN으로 제한), 다른 사이트 안에 넣기 금지(클릭재킹), HSTS, nosniff, Referrer-Policy, Permissions-Policy.
@@ -115,7 +122,8 @@ npm test           # 단위 테스트
 - [ ] Supabase **Authentication > Rate Limits**: 로그인 시도 제한이 켜져 있는지 확인 (비밀번호 무차별 대입 방지)
 - [ ] OpenAI 대시보드에서 월 사용 한도(Usage limits) 정하기
 - [ ] GitHub 저장소 Settings > Code security에서 Dependabot alerts 켜기
-- [ ] 신고 확인: Supabase Table Editor의 `reports`(처리하면 `resolved_at` 채우기), 정지 해제는 `user_flags`의 `suspended_at` 비우기
+- [ ] 신고 확인과 정지 해제는 `/admin` 대시보드에서 (확인 완료한 신고는 자동 정지 계산에서 빠짐)
+- [ ] 관리자 계정은 회원 전체 정보를 볼 수 있으니 비밀번호를 길고 다른 곳과 겹치지 않게
 
 ## 공개 전에 할 일
 
