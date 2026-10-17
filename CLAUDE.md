@@ -53,7 +53,7 @@
 - 꾸밈 문항은 모두 필수. 남자에게만 면도·수염(S1), 여자에게만 메이크업(S3)을 묻고, 이 문항은 꾸밈 수준 점수에 들어간다 (`TEST_VERSION` 2026-10-v2)
 - ECR 애착 척도 넣지 않음, 파일럿 없음, 오프라인 이벤트 없음
 - 추가 검사(선택)는 상표·저작권 문제가 없는 한결 자체 문항만 쓴다 (MBTI, 에니어그램, 5가지 사랑의 언어, BFI-2, HEXACO-PI-R은 쓰지 않음. 공개 도메인 IPIP는 가능). `src/lib/extra/tests.ts`(문항 바꾸면 그 검사 version 올림), 결과는 리포트 '더 알아보기'와, 보여주기를 켠 경우 상대 자세히 보기에 요약·공통점으로. 추천 계산에는 쓰지 않는다
-- 그림 프로필(선택, `/me/illustration`): 사진 2장 + 성별·나이대·키·자기소개·성향·생활·꾸밈·추가 검사 요약으로 OpenAI Images Edits(`OPENAI_IMAGE_MODEL`, 기본 gpt-image-2.5-sunburst, medium, 1024x1536 webp). 이름·지역·종교·연락처·위생·조건은 넣지 않는다(`src/lib/illustration/prompt.ts`, 바꾸면 PROMPT_VERSION). 특정 스튜디오·작가 이름은 프롬프트에 쓰지 않고 화풍을 묘사한다. 별도 동의(consents 'illustration'), 하루 3번, 서비스 전체 상한, 응답 뒤 after()로 생성(페이지 maxDuration 300). 회원이 '추천 카드에 보여주기'를 켠 그림만 추천 카드·자세히 보기(사진 공개 전)에 보인다
+- 그림 프로필(선택, `/me/illustration`): 사진 2장 + 성별·나이대·키·자기소개·성향·생활·꾸밈·추가 검사 요약으로 OpenAI Images Edits(`OPENAI_IMAGE_MODEL`, 기본 gpt-image-2.5-sunburst, medium, 1024x1536 webp). 이름·지역·종교·연락처·위생·조건은 넣지 않는다(`src/lib/illustration/prompt.ts`, 바꾸면 PROMPT_VERSION). 특정 스튜디오·작가 이름은 프롬프트에 쓰지 않고 화풍을 묘사한다. 별도 동의(consents 'illustration'), 한 계정당 3번(평생, 실패 제외, 지운 그림 포함 `ILLUSTRATIONS_PER_ACCOUNT`), 서비스 전체 하루 상한, 응답 뒤 after()로 생성(페이지 maxDuration 300). 회원이 '추천 카드에 보여주기'를 켠 그림만 추천 카드·자세히 보기(사진 공개 전)에 보인다
 - 사진 시도 기록(`photo_attempts.detail`)에 거절 사유를 남긴다. 거절된 사진 파일은 저장하지 않는다. 관리자 회원 상세에 사진별 피드백·내부 점수 기록
 - 개인정보 보호책임자: 최현석, testwelltest01@gmail.com. 교체 사진 30일 보관
 - 본인인증(휴대폰)은 사업자등록이 필요해 보류. 공개 전에 초대제 비공개 테스트 권장

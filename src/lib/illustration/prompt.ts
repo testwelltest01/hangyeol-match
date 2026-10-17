@@ -7,8 +7,8 @@ import type { Scores } from "@/lib/scoring";
 /** 프롬프트를 고치면 올린다 (어떤 프롬프트로 만든 그림인지 기록) */
 export const PROMPT_VERSION = "2026-10-v1";
 
-/** 하루에 새로 그릴 수 있는 횟수 (실패는 세지 않는다) */
-export const ILLUSTRATIONS_PER_DAY = 3;
+/** 한 계정이 그릴 수 있는 횟수 (평생). 실패는 세지 않고, 지운 그림은 센다 */
+export const ILLUSTRATIONS_PER_ACCOUNT = 3;
 
 export type IllustrationInput = {
   gender: "male" | "female";

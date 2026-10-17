@@ -7,9 +7,9 @@ import {
   loadIllustrations,
   overDailyCap,
   runIllustration,
-  usedToday,
+  usedByAccount,
 } from "@/lib/illustration/server";
-import { ILLUSTRATIONS_PER_DAY } from "@/lib/illustration/prompt";
+import { ILLUSTRATIONS_PER_ACCOUNT } from "@/lib/illustration/prompt";
 import { loadMySetup } from "@/lib/match/me";
 import { getProgress } from "@/lib/progress";
 import { allow, TOO_MANY, UUID_RE } from "@/lib/security";
@@ -43,8 +43,8 @@ export async function createIllustration(agree: boolean): Promise<Result> {
     const { error } = await admin.from("consents").upsert({ user_id: userId, kind: "illustration" });
     if (error) return { ok: false, error: "저장하지 못했어요. 다시 시도해주세요." };
   }
-  if ((await usedToday(admin, userId)) >= ILLUSTRATIONS_PER_DAY) {
-    return { ok: false, error: `그림은 하루 ${ILLUSTRATIONS_PER_DAY}번까지 그릴 수 있어요. 내일 다시 시도해주세요.` };
+  if ((await usedByAccount(admin, userId)) >= ILLUSTRATIONS_PER_ACCOUNT) {
+    return { ok: false, error: `그림은 한 계정당 ${ILLUSTRATIONS_PER_ACCOUNT}번까지 그릴 수 있어요. 남아 있는 그림 중에서 골라주세요.` };
   }
   if (await overDailyCap(admin)) return { ok: false, error: "오늘은 그림 요청이 많아 잠시 쉬어요. 내일 다시 시도해주세요." };
 

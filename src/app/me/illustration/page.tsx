@@ -4,8 +4,8 @@ import { Suspense } from "react";
 import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
 import { PageTitle } from "@/components/ui";
-import { ILLUSTRATIONS_PER_DAY } from "@/lib/illustration/prompt";
-import { loadIllustrations, usedToday } from "@/lib/illustration/server";
+import { ILLUSTRATIONS_PER_ACCOUNT } from "@/lib/illustration/prompt";
+import { loadIllustrations, usedByAccount } from "@/lib/illustration/server";
 import { loadMySetup, signedPhotoUrls } from "@/lib/match/me";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -40,7 +40,7 @@ async function IllustrationGate() {
   const admin = createAdminClient();
   const [{ available, rows }, used, consent] = await Promise.all([
     loadIllustrations(admin, userId!),
-    usedToday(admin, userId!),
+    usedByAccount(admin, userId!),
     admin.from("consents").select("kind").eq("user_id", userId!).eq("kind", "illustration").maybeSingle(),
   ]);
   const urls = await signedPhotoUrls(rows.flatMap((r) => (r.status === "done" && r.path ? [r.path] : [])));
@@ -50,8 +50,8 @@ async function IllustrationGate() {
       available={available}
       ready={Boolean(setup.matchProfile && setup.photos.face && setup.photos.body)}
       consented={Boolean(consent.data)}
-      remaining={Math.max(0, ILLUSTRATIONS_PER_DAY - used)}
-      perDay={ILLUSTRATIONS_PER_DAY}
+      remaining={Math.max(0, ILLUSTRATIONS_PER_ACCOUNT - used)}
+      limit={ILLUSTRATIONS_PER_ACCOUNT}
       rows={rows.map((r) => ({
         id: r.id,
         status: r.status,

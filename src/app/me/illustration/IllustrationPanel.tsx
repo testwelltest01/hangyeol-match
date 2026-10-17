@@ -14,11 +14,12 @@ type Props = {
   ready: boolean;
   consented: boolean;
   remaining: number;
-  perDay: number;
+  /** 한 계정이 그릴 수 있는 횟수 */
+  limit: number;
   rows: Row[];
 };
 
-export function IllustrationPanel({ available, ready, consented, remaining, perDay, rows }: Props) {
+export function IllustrationPanel({ available, ready, consented, remaining, limit, rows }: Props) {
   const router = useRouter();
   const [agree, setAgree] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,7 +111,7 @@ export function IllustrationPanel({ available, ready, consented, remaining, perD
                     type="button"
                     disabled={pending}
                     onClick={() => {
-                      if (window.confirm("이 그림을 지울까요?")) run(() => deleteIllustration(r.id));
+                      if (window.confirm("이 그림을 지울까요? 지워도 그릴 수 있는 횟수는 돌아오지 않아요.")) run(() => deleteIllustration(r.id));
                     }}
                     className="text-muted underline underline-offset-4"
                   >
@@ -150,11 +151,12 @@ export function IllustrationPanel({ available, ready, consented, remaining, perD
           )}
           <div className="mt-4">
             <PrimaryButton disabled={pending || remaining === 0 || (!consented && !agree)} onClick={() => run(() => createIllustration(agree))}>
-              {remaining === 0 ? "오늘은 모두 그렸어요" : done.length ? "새로 그리기" : "그림 그리기"}
+              {remaining === 0 ? `${limit}번 모두 그렸어요` : done.length ? `새로 그리기 (${remaining}번 남음)` : "그림 그리기"}
             </PrimaryButton>
           </div>
           <p className="mt-2 text-center text-sm text-muted">
-            하루 {perDay}번까지 그릴 수 있어요 (오늘 {remaining}번 남음). 실제 사진은 지금처럼 서로 관심을 보낸 뒤에만 공개돼요.
+            한 계정당 {limit}번까지 그릴 수 있어요 ({remaining}번 남음). 실패하면 세지 않고, 지운 그림은 횟수에 포함돼요. 실제 사진은 지금처럼
+            서로 관심을 보낸 뒤에만 공개돼요.
           </p>
         </section>
       )}

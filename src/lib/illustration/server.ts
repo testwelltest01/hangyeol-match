@@ -52,19 +52,27 @@ export async function loadIllustrations(admin: Admin, userId: string): Promise<{
   return { available: true, rows };
 }
 
-/** 오늘 새로 그린 수 (실패 제외, 한국 날짜) */
-export async function usedToday(admin: Admin, userId?: string): Promise<number> {
-  let q = admin
+/** 이 계정이 지금까지 그린 수 (실패 제외, 지운 그림 포함 — 지웠다 다시 그려도 횟수가 늘지 않게) */
+export async function usedByAccount(admin: Admin, userId: string): Promise<number> {
+  const { count } = await admin
+    .from("illustrations")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .neq("status", "failed");
+  return count ?? 0;
+}
+
+/** 서비스 전체에서 오늘 그린 수 (실패 제외, 한국 날짜) */
+async function usedTodayAll(admin: Admin): Promise<number> {
+  const { count } = await admin
     .from("illustrations")
     .select("id", { count: "exact", head: true })
     .neq("status", "failed")
     .gte("created_at", kstDayStartIso(kstDay()));
-  if (userId) q = q.eq("user_id", userId);
-  const { count } = await q;
   return count ?? 0;
 }
 
-export const overDailyCap = async (admin: Admin) => (await usedToday(admin)) >= dailyCap();
+export const overDailyCap = async (admin: Admin) => (await usedTodayAll(admin)) >= dailyCap();
 
 /** 그림에 넣을 정보 모으기 (이름·지역·종교·연락처는 읽지도 않는다) */
 export async function collectFeatures(admin: Admin, userId: string): Promise<IllustrationFeatures | null> {
@@ -134,20 +142,7 @@ export async function runIllustration(admin: Admin, userId: string, id: string, 
       .update({ status: "done", path, model: result.model, completed_at: new Date().toISOString() })
       .eq("id", id);
 
-    // 정리: 보여주는 그림과 방금 그린 그림만 남기고 예전 그림은 지운다
-    const { data: old } = await admin
-      .from("illustrations")
-      .select("id, path")
-      .eq("user_id", userId)
-      .is("deleted_at", null)
-      .eq("shown", false)
-      .neq("id", id)
-      .neq("status", "pending");
-    if (old?.length) {
-      const paths = old.map((o) => o.path).filter((p): p is string => Boolean(p));
-      if (paths.length) await admin.storage.from("photos").remove(paths);
-      await admin.from("illustrations").update({ deleted_at: new Date().toISOString() }).in("id", old.map((o) => o.id));
-    }
+    // 한 계정당 3번뿐이라 예전 그림도 지우지 않고 남긴다 (회원이 그중에서 고르거나 직접 지운다)
   } catch (e) {
     console.error("illustration failed", (e as Error).message);
     await fail("그림을 만들지 못했어요. 잠시 후 다시 시도해주세요.");
