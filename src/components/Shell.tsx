@@ -12,9 +12,13 @@ export function Shell({ children, right }: { children: ReactNode; right?: ReactN
         {right}
       </header>
       <main className="mx-auto w-full max-w-[560px] flex-1 px-5 pb-16 pt-8">{children}</main>
-      <footer className="mx-auto w-full max-w-[560px] px-5 pb-8 text-sm text-muted">
+      <footer className="mx-auto flex w-full max-w-[560px] items-center gap-3 px-5 pb-8 text-sm text-muted">
         <Link href="/privacy" className="underline underline-offset-4">
           개인정보처리방침
+        </Link>
+        <span aria-hidden>·</span>
+        <Link href="/letter" className="underline underline-offset-4">
+          만든 사람의 편지
         </Link>
       </footer>
     </div>
