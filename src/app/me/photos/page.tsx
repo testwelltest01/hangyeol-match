@@ -56,7 +56,7 @@ async function PhotosGate({ searchParams }: { searchParams: PageProps<"/me/photo
       <PhotoSlot
         slot="face"
         title="얼굴 사진"
-        tip="버튼을 누르면 카메라가 열려요. 거울 앞에서 2배 줌으로 찍으면 얼굴이 덜 왜곡되고, 창문을 마주 보면 얼굴이 밝게 나와요."
+        tip="지금 바로 찍거나 갤러리에서 골라주세요. 직접 찍을 때는 거울 앞에서 2배 줌으로 찍으면 얼굴이 덜 왜곡되고, 창문을 마주 보면 얼굴이 밝게 나와요."
         current={face ? { url: urls.get(face.path) ?? null, feedback: face.feedback } : null}
         canUpload={remaining > 0}
         needsConsent={!setup.consents.photoOverseas}

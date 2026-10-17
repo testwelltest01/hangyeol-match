@@ -53,7 +53,9 @@ export function PhotoSlot({
   needsConsent: boolean;
 }) {
   const router = useRouter();
+  // 얼굴: 카메라로 바로 찍기(inputRef) + 갤러리에서 고르기(galleryRef). 전신: 갤러리만(inputRef)
   const inputRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
   const [agree, setAgree] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,10 +85,12 @@ export function PhotoSlot({
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";
+      if (galleryRef.current) galleryRef.current.value = "";
     }
   }
 
   const feedback = fresh ?? current?.feedback ?? null;
+  const disabled = busy || locked || (needsConsent && !agree);
 
   return (
     <section>
@@ -128,10 +132,21 @@ export function PhotoSlot({
             aria-hidden
             onChange={(e) => onFile(e.target.files?.[0])}
           />
+          {slot === "face" && (
+            <input
+              ref={galleryRef}
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              tabIndex={-1}
+              aria-hidden
+              onChange={(e) => onFile(e.target.files?.[0])}
+            />
+          )}
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            disabled={busy || locked || (needsConsent && !agree)}
+            disabled={disabled}
             className="w-full rounded-full bg-ink px-5 py-3.5 font-semibold text-white disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
           >
             {busy
@@ -146,6 +161,16 @@ export function PhotoSlot({
                     ? "얼굴 사진 찍기"
                     : "전신 사진 고르기"}
           </button>
+          {slot === "face" && !busy && !locked && (
+            <button
+              type="button"
+              onClick={() => galleryRef.current?.click()}
+              disabled={disabled}
+              className="w-full rounded-full border border-ink px-5 py-3 font-semibold text-ink transition-colors hover:bg-ink hover:text-white disabled:cursor-not-allowed disabled:border-line disabled:text-muted disabled:hover:bg-transparent"
+            >
+              갤러리에서 고르기
+            </button>
+          )}
           {busy && <p className="text-sm text-muted">10~30초쯤 걸려요. 화면을 닫지 말아주세요.</p>}
         </div>
       </div>
