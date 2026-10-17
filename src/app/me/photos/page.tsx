@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { Loading } from "@/components/Loading";
 import { PrimaryLink, Shell } from "@/components/Shell";
 import { PageTitle, SecondaryLink } from "@/components/ui";
+import { ILLUSTRATIONS_PER_ACCOUNT } from "@/lib/illustration/prompt";
+import { loadIllustrations, usedByAccount } from "@/lib/illustration/server";
 import { loadMySetup, nextSetupPath, signedPhotoUrls } from "@/lib/match/me";
 import { COUNTED_RESULTS, PHOTO_UPLOADS_PER_ACCOUNT, remainingUploads } from "@/lib/photo/rules";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -47,6 +49,7 @@ async function PhotosGate({ searchParams }: { searchParams: PageProps<"/me/photo
   ]);
   const remaining = remainingUploads((attempts ?? []).map((a) => a.result));
   const done = Boolean(face && body);
+  const offerIllustration = done && !fromIllustration && Boolean(setup.matchProfile) && (await canStartIllustration(userId!));
 
   return (
     <div className="mt-8 space-y-10">
@@ -71,12 +74,31 @@ async function PhotosGate({ searchParams }: { searchParams: PageProps<"/me/photo
         남았어요. 바꾼 이전 사진은 1년 뒤 지워져요. AI 점수는 사진 개선 안내에만 쓰고 추천
         순위에는 쓰지 않아요.
       </p>
+      {offerIllustration && (
+        <section className="rounded-2xl border border-line bg-surface px-5 py-5">
+          <h2 className="font-serif text-lg font-bold">사진 2장이 준비됐어요</h2>
+          <p className="mt-1 text-sm text-ink-soft">
+            이 사진과 자기소개로 AI가 그림 프로필을 그려줘요. 추천 카드에 보여주면 사진이 공개되기 전에도 내 분위기를 전할 수 있어요.
+            (선택, 계정당 {ILLUSTRATIONS_PER_ACCOUNT}번)
+          </p>
+          <div className="mt-4">
+            <PrimaryLink href="/me/illustration">그림 프로필 만들기</PrimaryLink>
+          </div>
+        </section>
+      )}
       {done &&
         (fromIllustration ? (
           <PrimaryLink href="/me/illustration">그림 프로필로 돌아가기</PrimaryLink>
         ) : (
-          <SecondaryLink href={nextSetupPath(setup, "photos")}>다음</SecondaryLink>
+          <SecondaryLink href={nextSetupPath(setup, "photos")}>{offerIllustration ? "그림 없이 다음" : "다음"}</SecondaryLink>
         ))}
     </div>
   );
+}
+
+/** 그림 프로필을 아직 안 만들었고(그린 것·그리는 중 없음) 만들 횟수가 남았으면 true. 0006 SQL 전이면 false */
+async function canStartIllustration(userId: string): Promise<boolean> {
+  const admin = createAdminClient();
+  const [{ available, rows }, used] = await Promise.all([loadIllustrations(admin, userId), usedByAccount(admin, userId)]);
+  return available && !rows.some((r) => r.status === "done" || r.status === "pending") && used < ILLUSTRATIONS_PER_ACCOUNT;
 }
