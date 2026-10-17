@@ -48,7 +48,7 @@ async function IllustrationGate() {
   return (
     <IllustrationPanel
       available={available}
-      ready={Boolean(setup.matchProfile && setup.photos.face && setup.photos.body)}
+      missing={!setup.photos.face || !setup.photos.body ? "photos" : !setup.matchProfile ? "profile" : null}
       consented={Boolean(consent.data)}
       remaining={Math.max(0, ILLUSTRATIONS_PER_ACCOUNT - used)}
       limit={ILLUSTRATIONS_PER_ACCOUNT}

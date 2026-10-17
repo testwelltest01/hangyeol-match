@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { PrimaryButton } from "@/components/Shell";
+import { PrimaryButton, PrimaryLink } from "@/components/Shell";
 import { Notice } from "@/components/ui";
 import { createIllustration, deleteIllustration, setIllustrationShown } from "./actions";
 import { ZoomImage } from "@/components/ZoomImage";
@@ -12,7 +12,8 @@ type Row = { id: string; status: "pending" | "done" | "failed"; url: string | nu
 
 type Props = {
   available: boolean;
-  ready: boolean;
+  /** 그리기 전에 채울 것: 사진 2장이 먼저, 그다음 내 정보(자기소개 등) */
+  missing: "photos" | "profile" | null;
   consented: boolean;
   remaining: number;
   /** 한 계정이 그릴 수 있는 횟수 */
@@ -20,7 +21,7 @@ type Props = {
   rows: Row[];
 };
 
-export function IllustrationPanel({ available, ready, consented, remaining, limit, rows }: Props) {
+export function IllustrationPanel({ available, missing, consented, remaining, limit, rows }: Props) {
   const router = useRouter();
   const [agree, setAgree] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,15 +52,19 @@ export function IllustrationPanel({ available, ready, consented, remaining, limi
       </div>
     );
   }
-  if (!ready) {
+  if (missing === "photos") {
     return (
-      <div className="mt-8">
-        <Notice>
-          그림을 그리려면 내 정보와 사진 2장이 필요해요.{" "}
-          <Link href="/me" className="underline underline-offset-4">
-            내 정보 채우기
-          </Link>
-        </Notice>
+      <div className="mt-8 space-y-4">
+        <Notice>그림은 등록한 얼굴·전신 사진 2장을 바탕으로 그려요. 사진을 먼저 올려주세요.</Notice>
+        <PrimaryLink href="/me/photos?next=illustration">사진 등록하러 가기</PrimaryLink>
+      </div>
+    );
+  }
+  if (missing === "profile") {
+    return (
+      <div className="mt-8 space-y-4">
+        <Notice>그림의 분위기는 자기소개를 보고 정해요. 내 정보와 자기소개를 먼저 채워주세요.</Notice>
+        <PrimaryLink href="/me/profile">내 정보 채우기</PrimaryLink>
       </div>
     );
   }

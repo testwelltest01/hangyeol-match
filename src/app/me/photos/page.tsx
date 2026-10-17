@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Loading } from "@/components/Loading";
-import { Shell } from "@/components/Shell";
+import { PrimaryLink, Shell } from "@/components/Shell";
 import { PageTitle, SecondaryLink } from "@/components/ui";
 import { loadMySetup, nextSetupPath, signedPhotoUrls } from "@/lib/match/me";
 import { COUNTED_RESULTS, PHOTO_UPLOADS_PER_ACCOUNT, remainingUploads } from "@/lib/photo/rules";
@@ -13,7 +13,7 @@ import { PhotoSlot } from "./PhotoSlot";
 // 사진 분석(AI)이 10~30초 걸릴 수 있어서 서버 액션 제한 시간을 늘린다
 export const maxDuration = 60;
 
-export default function PhotosPage() {
+export default function PhotosPage({ searchParams }: PageProps<"/me/photos">) {
   return (
     <Shell nav="me">
       <PageTitle
@@ -21,13 +21,15 @@ export default function PhotosPage() {
         lead="사진은 서로 관심을 보낸 사람에게만 보여요. 올리면 AI가 분위기를 중심으로 더 좋은 사진을 찍는 방법을 알려줘요."
       />
       <Suspense fallback={<Loading />}>
-        <PhotosGate />
+        <PhotosGate searchParams={searchParams} />
       </Suspense>
     </Shell>
   );
 }
 
-async function PhotosGate() {
+async function PhotosGate({ searchParams }: { searchParams: PageProps<"/me/photos">["searchParams"] }) {
+  // 그림 프로필 화면에서 왔으면 사진을 다 올린 뒤 그림 프로필로 돌려보낸다
+  const fromIllustration = (await searchParams).next === "illustration";
   const userId = await getUserId();
   const progress = await getProgress(userId);
   if (progress !== "report") redirect(PROGRESS_PATH[progress]);
@@ -69,7 +71,12 @@ async function PhotosGate() {
         남았어요. 바꾼 이전 사진은 1년 뒤 지워져요. AI 점수는 사진 개선 안내에만 쓰고 추천
         순위에는 쓰지 않아요.
       </p>
-      {done && <SecondaryLink href={nextSetupPath(setup, "photos")}>다음</SecondaryLink>}
+      {done &&
+        (fromIllustration ? (
+          <PrimaryLink href="/me/illustration">그림 프로필로 돌아가기</PrimaryLink>
+        ) : (
+          <SecondaryLink href={nextSetupPath(setup, "photos")}>다음</SecondaryLink>
+        ))}
     </div>
   );
 }
