@@ -21,11 +21,15 @@ export type PersonCard = {
 };
 
 export type Dashboard = {
+  /** 오늘 추천받은 사람. 관심·수락이 진행돼도 하루 동안은 그대로 보여준다 */
   today: PersonCard[];
+  /** 서로 관심: 사진 공개, 내 수락 차례 */
   photos: PersonCard[];
+  /** 내가 수락, 상대 답 기다림 */
   waitingAccept: PersonCard[];
+  /** 내가 관심, 상대 답 기다림 */
+  sentInterest: PersonCard[];
   connected: (PersonCard & { needsFeedback: boolean })[];
-  waitingInterest: number;
   contactNotFound: boolean;
 };
 
@@ -107,7 +111,7 @@ export async function loadDashboard(admin: SupabaseClient, me: string, myScores:
   const daysSince = (iso: string | null | undefined) => (iso ? (now - new Date(iso).getTime()) / 86_400_000 : 0);
 
   const cards = visible.map(card).filter((c): c is PersonCard => c !== null);
-  const today = cards.filter((c) => todayReason.has(c.id) && (c.stage === "new" || c.stage === "waiting_interest"));
+  const today = cards.filter((c) => todayReason.has(c.id));
   const byStage = (s: PairStage) => cards.filter((c) => c.stage === s);
 
   const connected = byStage("connected").map((c) => {
@@ -124,8 +128,8 @@ export async function loadDashboard(admin: SupabaseClient, me: string, myScores:
     today,
     photos: byStage("photos"),
     waitingAccept: byStage("waiting_accept"),
+    sentInterest: byStage("waiting_interest"),
     connected,
-    waitingInterest: byStage("waiting_interest").filter((c) => !todayReason.has(c.id)).length,
     contactNotFound: Boolean(lastNotFound && contact.data && lastNotFound > contact.data.updated_at),
   };
 }

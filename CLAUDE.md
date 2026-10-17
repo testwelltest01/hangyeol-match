@@ -32,6 +32,7 @@
 
 - 검사: `src/lib/items.ts`(문항, 바꾸면 `TEST_VERSION` 올림), `scoring.ts`(채점·상호 점수), `report.ts`
 - 매칭: `src/lib/match/` — `filters.ts`(1층 하드 필터, 꼭/되도록), `explain.ts`(추천 이유), `allocate.ts`(하루 3명 라운드 로빈 배분, 노출 상한 6, 3층 게이트), `server.ts`(후보 풀, 추천 생성, 관계 단계), `dashboard.ts`, `me.ts`
+- 추천 화면은 탭 3개: `/match`(오늘), `/match/interest`(관심), `/match/connected`(연결). 공통 틀·탭·데이터(`loadMatch`, React `cache`)는 `src/app/match/frame.tsx`. 탭 숫자는 내가 답할 사람 수(관심: 사진 공개 후 수락 차례, 연결: 만남 피드백)
 - 지역: `src/lib/regions.ts` (2026-07 광주·전남 통합, 인천 제물포·영종·검단구 반영)
 - 사진 AI 피드백: `src/lib/photo/feedback.ts` (OpenAI Chat Completions + JSON schema). 내부 점수는 추천에 쓰지 않는다
 - 인증: `/signup`(이메일 코드 → 비밀번호), `/login`(비밀번호), `/reset`(코드 → 새 비밀번호), `/set-password`. `user_metadata.password_set`이 없으면 `/start`가 비밀번호 만들기로 보낸다

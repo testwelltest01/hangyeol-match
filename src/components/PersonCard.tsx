@@ -9,7 +9,15 @@ export function personLine(c: { birthYear: number; region: string; height: numbe
 }
 
 /** 추천 카드: 사진 없이 검사 요약, 자기소개, 추천 이유만 보여준다 */
-export function PersonCardView({ card, actions }: { card: Card; actions?: ReactNode }) {
+export function PersonCardView({
+  card,
+  actions,
+  detailLabel = "자세히",
+}: {
+  card: Card;
+  actions?: ReactNode;
+  detailLabel?: string;
+}) {
   return (
     <article className="rounded-2xl border border-line bg-surface px-5 py-5">
       <div className="flex items-baseline justify-between gap-3">
@@ -35,7 +43,7 @@ export function PersonCardView({ card, actions }: { card: Card; actions?: ReactN
       <div className="mt-5 flex items-center gap-3">
         <div className="flex-1">{actions}</div>
         <Link href={`/people/${card.id}`} className="shrink-0 text-sm text-muted underline underline-offset-4">
-          자세히
+          {detailLabel}
         </Link>
       </div>
     </article>
