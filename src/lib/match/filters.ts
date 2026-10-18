@@ -19,6 +19,8 @@ export const isReligion = (v: unknown): v is Religion => typeof v === "string" &
 
 export type HeightMode = "any" | "taller" | "shorter" | "range";
 export type SmokingMode = "any" | "no_cigarette" | "none_only";
+/** 상관없음 / 주 3번 이상만 아니면 / 가끔 이하 / 마시지 않는 사람만 */
+export type DrinkingMode = "any" | "not_often" | "rarely_or_less" | "none_only";
 export type ReligionMode = "any" | "same" | "specific";
 
 export type Filters = {
@@ -26,6 +28,7 @@ export type Filters = {
   regions: { list: string[]; strict: boolean };
   height: { mode: HeightMode; min: number; max: number; strict: boolean };
   smoking: { mode: SmokingMode; strict: boolean };
+  drinking: { mode: DrinkingMode; strict: boolean };
   /** 결혼·자녀 생각이 정반대(원함 vs 원하지 않음)인 상대 */
   family: { strict: boolean };
   religion: { mode: ReligionMode; list: Religion[]; strict: boolean };
@@ -43,6 +46,8 @@ export type MatchPerson = {
   religion: Religion | null;
   /** 검사 D3: none | ecig | yes */
   smoking: string;
+  /** 검사 D4: none | rarely | weekly | often. 2026-10-v3 전에 검사를 마치고 아직 답하지 않았으면 null */
+  drinking: string | null;
   /** 검사 D1, D2: yes | unsure | no */
   marriage: string;
   children: string;
@@ -68,6 +73,7 @@ export function defaultFilters(me: { birthYear: number; region: string }, year: 
     regions: { list: provinceKeys(provinceOf(me.region)), strict: true },
     height: { mode: "any", min: 150, max: 190, strict: false },
     smoking: { mode: "any", strict: true },
+    drinking: { mode: "any", strict: true },
     family: { strict: true },
     religion: { mode: "any", list: [], strict: true },
   };
@@ -94,6 +100,13 @@ export function meets(key: FilterKey, viewer: MatchPerson, cand: MatchPerson, ye
       if (f.smoking.mode === "any") return true;
       if (f.smoking.mode === "no_cigarette") return cand.smoking !== "yes";
       return cand.smoking === "none";
+    case "drinking":
+      if (f.drinking.mode === "any") return true;
+      // 음주에 아직 답하지 않은 사람은 음주 조건을 건 사람에게 '꼭'이면 보이지 않고 '되도록'이면 감점
+      if (cand.drinking === null) return false;
+      if (f.drinking.mode === "not_often") return cand.drinking !== "often";
+      if (f.drinking.mode === "rarely_or_less") return cand.drinking === "none" || cand.drinking === "rarely";
+      return cand.drinking === "none";
     case "family":
       return !clash(viewer.marriage, cand.marriage) && !clash(viewer.children, cand.children);
     case "religion":
@@ -109,11 +122,20 @@ export function meets(key: FilterKey, viewer: MatchPerson, cand: MatchPerson, ye
 function isActive(key: FilterKey, f: Filters): boolean {
   if (key === "height") return f.height.mode !== "any";
   if (key === "smoking") return f.smoking.mode !== "any";
+  if (key === "drinking") return f.drinking.mode !== "any";
   if (key === "religion") return f.religion.mode !== "any";
   return true;
 }
 
-const KEYS: FilterKey[] = ["age", "regions", "height", "smoking", "family", "religion"];
+const KEYS: FilterKey[] = ["age", "regions", "height", "smoking", "drinking", "family", "religion"];
+
+const DRINKING_MODES: DrinkingMode[] = ["any", "not_often", "rarely_or_less", "none_only"];
+
+/** DB에 저장된 조건을 읽을 때: 나중에 생긴 조건(음주)이 없으면 '상관없음'으로 채운다 */
+export function withFilterDefaults(f: Filters): Filters {
+  const d = (f as Partial<Filters>).drinking;
+  return d && DRINKING_MODES.includes(d.mode) ? f : { ...f, drinking: { mode: "any", strict: true } };
+}
 
 export type OneWay = { blocked: boolean; softMisses: number; failed: FilterKey[] };
 
@@ -179,6 +201,10 @@ export function sanitizeFilters(input: unknown, me: { religion: Religion | null 
     return { error: "흡연 조건을 확인해주세요." };
   }
 
+  // 음주 조건이 없던 예전 화면에서 보낸 값이면 '상관없음'으로 본다
+  const drinkingMode = raw.drinking?.mode ?? "any";
+  if (!DRINKING_MODES.includes(drinkingMode as DrinkingMode)) return { error: "음주 조건을 확인해주세요." };
+
   const religionMode = raw.religion?.mode;
   if (religionMode !== "any" && religionMode !== "same" && religionMode !== "specific") {
     return { error: "종교 조건을 확인해주세요." };
@@ -194,6 +220,7 @@ export function sanitizeFilters(input: unknown, me: { religion: Religion | null 
     regions: { list, strict: bool(raw.regions?.strict) },
     height: { mode: heightMode, min: hMin, max: hMax, strict: bool(raw.height?.strict) },
     smoking: { mode: smokingMode, strict: bool(raw.smoking?.strict) },
+    drinking: { mode: drinkingMode as DrinkingMode, strict: raw.drinking ? bool(raw.drinking.strict) : true },
     family: { strict: bool(raw.family?.strict) },
     religion: { mode: religionMode, list: religionMode === "specific" ? religionList : [], strict: bool(raw.religion?.strict) },
   };

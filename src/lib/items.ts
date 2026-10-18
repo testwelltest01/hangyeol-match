@@ -1,7 +1,7 @@
 // 한결 검사 문항 (기획서 '척도 문항 초안' 탭과 같은 내용)
 // 문항을 고치면 TEST_VERSION을 올려서, 어떤 버전으로 응답했는지 구분한다.
 
-export const TEST_VERSION = "2026-10-v2";
+export const TEST_VERSION = "2026-10-v3";
 
 export type Domain =
   | "marriage"
@@ -160,7 +160,23 @@ export const DEALBREAKER_ITEMS: SingleItem[] = [
       { value: "yes", label: "피운다" },
     ],
   },
+  {
+    kind: "single",
+    id: "D4",
+    question: "음주",
+    required: true,
+    options: [
+      { value: "none", label: "마시지 않는다" },
+      { value: "rarely", label: "가끔 마신다 (한 달에 1~2번 이하)" },
+      { value: "weekly", label: "주 1~2번 마신다" },
+      { value: "often", label: "주 3번 이상 마신다" },
+    ],
+  },
 ];
+
+/** 음주 답 (D4). 2026-10-v3에 추가돼서 그 전에 검사를 마친 사람은 따로 답한다 */
+export const DRINKING_OPTIONS = DEALBREAKER_ITEMS.find((i) => i.id === "D4")!.options;
+export const isDrinking = (v: unknown): v is string => typeof v === "string" && DRINKING_OPTIONS.some((o) => o.value === v);
 
 // ---------------------------------------------------------------------------
 // 성격: Mini-IPIP 20문항 (IPIP, 퍼블릭 도메인) 한국어 번안. 1~5점

@@ -15,6 +15,7 @@ import {
   defaultFilters,
   meets,
   sanitizeFilters,
+  withFilterDefaults,
   type Filters,
   type MatchPerson,
 } from "./filters";
@@ -30,6 +31,7 @@ function person(over: Omit<Partial<MatchPerson>, "filters"> & { filters?: Partia
     height: 175,
     religion: null,
     smoking: "none",
+    drinking: "rarely",
     marriage: "yes",
     children: "unsure",
     filters: defaultFilters({ birthYear: 1996, region: "서울|강남구" }, YEAR),
@@ -87,6 +89,33 @@ describe("조건 검사", () => {
     expect(meets("smoking", noneOnly, person({ id: "b", smoking: "ecig" }), YEAR)).toBe(false);
   });
 
+  it("음주 조건", () => {
+    const notOften = person({ filters: { drinking: { mode: "not_often", strict: true } } });
+    expect(meets("drinking", notOften, person({ id: "b", drinking: "weekly" }), YEAR)).toBe(true);
+    expect(meets("drinking", notOften, person({ id: "b", drinking: "often" }), YEAR)).toBe(false);
+    const rarely = person({ filters: { drinking: { mode: "rarely_or_less", strict: true } } });
+    expect(meets("drinking", rarely, person({ id: "b", drinking: "rarely" }), YEAR)).toBe(true);
+    expect(meets("drinking", rarely, person({ id: "b", drinking: "weekly" }), YEAR)).toBe(false);
+    const noneOnly = person({ filters: { drinking: { mode: "none_only", strict: true } } });
+    expect(meets("drinking", noneOnly, person({ id: "b", drinking: "none" }), YEAR)).toBe(true);
+    expect(meets("drinking", noneOnly, person({ id: "b", drinking: "rarely" }), YEAR)).toBe(false);
+  });
+
+  it("음주에 아직 답하지 않은 사람: 조건 없는 사람에게는 보이고, 조건을 건 사람에게는 '꼭'이면 막히고 '되도록'이면 감점", () => {
+    const unknown = person({ id: "b", gender: "female", drinking: null });
+    expect(checkMutual(person(), unknown, YEAR).ok).toBe(true);
+    const strict = person({ filters: { drinking: { mode: "not_often", strict: true } } });
+    expect(checkOneWay(strict, unknown, YEAR).blocked).toBe(true);
+    const soft = person({ filters: { drinking: { mode: "not_often", strict: false } } });
+    expect(checkOneWay(soft, unknown, YEAR)).toMatchObject({ blocked: false, softMisses: 1 });
+  });
+
+  it("예전에 저장한 조건(음주 없음)은 '상관없음'으로 읽는다", () => {
+    const old = { ...defaultFilters({ birthYear: 1996, region: "서울|강남구" }, YEAR) } as Partial<Filters>;
+    delete old.drinking;
+    expect(withFilterDefaults(old as Filters).drinking).toEqual({ mode: "any", strict: true });
+  });
+
   it("결혼·자녀는 원함 vs 원하지 않음만 걸린다", () => {
     const viewer = person({ marriage: "yes" });
     expect(meets("family", viewer, person({ id: "b", marriage: "no" }), YEAR)).toBe(false);
@@ -136,6 +165,10 @@ describe("입력 검증", () => {
     expect("error" in noReligion).toBe(true);
     expect("error" in sanitizeFilters({ ...f, age: { min: 40, max: 30, strict: true } }, { religion: null })).toBe(true);
     expect("error" in sanitizeFilters("hack", { religion: null })).toBe(true);
+    // 음주: 잘못된 값은 막고, 예전 화면처럼 아예 없으면 '상관없음'
+    expect("error" in sanitizeFilters({ ...f, drinking: { mode: "hack", strict: true } }, { religion: null })).toBe(true);
+    const noDrinking = sanitizeFilters({ ...f, drinking: undefined }, { religion: null });
+    expect(!("error" in noDrinking) && noDrinking.drinking).toEqual({ mode: "any", strict: true });
   });
 
   it("자기소개에 연락처를 적을 수 없다", () => {

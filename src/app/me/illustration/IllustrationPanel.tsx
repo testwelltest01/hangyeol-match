@@ -134,7 +134,7 @@ export function IllustrationPanel({ available, missing, consented, remaining, li
             <li>성별, 나이대, 키, 자기소개</li>
             <li>검사 결과 중 성격·생활 성향·꾸밈 정도 요약, 더 알아보기 결과</li>
           </ul>
-          <p className="mt-2 text-sm text-muted">닉네임, 사는 곳, 종교, 연락처, 생활 습관 점수, 결혼·자녀·흡연 조건은 보내지 않아요.</p>
+          <p className="mt-2 text-sm text-muted">닉네임, 사는 곳, 종교, 연락처, 생활 습관 점수, 결혼·자녀·흡연·음주 조건은 보내지 않아요.</p>
           {!consented && (
             <label className="mt-4 flex cursor-pointer items-start gap-3">
               <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-1 h-4 w-4 accent-indigo" />

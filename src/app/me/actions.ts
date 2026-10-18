@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { normalizeInstagram, normalizeKakao } from "@/lib/contact";
 import { encryptText } from "@/lib/crypto";
 import { kstYear } from "@/lib/day";
+import { isDrinking, type Answers } from "@/lib/items";
 import {
   checkIntro,
   defaultFilters,
@@ -31,6 +32,40 @@ async function requireUser(): Promise<string> {
   const userId = await getUserId();
   if (!userId) redirect("/login");
   return userId;
+}
+
+// ---------------------------------------------------------------------------
+// 음주 (검사 D4). 2026-10-v3 전에 검사를 마친 사람이 한 번만 답한다
+// ---------------------------------------------------------------------------
+
+export async function saveDrinking(value: unknown): Promise<{ ok: true } | { ok: false; error: string }> {
+  const userId = await getUserId();
+  if (!userId) return { ok: false, error: "로그인이 풀렸어요. 다시 로그인해주세요." };
+  if (!isDrinking(value)) return { ok: false, error: "답을 골라주세요." };
+  if (!(await allow(`drinking:${userId}`, 10, 3600))) return { ok: false, error: TOO_MANY };
+
+  const admin = createAdminClient();
+  const [{ data: scoreRow }, { data: answerRow }] = await Promise.all([
+    admin.from("test_scores").select("scores").eq("user_id", userId).maybeSingle(),
+    admin.from("test_answers").select("answers").eq("user_id", userId).maybeSingle(),
+  ]);
+  if (!scoreRow) return { ok: false, error: "검사를 먼저 마쳐주세요." };
+  const scores = scoreRow.scores as Scores;
+  // 이미 답했으면 그대로 둔다 (흡연처럼 검사 답은 나중에 바꾸지 않는다)
+  if (scores.dealbreakers.drinking) return { ok: true };
+
+  const { error } = await admin
+    .from("test_scores")
+    .update({ scores: { ...scores, dealbreakers: { ...scores.dealbreakers, drinking: value } } })
+    .eq("user_id", userId);
+  if (error) return { ok: false, error: "저장하지 못했어요. 다시 시도해주세요." };
+  if (answerRow) {
+    await admin
+      .from("test_answers")
+      .update({ answers: { ...(answerRow.answers as Answers), D4: value }, updated_at: new Date().toISOString() })
+      .eq("user_id", userId);
+  }
+  return { ok: true };
 }
 
 // ---------------------------------------------------------------------------
@@ -110,6 +145,7 @@ async function currentMe(userId: string): Promise<{ me: MatchPerson; next: strin
       height: setup.matchProfile.height,
       religion: setup.matchProfile.religion,
       smoking: s.dealbreakers.smoking,
+      drinking: s.dealbreakers.drinking ?? null,
       marriage: s.dealbreakers.marriage,
       children: s.dealbreakers.children,
       filters: setup.matchProfile.filters,

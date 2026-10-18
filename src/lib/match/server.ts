@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { daysBefore, kstYear } from "@/lib/day";
 import { allocate, gateFactor, type Edge, type FeedbackReceived } from "@/lib/match/allocate";
 import { recommendationReason } from "@/lib/match/explain";
-import { checkMutual, type Filters, type Gender, type MatchPerson, type Religion } from "@/lib/match/filters";
+import { checkMutual, withFilterDefaults, type Filters, type Gender, type MatchPerson, type Religion } from "@/lib/match/filters";
 import { MIN_FRIENDS_FOR_MATCHING } from "@/lib/match/rules";
 import { mutualScore, type Scores } from "@/lib/scoring";
 
@@ -85,9 +85,10 @@ export async function loadPool(admin: Admin): Promise<Map<string, PoolEntry>> {
         height: mp.height,
         religion: mp.religion,
         smoking: s.dealbreakers.smoking,
+        drinking: s.dealbreakers.drinking ?? null,
         marriage: s.dealbreakers.marriage,
         children: s.dealbreakers.children,
-        filters: mp.filters,
+        filters: withFilterDefaults(mp.filters),
       },
       scores: s,
       nickname: profile.nickname,

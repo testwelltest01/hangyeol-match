@@ -124,6 +124,7 @@ const DEALBREAKER_LABEL: Record<string, Record<string, string>> = {
   marriage: { yes: "결혼하고 싶다", unsure: "아직 모르겠다", no: "결혼 생각이 없다" },
   children: { yes: "원한다", unsure: "아직 모르겠다", no: "원하지 않는다" },
   smoking: { none: "피우지 않는다", ecig: "전자담배만 피운다", yes: "피운다" },
+  drinking: { none: "마시지 않는다", rarely: "가끔 마신다", weekly: "주 1~2번 마신다", often: "주 3번 이상 마신다" },
 };
 
 export function buildReport(scores: Scores): Report {
@@ -171,6 +172,10 @@ export function buildReport(scores: Scores): Report {
       { label: "결혼", value: DEALBREAKER_LABEL.marriage[scores.dealbreakers.marriage] },
       { label: "자녀", value: DEALBREAKER_LABEL.children[scores.dealbreakers.children] },
       { label: "흡연", value: DEALBREAKER_LABEL.smoking[scores.dealbreakers.smoking] },
+      {
+        label: "음주",
+        value: scores.dealbreakers.drinking ? DEALBREAKER_LABEL.drinking[scores.dealbreakers.drinking] : "아직 답하지 않았어요",
+      },
     ],
   };
 }

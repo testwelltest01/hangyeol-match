@@ -2,11 +2,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { DeleteAccount } from "@/app/report/DeleteAccount";
+import { DrinkingQuestion } from "@/components/DrinkingQuestion";
 import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
 import { Notice, PageTitle } from "@/components/ui";
 import { loadMySetup, setupSteps } from "@/lib/match/me";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
+import type { Scores } from "@/lib/scoring";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserId } from "@/lib/supabase/server";
 import { AppSettings } from "./AppSettings";
 import { PauseToggle } from "./PauseToggle";
@@ -30,9 +33,16 @@ async function MeGate() {
   if (!setup) redirect("/start");
 
   const steps = setupSteps(setup);
+  const { data: scoreRow } = await createAdminClient().from("test_scores").select("scores").eq("user_id", userId!).maybeSingle();
+  const needsDrinking = Boolean(scoreRow) && !(scoreRow!.scores as Scores).dealbreakers.drinking;
   return (
     <>
       <PageTitle title="내 정보" lead={`${setup.nickname}님의 매칭 정보예요. 언제든 고칠 수 있어요.`} />
+      {needsDrinking && (
+        <div className="mt-6">
+          <DrinkingQuestion />
+        </div>
+      )}
 
       {setup.suspended && (
         <div className="mt-6">

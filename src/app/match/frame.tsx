@@ -24,7 +24,8 @@ const TABS: { id: MatchTab; href: string; label: string }[] = [
   { id: "connected", href: "/match/connected", label: "연결" },
 ];
 
-export type MatchData = { setup: MySetup; ready: boolean; d: Dashboard };
+/** needsDrinking: 음주 문항(2026-10-v3) 전에 검사를 마쳐서 아직 답하지 않음 */
+export type MatchData = { setup: MySetup; ready: boolean; d: Dashboard; needsDrinking: boolean };
 
 /**
  * 추천 탭 세 곳이 함께 쓰는 데이터. 탭 숫자와 본문이 같은 요청 안에서 부르므로 cache로 한 번만 읽는다.
@@ -51,8 +52,9 @@ export const loadMatch = cache(async (): Promise<MatchData> => {
   }
 
   const { data: scoreRow } = await admin.from("test_scores").select("scores").eq("user_id", userId!).single();
-  const d = await loadDashboard(admin, userId!, scoreRow!.scores as Scores);
-  return { setup, ready, d };
+  const scores = scoreRow!.scores as Scores;
+  const d = await loadDashboard(admin, userId!, scores);
+  return { setup, ready, d, needsDrinking: !scores.dealbreakers.drinking };
 });
 
 /** 연결 탭에서 내가 봐야 할 사람: 새 메시지, 상대의 연락처 전달 요청, 만남 피드백 */

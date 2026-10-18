@@ -37,11 +37,19 @@ function fullAnswers(overrides: Answers = {}, valueAll = 3): Answers {
 }
 
 describe("문항 설정", () => {
-  it("관계 가치관 24 + 중요도 8 + 딜브레이커 3 = 35문항", () => {
+  it("관계 가치관 24 + 중요도 8 + 딜브레이커 4(결혼·자녀·흡연·음주) = 36문항", () => {
     const ids = ALL_ITEMS.map((i) => i.id);
     expect(VALUE_ITEMS).toHaveLength(24);
     expect(ids.filter((id) => /^W\d$/.test(id))).toHaveLength(8);
-    expect(ids.filter((id) => /^D\d$/.test(id))).toHaveLength(3);
+    expect(ids.filter((id) => /^D\d$/.test(id))).toHaveLength(4);
+  });
+
+  it("음주(D4)는 필수이고 점수에 들어간다", () => {
+    const s = computeScores(fullAnswers({ D4: "weekly" }), "male");
+    expect(s.dealbreakers.drinking).toBe("weekly");
+    const noDrinking = fullAnswers();
+    delete noDrinking.D4;
+    expect(() => computeScores(noDrinking, "male")).toThrow(/D4/);
   });
 
   it("문항 id가 겹치지 않는다", () => {

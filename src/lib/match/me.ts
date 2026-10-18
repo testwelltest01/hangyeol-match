@@ -1,7 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Improvement, UserView } from "@/lib/photo/feedback";
-import type { Filters, Gender, Religion } from "@/lib/match/filters";
+import { withFilterDefaults, type Filters, type Gender, type Religion } from "@/lib/match/filters";
 import { MIN_FRIENDS_FOR_MATCHING } from "@/lib/match/rules";
 
 export type PhotoRow = { id: string; slot: "face" | "body"; path: string; feedback: UserView; created_at: string };
@@ -52,7 +52,7 @@ export async function loadMySetup(userId: string): Promise<MySetup | null> {
     nickname: profile.data.nickname,
     gender: profile.data.gender,
     birthYear: profile.data.birth_year,
-    matchProfile: mp.data ?? null,
+    matchProfile: mp.data ? { ...mp.data, filters: withFilterDefaults(mp.data.filters as Filters) } : null,
     photos: { face: rows.find((r) => r.slot === "face") ?? null, body: rows.find((r) => r.slot === "body") ?? null },
     contact: contact.data ? { instagram: Boolean(contact.data.instagram), kakao: Boolean(contact.data.kakao) } : null,
     consents: { religion: kinds.has("religion"), photoOverseas: kinds.has("photo_overseas") },

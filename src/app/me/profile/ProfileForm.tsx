@@ -102,7 +102,7 @@ export function ProfileForm({
         )}
       </fieldset>
 
-      <p className="text-sm text-muted">결혼·자녀 생각과 흡연 여부는 검사에서 답한 내용을 조건 비교에 써요. 상대에게 그대로 보이지는 않아요.</p>
+      <p className="text-sm text-muted">결혼·자녀 생각과 흡연·음주 여부는 검사에서 답한 내용을 조건 비교에 써요. 상대에게 그대로 보이지는 않아요.</p>
 
       <ErrorText>{state.error}</ErrorText>
       {state.saved && !state.error && <p className="text-moss">저장했어요.</p>}

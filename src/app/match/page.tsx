@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { PersonCardView } from "@/components/PersonCard";
+import { DrinkingQuestion } from "@/components/DrinkingQuestion";
 import { ReactButtons } from "@/components/ReactButtons";
 import { TourInvite } from "@/components/TourInvite";
 import { SecondaryLink } from "@/components/ui";
@@ -50,6 +51,7 @@ async function TodayGate() {
     return (
       <>
         <MatchNotices data={data} />
+        {data.needsDrinking && <DrinkingQuestion />}
         <h2 className="font-serif text-2xl font-bold">매칭 준비</h2>
         <p className="mt-2 text-ink-soft">
           아래를 모두 채우면 바로 오늘의 추천이 열려요. 추천 카드에는 사진이 없고, 서로 관심을 보내면 사진이 공개돼요.
@@ -76,6 +78,7 @@ async function TodayGate() {
   return (
     <>
       <MatchNotices data={data} showPaused />
+      {data.needsDrinking && <DrinkingQuestion />}
       <p className="text-ink-soft">매일 저녁 8시에 결이 맞는 사람 3명을 새로 골라요. 서로 관심을 보내면 사진이 공개돼요.</p>
 
       <div className="mt-6 space-y-4">

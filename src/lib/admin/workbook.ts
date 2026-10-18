@@ -103,8 +103,8 @@ function itemScale(item: Item): string {
   }
 }
 
-const dealbreakerLabel = (id: "D1" | "D2" | "D3", value: string) =>
-  DEALBREAKER_ITEMS.find((i) => i.id === id)?.options.find((o) => o.value === value)?.label ?? value;
+const dealbreakerLabel = (id: "D1" | "D2" | "D3" | "D4", value: string | undefined) =>
+  value === undefined ? "" : (DEALBREAKER_ITEMS.find((i) => i.id === id)?.options.find((o) => o.value === value)?.label ?? value);
 
 export async function buildWorkbook(d: ExportData): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
@@ -169,7 +169,7 @@ export async function buildWorkbook(d: ExportData): Promise<Buffer> {
       "사용자ID", "닉네임", "성별", "출생연도", "검사 버전", "검사 완료",
       ...valueIds,
       ...DOMAINS.map((x) => `중요도_${x.label}`),
-      "결혼 의사", "자녀 계획", "흡연",
+      "결혼 의사", "자녀 계획", "흡연", "음주",
       ...TRAITS.map((t) => t.label),
       "위생(0~18)", "꾸밈_본인(1~4)", "꾸밈_원함(1~4)", "꾸밈_중요도(1~4)",
     ],
@@ -180,7 +180,7 @@ export async function buildWorkbook(d: ExportData): Promise<Buffer> {
         s.user_id, m?.nickname, m?.gender ? GENDER[m.gender] : null, m?.birthYear, s.version, kst(s.computed_at),
         ...valueIds.map((id) => sc.values.items[id]),
         ...DOMAINS.map((x) => sc.values.importance[x.id]),
-        dealbreakerLabel("D1", sc.dealbreakers.marriage), dealbreakerLabel("D2", sc.dealbreakers.children), dealbreakerLabel("D3", sc.dealbreakers.smoking),
+        dealbreakerLabel("D1", sc.dealbreakers.marriage), dealbreakerLabel("D2", sc.dealbreakers.children), dealbreakerLabel("D3", sc.dealbreakers.smoking), dealbreakerLabel("D4", sc.dealbreakers.drinking),
         ...TRAITS.map((t) => sc.bigFive[t.id]),
         sc.hygiene, sc.grooming.self, sc.grooming.preferred, sc.grooming.importance,
       ];

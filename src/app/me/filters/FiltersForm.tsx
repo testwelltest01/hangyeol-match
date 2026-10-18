@@ -316,6 +316,27 @@ export function FiltersForm({
       </Section>
 
       <Section
+        title="음주"
+        toggle={
+          f.drinking.mode !== "any" ? (
+            <StrictToggle label="음주" value={f.drinking.strict} onChange={(v) => update("drinking", { strict: v })} />
+          ) : undefined
+        }
+      >
+        <Radio
+          name="drinking"
+          value={f.drinking.mode}
+          onChange={(mode) => update("drinking", { mode })}
+          options={[
+            { id: "any", label: "상관없음" },
+            { id: "not_often", label: "주 3번 이상만 아니면 괜찮음" },
+            { id: "rarely_or_less", label: "가끔(한 달에 1~2번) 이하로 마시는 사람" },
+            { id: "none_only", label: "마시지 않는 사람만" },
+          ]}
+        />
+      </Section>
+
+      <Section
         title="결혼·자녀 생각"
         toggle={<StrictToggle label="결혼·자녀" value={f.family.strict} onChange={(v) => update("family", { strict: v })} />}
       >
