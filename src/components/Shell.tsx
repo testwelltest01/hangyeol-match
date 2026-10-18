@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { BackButton } from "@/components/BackButton";
 import { IconBack, IconChat, IconGrain, IconHeart, IconLetter, IconToday, IconUser } from "@/components/icons";
+import { PendingFill } from "@/components/LinkPending";
 import { ThemeSync } from "@/components/ThemeSync";
 import { loadTabBadges, type TabBadges } from "@/lib/match/badges";
 import { loadMyTheme } from "@/lib/theme-server";
@@ -114,7 +115,8 @@ function TabBar({ current }: { current: TabId }) {
                 className={`flex h-[60px] flex-col items-center justify-center gap-1 text-[11.5px] ${active ? "font-semibold text-primary" : "text-muted hover:text-ink"}`}
               >
                 <span className={`relative flex h-7 w-12 items-center justify-center rounded-full ${active ? "bg-primary/10" : ""}`}>
-                  <t.Icon size={22} strong={active} />
+                  {!active && <PendingFill className="rounded-full bg-primary/10" />}
+                  <t.Icon size={22} strong={active} className="relative" />
                   {t.badge && (
                     <Suspense fallback={null}>
                       <TabBadge kind={t.badge} label={t.label} />

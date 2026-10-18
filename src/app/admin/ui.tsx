@@ -11,6 +11,7 @@ import {
   IconGrid,
   IconTrend,
 } from "@/components/icons";
+import { PendingFill } from "@/components/LinkPending";
 import { ClearTheme } from "@/components/ThemeSync";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -39,7 +40,7 @@ async function ReportBadge({ compact = false }: { compact?: boolean }) {
       <span className="sr-only">건의 처리할 신고</span>
     </span>
   ) : (
-    <span className="ml-auto inline-flex items-center rounded-full bg-rose/10 px-2 py-0.5 text-[12px] font-semibold text-rose">신고 {n}</span>
+    <span className="relative ml-auto inline-flex items-center rounded-full bg-rose/10 px-2 py-0.5 text-[12px] font-semibold text-rose">신고 {n}</span>
   );
 }
 
@@ -69,12 +70,15 @@ export function AdminShell({ current, back, children }: { current?: AdminTab; ba
                 key={t.id}
                 href={t.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] transition-colors ${
+                className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] transition-colors ${
                   active ? "bg-surface font-semibold text-ink ring-1 ring-line/80" : "text-muted hover:bg-surface/70 hover:text-ink"
                 }`}
               >
-                <t.Icon size={20} strong={active} />
-                {t.label}
+                {!active && <PendingFill className="rounded-xl bg-surface ring-1 ring-line/80" />}
+                <span className="relative flex items-center gap-3">
+                  <t.Icon size={20} strong={active} />
+                  {t.label}
+                </span>
                 {t.id === "dashboard" && (
                   <Suspense fallback={null}>
                     <ReportBadge />
@@ -145,7 +149,8 @@ export function AdminShell({ current, back, children }: { current?: AdminTab; ba
                     className={`flex h-[60px] flex-col items-center justify-center gap-1 text-[11.5px] ${active ? "font-semibold text-ink" : "text-muted"}`}
                   >
                     <span className={`relative flex h-7 w-12 items-center justify-center rounded-full ${active ? "bg-mist" : ""}`}>
-                      <t.Icon size={22} strong={active} />
+                      {!active && <PendingFill className="rounded-full bg-mist" />}
+                      <t.Icon size={22} strong={active} className="relative" />
                       {t.id === "dashboard" && (
                         <Suspense fallback={null}>
                           <ReportBadge compact />

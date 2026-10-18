@@ -77,7 +77,7 @@ function Section({
   );
 }
 
-const pill = "inline-block rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-soft";
+const pill = "inline-block rounded-full bg-primary transition active:scale-[0.98] active:opacity-80 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-soft";
 
 export function ReportParts({
   nickname,

@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useState, type MouseEvent, type ReactNode } from "react";
+import { PendingSpinner } from "@/components/LinkPending";
 import { externalBrowserUrl } from "@/lib/inapp";
 
 const STYLE = {
   primary:
-    "block w-full rounded-full bg-primary px-6 py-4 text-center text-base font-semibold text-white transition-colors hover:bg-primary-soft",
+    "relative block w-full rounded-full bg-primary px-6 py-4 text-center text-base font-semibold text-white transition hover:bg-primary-soft active:scale-[0.98] active:opacity-80",
   text: "inline-block text-[15px] text-ink underline underline-offset-4",
 };
 
@@ -29,6 +30,7 @@ export function OpenInBrowserLink({ href, children, variant = "primary" }: { hre
     <>
       <Link href={href} onClick={onClick} className={STYLE[variant]}>
         {children}
+        {variant === "primary" && <PendingSpinner />}
       </Link>
       {handedOff && (
         <p className="mt-3 text-center text-[14px] leading-relaxed text-muted">

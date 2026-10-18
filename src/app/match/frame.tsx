@@ -3,7 +3,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cache, Suspense, type ReactNode } from "react";
 import { Avatar, PageHeader, StatusChip } from "@/components/app-ui";
-import { IconChevron } from "@/components/icons";
 import { Loading } from "@/components/Loading";
 import { PushNudge } from "@/components/PushNudge";
 import { personLine } from "@/components/PersonCard";
@@ -15,6 +14,7 @@ import { isReady, loadMySetup, type MySetup } from "@/lib/match/me";
 import { generateRecommendations } from "@/lib/match/server";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
 import type { Scores } from "@/lib/scoring";
+import { PendingChevron } from "@/components/LinkPending";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserId } from "@/lib/supabase/server";
 
@@ -125,7 +125,7 @@ export function PairRow({
         <span className="mt-0.5 block truncate text-[13px] text-muted">{sub ?? personLine(card)}</span>
       </span>
       <StatusChip tone={waiting ? "wait" : "turn"}>{note}</StatusChip>
-      <IconChevron size={18} className="-mr-1 shrink-0 text-muted/70" />
+      <PendingChevron size={18} className="text-muted/70" />
     </Link>
   );
 }

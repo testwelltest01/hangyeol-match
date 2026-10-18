@@ -257,7 +257,7 @@ export function ChatRoom({ otherId, name, initialMessages, initialState, initial
               <button
                 type="submit"
                 disabled={sending || !text.trim()}
-                className="shrink-0 rounded-xl bg-primary px-4 py-3 font-semibold text-white disabled:bg-line disabled:text-muted"
+                className="shrink-0 rounded-xl bg-primary transition active:scale-[0.98] active:opacity-80 px-4 py-3 font-semibold text-white disabled:bg-line disabled:text-muted"
               >
                 보내기
               </button>
@@ -334,7 +334,7 @@ function ContactPanel({
         <p className="text-[15px]">
           <strong>{name}님</strong>이 연락처를 주고받고 싶어해요.
         </p>
-        <button type="button" disabled={pending} onClick={() => onToggle(true)} className="shrink-0 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
+        <button type="button" disabled={pending} onClick={() => onToggle(true)} className="shrink-0 rounded-full bg-primary transition active:scale-[0.98] active:opacity-80 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
           연락처 전달
         </button>
       </div>

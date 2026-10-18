@@ -237,7 +237,7 @@ export function TourClient({ initialGender, nickname, journey, cta }: Props) {
                     type="button"
                     disabled={busy}
                     onClick={sendInterest}
-                    className="flex-1 rounded-full bg-primary px-4 py-3 font-semibold text-white disabled:bg-line disabled:text-muted"
+                    className="flex-1 rounded-full bg-primary transition active:scale-[0.98] active:opacity-80 px-4 py-3 font-semibold text-white disabled:bg-line disabled:text-muted"
                   >
                     {busy ? "보내는 중" : "관심 있어요"}
                   </button>
@@ -316,7 +316,7 @@ export function TourClient({ initialGender, nickname, journey, cta }: Props) {
               <>
                 <p className="mb-4 text-ink-soft">사진을 보고 마음에 들면 수락해주세요. 서로 수락하면 대화방이 열려요.</p>
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => accept(p)} className="flex-1 rounded-full bg-primary px-4 py-3 font-semibold text-white">
+                  <button type="button" onClick={() => accept(p)} className="flex-1 rounded-full bg-primary transition active:scale-[0.98] active:opacity-80 px-4 py-3 font-semibold text-white">
                     수락하기
                   </button>
                   <button type="button" onClick={() => setDeclined(true)} className="rounded-full border border-line px-4 py-3 text-ink-soft">
@@ -440,7 +440,7 @@ export function TourClient({ initialGender, nickname, journey, cta }: Props) {
                 <button
                   type="submit"
                   disabled={typing || !text.trim()}
-                  className="shrink-0 rounded-xl bg-primary px-4 py-3 font-semibold text-white disabled:bg-line disabled:text-muted"
+                  className="shrink-0 rounded-xl bg-primary transition active:scale-[0.98] active:opacity-80 px-4 py-3 font-semibold text-white disabled:bg-line disabled:text-muted"
                 >
                   보내기
                 </button>
@@ -583,7 +583,7 @@ function ContactBox({
         <p className="text-[15px]">
           <strong>{name}님</strong>이 연락처를 주고받고 싶어해요.
         </p>
-        <button type="button" onClick={onShare} className="shrink-0 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">
+        <button type="button" onClick={onShare} className="shrink-0 rounded-full bg-primary transition active:scale-[0.98] active:opacity-80 px-4 py-2 text-sm font-semibold text-white">
           연락처 전달
         </button>
       </div>

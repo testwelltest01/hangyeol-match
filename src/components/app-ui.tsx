@@ -3,7 +3,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { PrimaryLink } from "@/components/buttons";
-import { IconCheck, IconChevron } from "@/components/icons";
+import { IconCheck } from "@/components/icons";
+import { PendingChevron } from "@/components/LinkPending";
 
 /** 화면 제목. 제목만 고운바탕, 나머지는 프리텐다드 */
 export function PageHeader({ title, sub, aside }: { title: string; sub?: ReactNode; aside?: ReactNode }) {
@@ -68,7 +69,7 @@ export function ListRow({
         {sub && <span className="mt-0.5 block text-[13px] leading-snug text-muted">{sub}</span>}
       </span>
       {right}
-      {href && chevron && <IconChevron size={18} className="-mr-1 shrink-0 text-muted/70" />}
+      {href && chevron && <PendingChevron size={18} className="text-muted/70" />}
     </>
   );
   const cls = "flex items-center gap-3.5 px-4 py-3.5";
@@ -159,7 +160,7 @@ export function NextStepCard({ steps, doneTitle, showList = true }: { steps: Jou
                   <span className={`text-[13px] ${s.done ? "text-moss" : current ? "font-semibold text-indigo" : "text-muted"}`}>
                     {s.done ? "완료" : current ? "지금" : ""}
                   </span>
-                  <IconChevron size={16} className="-mr-1 shrink-0 text-muted/60" />
+                  <PendingChevron size={16} className="text-muted/60" />
                 </Link>
               </li>
             );

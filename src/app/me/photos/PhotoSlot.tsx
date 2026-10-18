@@ -147,7 +147,7 @@ export function PhotoSlot({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={disabled}
-            className="w-full rounded-full bg-primary px-5 py-3.5 font-semibold text-white disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
+            className="w-full rounded-full bg-primary transition active:scale-[0.98] active:opacity-80 px-5 py-3.5 font-semibold text-white disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
           >
             {busy
               ? "AI가 사진을 보는 중"
