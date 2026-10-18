@@ -88,7 +88,7 @@ export function AdminShell({ current, back, children }: { current?: AdminTab; ba
             <IconDownload size={20} />
             엑셀 받기
           </a>
-          <Link href="/" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-muted hover:bg-surface/70 hover:text-ink">
+          <Link href="/match" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-muted hover:bg-surface/70 hover:text-ink">
             <IconExternal size={20} />
             서비스 보기
           </Link>
@@ -102,7 +102,7 @@ export function AdminShell({ current, back, children }: { current?: AdminTab; ba
               {brand}
             </Link>
             <div className="flex items-center gap-1">
-              <Link href="/" className="flex h-10 items-center rounded-full px-3 text-[14px] text-muted hover:bg-mist hover:text-ink">
+              <Link href="/match" className="flex h-10 items-center rounded-full px-3 text-[14px] text-muted hover:bg-mist hover:text-ink">
                 서비스 보기
               </Link>
               <a href="/admin/export" className="flex h-9 items-center gap-1.5 rounded-full bg-ink px-3.5 text-[13.5px] font-semibold text-white">
