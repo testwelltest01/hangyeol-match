@@ -4,11 +4,17 @@ import Link from "next/link";
 import { useState, type MouseEvent, type ReactNode } from "react";
 import { externalBrowserUrl } from "@/lib/inapp";
 
+const STYLE = {
+  primary:
+    "block w-full rounded-full bg-primary px-6 py-4 text-center text-base font-semibold text-white transition-colors hover:bg-primary-soft",
+  text: "inline-block text-[15px] text-ink underline underline-offset-4",
+};
+
 /**
- * 큰 버튼 모양 링크. 카카오톡 같은 앱 안 브라우저에서 누르면 휴대폰 기본 브라우저(Safari·Chrome)로 넘겨 연다.
- * 가입·로그인·홈 화면 추가가 카카오톡 창에 묶이지 않게 (친구 평가를 마친 친구의 '나도 검사해보기')
+ * 카카오톡 같은 앱 안 브라우저에서 누르면 휴대폰 기본 브라우저(Safari·Chrome)로 넘겨 여는 링크.
+ * 가입·로그인·홈 화면 추가가 카카오톡 창에 묶이지 않게 (친구 평가를 마친 친구의 '시작하기')
  */
-export function OpenInBrowserLink({ href, children }: { href: string; children: ReactNode }) {
+export function OpenInBrowserLink({ href, children, variant = "primary" }: { href: string; children: ReactNode; variant?: keyof typeof STYLE }) {
   const [handedOff, setHandedOff] = useState(false);
 
   function onClick(e: MouseEvent<HTMLAnchorElement>) {
@@ -21,11 +27,7 @@ export function OpenInBrowserLink({ href, children }: { href: string; children: 
 
   return (
     <>
-      <Link
-        href={href}
-        onClick={onClick}
-        className="block w-full rounded-full bg-primary px-6 py-4 text-center text-base font-semibold text-white transition-colors hover:bg-primary-soft"
-      >
+      <Link href={href} onClick={onClick} className={STYLE[variant]}>
         {children}
       </Link>
       {handedOff && (

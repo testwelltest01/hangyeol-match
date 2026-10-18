@@ -3,10 +3,10 @@
 import { useState, useTransition } from "react";
 import { submitFriendRating } from "@/app/actions";
 import { PrimaryButton } from "@/components/buttons";
-import { OpenInBrowserLink } from "@/components/OpenInBrowserLink";
 import { LikertScale } from "@/components/scales";
+import { FriendDone } from "./FriendDone";
 
-export function FriendForm({ token, items }: { token: string; items: { id: string; text: string }[] }) {
+export function FriendForm({ token, name, items }: { token: string; name: string; items: { id: string; text: string }[] }) {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,46 +27,39 @@ export function FriendForm({ token, items }: { token: string; items: { id: strin
     });
   }
 
-  if (done) {
-    return (
-      <div className="mt-10">
-        <p className="font-serif text-2xl font-bold">고마워요. 답이 전달됐어요.</p>
-        <p className="mt-3 text-ink-soft">
-          한결은 연락 스타일과 주말이 맞는 사람을 찾는 소개팅 서비스예요. 11분 검사로 나의 연애 결도
-          알아볼 수 있어요.
-        </p>
-        <div className="mt-8">
-          {/* 카카오톡 안에서 열렸으면 기본 브라우저로 넘겨서 연다 (가입·로그인이 카카오톡 창에 묶이지 않게) */}
-          <OpenInBrowserLink href="/">나도 검사해보기</OpenInBrowserLink>
-        </div>
-      </div>
-    );
-  }
+  if (done) return <FriendDone name={name} />;
 
   return (
-    <div className="mt-8">
-      <div className="divide-y divide-line">
-        {items.map((item) => (
-          <div key={item.id} className="py-7 first:pt-0">
-            <LikertScale
-              name={item.id}
-              text={item.text}
-              value={answers[item.id]}
-              onChange={(v) => setAnswers((a) => ({ ...a, [item.id]: v }))}
-            />
-          </div>
-        ))}
+    <>
+      <h1 className="font-serif text-[1.65rem] font-bold leading-tight">{name}님은 어떤 사람인가요?</h1>
+      <p className="mt-3 text-ink-soft">
+        10문항, 1분이면 끝나요. 답은 다른 친구들의 답과 합쳐서 평균으로만 보여주고, 누가 어떻게 답했는지는 {name}님에게
+        보이지 않아요. 이름이나 연락처는 받지 않아요.
+      </p>
+      <div className="mt-8">
+        <div className="divide-y divide-line">
+          {items.map((item) => (
+            <div key={item.id} className="py-7 first:pt-0">
+              <LikertScale
+                name={item.id}
+                text={item.text}
+                value={answers[item.id]}
+                onChange={(v) => setAnswers((a) => ({ ...a, [item.id]: v }))}
+              />
+            </div>
+          ))}
+        </div>
+        {error && (
+          <p role="alert" className="mt-2 text-alert">
+            {error}
+          </p>
+        )}
+        <div className="mt-6">
+          <PrimaryButton onClick={submit} disabled={!complete || pending}>
+            {pending ? "보내는 중" : "답 보내기"}
+          </PrimaryButton>
+        </div>
       </div>
-      {error && (
-        <p role="alert" className="mt-2 text-alert">
-          {error}
-        </p>
-      )}
-      <div className="mt-6">
-        <PrimaryButton onClick={submit} disabled={!complete || pending}>
-          {pending ? "보내는 중" : "답 보내기"}
-        </PrimaryButton>
-      </div>
-    </div>
+    </>
   );
 }
