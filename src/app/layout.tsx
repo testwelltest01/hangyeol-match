@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { PwaRegister } from "@/components/PwaRegister";
+import { splashImages } from "@/lib/pwa/splash";
 import "./globals.css";
 
 const TITLE = "한결 | 결이 맞는 사람";
@@ -16,8 +17,10 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   applicationName: "한결",
-  // 아이폰에서 홈 화면에 추가했을 때 앱처럼(주소창 없이) 열리게
-  appleWebApp: { capable: true, title: "한결", statusBarStyle: "default" },
+  // 아이폰에서 홈 화면에 추가했을 때 앱처럼(주소창 없이) 열리게. 여는 동안 검은 화면 대신 한결 시작 화면(기기 크기별 그림)
+  appleWebApp: { capable: true, title: "한결", statusBarStyle: "default", startupImage: splashImages() },
+  // Next는 mobile-web-app-capable만 넣는다. iOS는 예전 이름이 있어야 시작 화면 그림을 쓰는 경우가 있어서 함께 둔다
+  other: { "apple-mobile-web-app-capable": "yes" },
   formatDetection: { telephone: false },
   // 이미지는 app/opengraph-image.png 파일이 자동으로 붙는다
   openGraph: {

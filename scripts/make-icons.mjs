@@ -1,6 +1,9 @@
 // 한결 앱 아이콘 만들기: 하얀 바탕에 분홍·하늘 물결이 나란히 흐른다 (분홍이 조금 앞서고 하늘이 뒤따른다).
 // 실행: node scripts/make-icons.mjs  (sharp는 next가 함께 설치한다)
 // 바꾸면 public/sw.js의 VERSION도 올린다 (알림 아이콘을 캐시해서).
+// iPhone·iPad 시작 화면(public/splash/)도 같은 물결로 함께 만든다. 시작 화면은 홈 화면에 추가할 때 받아가므로
+// 이미 설치한 기기는 지우고 다시 추가해야 바뀐다.
+import fs from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
 
@@ -92,11 +95,30 @@ function grad(id, S, stops) {
     .join("")}</linearGradient>`;
 }
 
+/** 물결 그림에 쓰는 색·그림자 (S: 물결을 그리는 칸 크기) */
+function markDefs(S) {
+  return `${grad("pink", S, PINK)}${grad("sky", S, SKY)}
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="${S * 0.012}"/>
+      <feOffset dy="${S * 0.01}"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.12"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>`;
+}
+
+/** S 칸 가운데에 그린 두 물결 */
+function mark(S, k = 1) {
+  const v = waves(S, k);
+  return `<g transform="${v.transform}">
+    <g filter="url(#shadow)"><path d="${v.pink}" fill="url(#pink)"/><path d="${v.sky}" fill="url(#sky)"/></g>
+    <path d="${v.pinkSheen}" fill="#fff" opacity="0.32"/><path d="${v.skySheen}" fill="#fff" opacity="0.32"/>
+  </g>`;
+}
+
 /**
  * shape: rounded = 둥근 사각(모서리 투명, 옅은 테두리) / square = 가장자리까지 하얀 바탕(iOS·마스커블)
  */
 function iconSvg(S, { shape = "rounded", k = 1 } = {}) {
-  const v = waves(S, k);
   const bg =
     shape === "rounded"
       ? `<rect width="${S}" height="${S}" rx="${S * 0.225}" fill="url(#bg)"/>
@@ -107,19 +129,51 @@ function iconSvg(S, { shape = "rounded", k = 1 } = {}) {
     <radialGradient id="bg" cx="50%" cy="38%" r="75%">
       <stop offset="0" stop-color="#FFFFFF"/><stop offset="0.7" stop-color="#FDFDFE"/><stop offset="1" stop-color="#F3F5F9"/>
     </radialGradient>
-    ${grad("pink", S, PINK)}${grad("sky", S, SKY)}
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="${S * 0.012}"/>
-      <feOffset dy="${S * 0.01}"/>
-      <feComponentTransfer><feFuncA type="linear" slope="0.12"/></feComponentTransfer>
-      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
+    ${markDefs(S)}
   </defs>
   ${bg}
-  <g transform="${v.transform}">
-    <g filter="url(#shadow)"><path d="${v.pink}" fill="url(#pink)"/><path d="${v.sky}" fill="url(#sky)"/></g>
-    <path d="${v.pinkSheen}" fill="#fff" opacity="0.32"/><path d="${v.skySheen}" fill="#fff" opacity="0.32"/>
-  </g>
+  ${mark(S, k)}
+</svg>`;
+}
+
+// ---------------------------------------------------------------------------
+// iPhone·iPad 시작 화면: 앱 바탕색 위에 물결 + '한결' + '결이 맞는 사람'
+// 기기 목록은 src/lib/pwa/splash-devices.json (레이아웃과 함께 쓴다)
+// ---------------------------------------------------------------------------
+const TEXT = JSON.parse(fs.readFileSync(path.join(ROOT, "scripts/splash-text.json"), "utf8"));
+const PAPER = "#f3f5f8";
+
+/** 글자 외곽선(크기 1000, 기준선 0)을 가운데 cx, 기준선 y, 글자 크기 px로 놓는다 */
+function text(t, cx, y, px, fill) {
+  const s = px / 1000;
+  const x = cx - ((t.x1 + t.x2) / 2) * s;
+  return `<path d="${t.d}" fill="${fill}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${s})"/>`;
+}
+
+/** W×H 화면 픽셀, dpr 배율. 글자·물결 크기는 CSS px로 정하고 배율을 곱한다 */
+function splashSvg(W, H, dpr) {
+  const u = (n) => n * dpr;
+  const S = u(190); // 물결 칸 (물결 폭은 이 칸의 약 70%)
+  const word = u(34);
+  const tag = u(14.5);
+  // 물결 · 한결 · 문구를 한 묶음으로 보고, 묶음이 화면 가운데보다 살짝 위에 오게
+  const markH = S * 0.42;
+  const gap1 = u(26);
+  const wordH = ((TEXT.wordmark.y2 - TEXT.wordmark.y1) / 1000) * word;
+  const gap2 = u(14);
+  const tagH = ((TEXT.tagline.y2 - TEXT.tagline.y1) / 1000) * tag;
+  const total = markH + gap1 + wordH + gap2 + tagH;
+  const top = H * 0.46 - total / 2;
+  const cx = W / 2;
+  const markCy = top + markH / 2;
+  const wordBase = top + markH + gap1 - (TEXT.wordmark.y1 / 1000) * word;
+  const tagBase = wordBase + (TEXT.wordmark.y2 / 1000) * word + gap2 - (TEXT.tagline.y1 / 1000) * tag;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <defs>${markDefs(S)}</defs>
+  <rect width="${W}" height="${H}" fill="${PAPER}"/>
+  <g transform="translate(${(cx - S / 2).toFixed(2)} ${(markCy - S / 2).toFixed(2)})">${mark(S)}</g>
+  ${text(TEXT.wordmark, cx, wordBase, word, "#1f2f5c")}
+  ${text(TEXT.tagline, cx, tagBase, tag, "#5b6478")}
 </svg>`;
 }
 
@@ -145,3 +199,23 @@ await sized((S) => iconSvg(S, { shape: "square", k: 0.92 }), 512, "public/icons/
 await sized((S) => badgeSvg(S), 96, "public/icons/badge-96.png");
 await sized((S) => iconSvg(S, { shape: "square", k: 1 }), 180, "src/app/apple-icon.png", { opaque: true });
 await sized((S) => iconSvg(S, { k: 1.3 }), 96, "src/app/icon.png");
+
+// 시작 화면: 지난 그림을 지우고 기기 목록대로 새로 만든다
+const { devices } = JSON.parse(fs.readFileSync(path.join(ROOT, "src/lib/pwa/splash-devices.json"), "utf8"));
+const SPLASH_DIR = path.join(ROOT, "public/splash");
+fs.rmSync(SPLASH_DIR, { recursive: true, force: true });
+fs.mkdirSync(SPLASH_DIR, { recursive: true });
+const sizes = new Map();
+for (const d of devices) {
+  const [W, H] = [d.w * d.dpr, d.h * d.dpr];
+  sizes.set(`${W}x${H}`, [W, H, d.dpr]);
+  if (d.ipad) sizes.set(`${H}x${W}`, [H, W, d.dpr]);
+}
+for (const [name, [W, H, dpr]] of sizes) {
+  await sharp(Buffer.from(splashSvg(W, H, dpr)))
+    .flatten({ background: PAPER })
+    .removeAlpha()
+    .png({ compressionLevel: 9, palette: true, quality: 95 })
+    .toFile(path.join(SPLASH_DIR, `${name}.png`));
+}
+console.log(`wrote public/splash/ (${sizes.size}장)`);

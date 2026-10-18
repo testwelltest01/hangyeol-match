@@ -1,0 +1,25 @@
+{
+  "note": "iPhone·iPad 홈 화면 앱의 시작 화면 크기(CSS px, 세로 기준). scripts/make-icons.mjs가 public/splash/에 그림을 만들고, 루트 레이아웃이 apple-touch-startup-image로 연결한다. iPad는 가로도 만든다",
+  "devices": [
+    { "w": 440, "h": 956, "dpr": 3, "name": "iPhone 16·17 Pro Max" },
+    { "w": 420, "h": 912, "dpr": 3, "name": "iPhone Air" },
+    { "w": 402, "h": 874, "dpr": 3, "name": "iPhone 16·17 Pro, 17" },
+    { "w": 430, "h": 932, "dpr": 3, "name": "iPhone 14 Pro Max, 15·16 Plus, 15 Pro Max" },
+    { "w": 393, "h": 852, "dpr": 3, "name": "iPhone 14 Pro, 15, 15 Pro, 16" },
+    { "w": 428, "h": 926, "dpr": 3, "name": "iPhone 12·13 Pro Max, 14 Plus" },
+    { "w": 390, "h": 844, "dpr": 3, "name": "iPhone 12, 13, 14, 16e" },
+    { "w": 375, "h": 812, "dpr": 3, "name": "iPhone X, XS, 11 Pro, 12·13 mini" },
+    { "w": 414, "h": 896, "dpr": 3, "name": "iPhone XS Max, 11 Pro Max" },
+    { "w": 414, "h": 896, "dpr": 2, "name": "iPhone XR, 11" },
+    { "w": 414, "h": 736, "dpr": 3, "name": "iPhone 8 Plus" },
+    { "w": 375, "h": 667, "dpr": 2, "name": "iPhone 8, SE 2·3세대" },
+    { "w": 1032, "h": 1376, "dpr": 2, "name": "iPad Pro 13 (M4)", "ipad": true },
+    { "w": 1024, "h": 1366, "dpr": 2, "name": "iPad Pro 12.9", "ipad": true },
+    { "w": 834, "h": 1210, "dpr": 2, "name": "iPad Pro 11 (M4)", "ipad": true },
+    { "w": 834, "h": 1194, "dpr": 2, "name": "iPad Pro 11", "ipad": true },
+    { "w": 820, "h": 1180, "dpr": 2, "name": "iPad Air, iPad 10세대", "ipad": true },
+    { "w": 810, "h": 1080, "dpr": 2, "name": "iPad 9세대", "ipad": true },
+    { "w": 744, "h": 1133, "dpr": 2, "name": "iPad mini 6·7", "ipad": true },
+    { "w": 768, "h": 1024, "dpr": 2, "name": "iPad 이전 모델", "ipad": true }
+  ]
+}
