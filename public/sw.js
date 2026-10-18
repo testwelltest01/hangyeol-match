@@ -4,7 +4,7 @@
 // 로그인한 화면이나 데이터는 기기에 캐시하지 않는다(사진·대화가 기기에 남지 않게).
 // 이 파일을 바꾸면 VERSION을 올린다.
 
-const VERSION = "2026-10-19";
+const VERSION = "2026-10-19.2";
 const CACHE = `hangyeol-${VERSION}`;
 const OFFLINE_URL = "/offline.html";
 const ICON = "/icons/icon-192.png";
