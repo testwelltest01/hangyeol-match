@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { PwaRegister } from "@/components/PwaRegister";
 import "./globals.css";
 
 const TITLE = "한결 | 결이 맞는 사람";
@@ -15,6 +16,9 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   applicationName: "한결",
+  // 아이폰에서 홈 화면에 추가했을 때 앱처럼(주소창 없이) 열리게
+  appleWebApp: { capable: true, title: "한결", statusBarStyle: "default" },
+  formatDetection: { telephone: false },
   // 이미지는 app/opengraph-image.png 파일이 자동으로 붙는다
   openGraph: {
     type: "website",
@@ -51,7 +55,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap"
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <PwaRegister />
+      </body>
     </html>
   );
 }

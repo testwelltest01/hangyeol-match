@@ -44,6 +44,14 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: SECURITY_HEADERS },
+      // 서비스 워커는 늘 새로 받아야 고친 내용이 바로 반영된다
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+        ],
+      },
       // 로그인 후 화면과 친구 평가 링크는 검색에 노출하지 않는다
       {
         source: "/:dir(f|me|match|people|report|test|onboarding|admin|extra|chat)/:path*",

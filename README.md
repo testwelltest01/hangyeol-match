@@ -21,6 +21,7 @@
 | `/report` | 리포트, 친구 평가 링크, 매칭 시작 버튼 |
 | `/extra/[id]` | 더 알아보기(선택): 마음이 전해지는 순간, 위로가 필요할 때, 대화 코드. 한결 자체 시범 문항, 추천 계산에는 안 씀 |
 | `/f/[토큰]` | 친구 평가 (로그인 없이 10문항) |
+| `/manifest.webmanifest`, `/sw.js`, `/offline.html` | PWA: 홈 화면 설치 정보, 서비스 워커(알림·오프라인 안내만, 화면은 캐시하지 않음), 인터넷이 끊겼을 때 안내 |
 | `/tour` | 가상 매칭 둘러보기: 체험용 가상 인물과 추천→관심→사진 공개→대화→연락처를 미리 해보고, 진짜 소개까지 남은 단계를 보여줌 (로그인 없이도, 저장 없음) |
 | `/match` | 오늘 탭: 매칭 준비 체크리스트 또는 오늘의 추천 3명 |
 | `/match/interest` | 관심 탭: 서로 관심(사진 공개, 수락 차례), 내가 수락한 사람, 내가 관심을 보낸 사람 |
@@ -75,6 +76,8 @@
 | `CRON_SECRET` | 매일 추천 계산 주소를 보호하는 비밀값 |
 | `OPENAI_IMAGE_MODEL` / `OPENAI_IMAGE_QUALITY` | (선택) 그림 프로필 모델·품질. 기본 `gpt-image-2.5-sunburst`, `medium` |
 | `ILLUSTRATION_DAILY_CAP` | (선택) 서비스 전체 하루 그림 상한. 기본 300 |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | 알림(웹 푸시) 키 한 쌍. 공개키는 브라우저에 보여도 되고, 개인키는 서버 전용. 없으면 알림만 꺼진 채로 동작 |
+| `VAPID_SUBJECT` | (선택) 푸시 서버에 알리는 연락처. 기본은 사이트 주소 |
 | `ADMIN_EMAILS` | (선택) 관리자 이메일, 쉼표로 여러 개. 없으면 `testwelltest01@gmail.com` |
 
 비밀값 만들기 (Node가 설치된 아무 터미널):
@@ -82,6 +85,7 @@
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"   # CONTACT_ENCRYPTION_KEY
 node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"      # CRON_SECRET
+npx web-push generate-vapid-keys                                               # VAPID 공개키·개인키
 ```
 
 ## 3. 실행과 배포

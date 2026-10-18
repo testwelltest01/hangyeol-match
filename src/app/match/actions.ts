@@ -1,9 +1,11 @@
 "use server";
 
+import { after as afterResponse } from "next/server";
 import { closeChatRoom, getChatRoom, openChatRoom } from "@/lib/chat/server";
 import { pairContext } from "@/lib/match/context";
 import { loadPair, pairStage, type PairStage } from "@/lib/match/server";
 import { REPORT_REASONS, type ReportReason } from "@/lib/match/safety";
+import { notifyPair } from "@/lib/push/server";
 import { allow, TOO_MANY } from "@/lib/security";
 
 type Result = { ok: true; stage?: PairStage } | { ok: false; error: string };
@@ -38,7 +40,11 @@ export async function react(targetId: string, kind: (typeof KINDS)[number]): Pro
   const after = await loadPair(admin, userId, targetId);
   const stageAfter = pairStage(after);
   // 서로 수락하면 대화방이 열린다 (0005 SQL 전이면 조용히 넘어간다)
-  if (stageAfter === "connected") await openChatRoom(admin, userId, targetId);
+  const room = stageAfter === "connected" ? await openChatRoom(admin, userId, targetId) : null;
+  // 상대에게 알림: 서로 관심(사진 공개), 서로 수락(대화방 또는 연락처 공개). 응답을 보낸 뒤에 보낸다
+  if (kind === "interest" && stageAfter === "photos") afterResponse(() => notifyPair(admin, userId, targetId, "mutualInterest"));
+  if (kind === "accept" && stageAfter === "connected")
+    afterResponse(() => notifyPair(admin, userId, targetId, room ? "connectedChat" : "connectedContact"));
   return { ok: true, stage: stageAfter };
 }
 

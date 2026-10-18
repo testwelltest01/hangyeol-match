@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cache, Suspense, type ReactNode } from "react";
 import { Loading } from "@/components/Loading";
+import { PushNudge } from "@/components/PushNudge";
 import { personLine } from "@/components/PersonCard";
 import { Shell } from "@/components/Shell";
 import { Notice } from "@/components/ui";
@@ -108,6 +109,7 @@ export function MatchFrame({ current, title, children }: { current: MatchTab; ti
         })}
       </nav>
       <div className="pt-7">
+        <PushNudge />
         <Suspense fallback={<Loading />}>{children}</Suspense>
       </div>
     </Shell>

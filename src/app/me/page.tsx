@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { signOut } from "@/app/actions";
 import { DeleteAccount } from "@/app/report/DeleteAccount";
 import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
@@ -9,7 +8,9 @@ import { Notice, PageTitle } from "@/components/ui";
 import { loadMySetup, setupSteps } from "@/lib/match/me";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
 import { getUserId } from "@/lib/supabase/server";
+import { AppSettings } from "./AppSettings";
 import { PauseToggle } from "./PauseToggle";
+import { SignOutButton } from "./SignOutButton";
 
 export default function MePage() {
   return (
@@ -60,6 +61,12 @@ async function MeGate() {
         <span className="shrink-0 text-sm text-indigo">보기</span>
       </Link>
 
+      <section id="app" className="mt-10 scroll-mt-6">
+        <h2 className="font-serif text-xl font-bold">앱처럼 쓰기</h2>
+        <p className="mt-2 text-ink-soft">홈 화면에 한결을 추가하면 앱처럼 바로 열리고, 알림도 받을 수 있어요.</p>
+        <AppSettings />
+      </section>
+
       {setup.matchProfile && (
         <section className="mt-10">
           <h2 className="font-serif text-xl font-bold">매칭 쉬기</h2>
@@ -74,11 +81,7 @@ async function MeGate() {
         <Link href="/set-password?mode=change" className="mb-5 block text-ink underline underline-offset-4">
           비밀번호 바꾸기
         </Link>
-        <form action={signOut}>
-          <button type="submit" className="text-ink underline underline-offset-4">
-            로그아웃
-          </button>
-        </form>
+        <SignOutButton />
         <DeleteAccount />
       </section>
     </>

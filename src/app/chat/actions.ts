@@ -1,8 +1,11 @@
 "use server";
 
+import { after } from "next/server";
 import { chatState, getChatRoom, openChatRoom, type ChatMessageView, type ChatState } from "@/lib/chat/server";
 import { checkChatMessage, MESSAGES_PER_PERSON } from "@/lib/chat/rules";
 import { pairContext } from "@/lib/match/context";
+import { notifyChatMessage, notifyPair } from "@/lib/push/server";
+import { allow } from "@/lib/security";
 
 type Fail = { ok: false; error: string };
 
@@ -43,6 +46,8 @@ export async function sendChatMessage(otherId: string, text: string): Promise<{ 
   const row = Array.isArray(data) ? data[0] : null;
   if (error || !row) return { ok: false, error: "보내지 못했어요. 다시 시도해주세요." };
   if (row.status !== "ok") return { ok: false, error: STATUS_ERROR[row.status] ?? "보내지 못했어요." };
+  // 상대가 대화 중이 아닐 때만 알린다 (응답을 보낸 뒤)
+  after(() => notifyChatMessage(r.admin, r.room.id, r.userId, otherId, row.message_id));
   return { ok: true, message: { id: row.message_id, mine: true, body, at: row.created_at } };
 }
 
@@ -61,5 +66,13 @@ export async function setContactShare(otherId: string, on: boolean): Promise<{ o
   if (row.status === "closed") return { ok: false, error: "대화가 닫혀서 연락처를 주고받을 수 없어요." };
   if (row.status !== "ok") return { ok: false, error: "대화방을 찾을 수 없어요." };
   const updated = await getChatRoom(r.admin, r.userId, otherId);
-  return { ok: true, state: chatState(updated.room ?? r.room, r.userId) };
+  const state = chatState(updated.room ?? r.room, r.userId);
+  if (on) {
+    // 눌렀다 취소하기를 반복해도 요청 알림은 하루 3번까지만
+    after(async () => {
+      if (state.exchanged) await notifyPair(r.admin, r.userId, otherId, "contactExchanged");
+      else if (await allow(`push-contact:${r.userId}:${otherId}`, 3, 86400)) await notifyPair(r.admin, r.userId, otherId, "contactRequest");
+    });
+  }
+  return { ok: true, state };
 }

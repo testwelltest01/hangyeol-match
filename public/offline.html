@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f3f5f8" />
+    <title>인터넷 연결이 끊겼어요 | 한결</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #f3f5f8;
+        color: #1f2f5c;
+        font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+        word-break: keep-all;
+      }
+      main {
+        box-sizing: border-box;
+        max-width: 560px;
+        min-height: 100vh;
+        margin: 0 auto;
+        padding: 20px 20px 48px;
+        display: flex;
+        flex-direction: column;
+      }
+      .brand {
+        font-family: "Gowun Batang", "Nanum Myeongjo", serif;
+        font-weight: 700;
+        font-size: 20px;
+      }
+      .body {
+        margin: auto 0;
+        text-align: center;
+      }
+      img {
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+      }
+      h1 {
+        margin: 20px 0 8px;
+        font-family: "Gowun Batang", "Nanum Myeongjo", serif;
+        font-size: 26px;
+      }
+      p {
+        margin: 0;
+        color: #3a4a75;
+        line-height: 1.6;
+      }
+      button {
+        margin-top: 28px;
+        width: 100%;
+        border: 0;
+        border-radius: 999px;
+        padding: 16px 24px;
+        background: #1f2f5c;
+        color: #fff;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="brand">한결</div>
+      <div class="body">
+        <img src="/icons/icon-192.png" alt="" />
+        <h1>인터넷 연결이 끊겼어요</h1>
+        <p>와이파이나 데이터가 켜져 있는지 확인하고<br />다시 시도해주세요.</p>
+        <button type="button" onclick="location.reload()">다시 시도</button>
+      </div>
+    </main>
+  </body>
+</html>
