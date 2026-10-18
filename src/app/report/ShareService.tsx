@@ -6,18 +6,18 @@ import { useState } from "react";
 export function ShareService() {
   const [copied, setCopied] = useState(false);
 
+  // 링크만 보낸다 (문구를 붙이면 카카오톡 등에 그대로 같이 보내진다. 미리보기는 첫 화면의 제목·설명이 맡는다)
   async function share() {
     const url = window.location.origin;
-    const text = "연락 스타일과 주말이 맞는 사람. 11분 가치관 검사 해봐.";
     if (navigator.share) {
       try {
-        await navigator.share({ title: "한결", text, url });
+        await navigator.share({ url });
         return;
       } catch {
         // 공유 창을 닫은 경우: 복사로 넘어간다
       }
     }
-    await navigator.clipboard.writeText(`${text} ${url}`);
+    await navigator.clipboard.writeText(url);
     setCopied(true);
   }
 
@@ -30,7 +30,7 @@ export function ShareService() {
       >
         친구에게 한결 알려주기
       </button>
-      {copied && <p className="mt-2 text-center text-sm text-moss">소개 문구를 복사했어요.</p>}
+      {copied && <p className="mt-2 text-center text-sm text-moss">링크를 복사했어요. 친구에게 붙여넣어 보내주세요.</p>}
     </div>
   );
 }

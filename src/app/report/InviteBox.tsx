@@ -11,11 +11,12 @@ export function InviteBox({ initialToken, count, minCount }: { initialToken: str
 
   const link = token ? `${typeof window === "undefined" ? "" : window.location.origin}/f/${token}` : null;
 
+  // 링크만 보낸다. 문구를 붙이면 카카오톡 등에 링크와 함께 그대로 보내져서, 회원이 원하지 않는 말이 같이 간다
+  // (링크 미리보기는 /f/[token]의 제목·설명이 대신 보여준다)
   async function share(url: string) {
-    const text = "나를 어떤 사람으로 보는지 1분만 알려줘. 답은 익명으로 합쳐서 보여줘.";
     if (navigator.share) {
       try {
-        await navigator.share({ title: "한결 친구 평가", text, url });
+        await navigator.share({ url });
         return;
       } catch {
         // 공유 창을 닫은 경우: 복사로 넘어간다
