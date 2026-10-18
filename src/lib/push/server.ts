@@ -50,6 +50,44 @@ export async function sendPush(admin: Admin, userId: string, message: PushMessag
   );
 }
 
+/** 여러 사람에게 서로 다른 알림을 한꺼번에 보낸다 (매일 저녁 새 추천). 구독한 사람만 골라서 보낸다 */
+export async function sendPushMany(admin: Admin, messages: Map<string, PushMessage>): Promise<number> {
+  if (!setup() || messages.size === 0) return 0;
+  const ids = [...messages.keys()];
+  const subs: { id: string; user_id: string; endpoint: string; p256dh: string; auth: string }[] = [];
+  for (let i = 0; i < ids.length; i += 200) {
+    const { data, error } = await admin
+      .from("push_subscriptions")
+      .select("id, user_id, endpoint, p256dh, auth")
+      .in("user_id", ids.slice(i, i + 200));
+    if (error) return 0; // 0007 SQL 전
+    subs.push(...(data ?? []));
+  }
+  let sent = 0;
+  const gone: string[] = [];
+  // 한 번에 20개씩 보낸다
+  for (let i = 0; i < subs.length; i += 20) {
+    await Promise.all(
+      subs.slice(i, i + 20).map(async (s) => {
+        try {
+          await webpush.sendNotification(
+            { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+            JSON.stringify(messages.get(s.user_id)),
+            { TTL: 6 * 3600, urgency: "normal" },
+          );
+          sent += 1;
+        } catch (e) {
+          const status = (e as { statusCode?: number }).statusCode;
+          if (status === 404 || status === 410) gone.push(s.id);
+          else console.error("web push failed", status ?? (e instanceof Error ? e.message : e));
+        }
+      }),
+    );
+  }
+  if (gone.length) await admin.from("push_subscriptions").delete().in("id", gone);
+  return sent;
+}
+
 async function nickname(admin: Admin, userId: string): Promise<string | null> {
   const { data } = await admin.from("profiles").select("nickname").eq("id", userId).maybeSingle();
   return data?.nickname ?? null;

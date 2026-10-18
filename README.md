@@ -44,7 +44,7 @@
 | `/admin/extra` | 관리자 추가 검사: 하위척도 평균·표준편차(성별), 크론바흐 α, 유형 분포 |
 | `/admin/chats/[roomId]` | 관리자 대화 보기: 요약·이벤트·메시지 정보. 내용은 두 사람 사이에 신고가 있을 때만 |
 | `/admin/export` | 관리자 엑셀 내려받기 (회원, 검사 점수, 문항 응답, 문항 목록, 친구 평가, 관심·수락, 최근 60일 추천, 만남 피드백, 신고) |
-| `/api/cron/daily` | 매일 자정(한국) 추천 계산과 오래된 사진 파일 삭제. Vercel Cron 전용 |
+| `/api/cron/daily` | 매일 저녁 8시(한국) 추천 계산, 새 추천 알림, 오래된 사진 파일 삭제. Vercel Cron 전용 |
 
 ## 1. Supabase 설정
 
@@ -96,7 +96,7 @@ npm run dev        # http://localhost:3000
 npm test           # 단위 테스트
 ```
 
-배포는 GitHub `main`에 push하면 Vercel이 자동으로 합니다. `vercel.json`이 서버 기능을 서울(`icn1`)에 고정하고, 매일 15:00 UTC(한국 자정)에 `/api/cron/daily`를 부릅니다. Hobby 요금제의 Cron은 정해진 시각부터 1시간 안에 실행돼요. Cron이 늦어도 사용자가 `/match`를 열 때 오늘 추천이 없으면 그 자리에서 만듭니다.
+배포는 GitHub `main`에 push하면 Vercel이 자동으로 합니다. `vercel.json`이 서버 기능을 서울(`icn1`)에 고정하고, 매일 11:00 UTC(한국 저녁 8시)에 `/api/cron/daily`를 부릅니다. 추천의 '하루'는 저녁 8시에 바뀌고(`matchDay`, `src/lib/day.ts`), 크론이 새 추천을 받은 사람에게 알림을 보냅니다. Hobby 요금제의 Cron은 정해진 시각부터 1시간 안에 실행돼요. Cron이 늦어도 저녁 8시 이후 사용자가 `/match`를 열면 그 자리에서 만듭니다.
 
 ## 매칭 규칙 (기획서 '매칭 방식과 필터', '추천 알고리즘')
 

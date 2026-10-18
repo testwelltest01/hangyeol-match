@@ -91,7 +91,7 @@ export function AppSettings() {
       <div>
         <h3 className="font-semibold">알림</h3>
         <p className="mt-1.5 text-[15px] text-ink-soft">
-          서로 관심, 대화방 열림, 새 메시지, 연락처 전달을 알려드려요. 알림에는 메시지 내용이 보이지 않아요.
+          매일 저녁 8시 새 추천, 서로 관심, 대화방 열림, 새 메시지, 연락처 전달을 알려드려요. 알림에는 메시지 내용이 보이지 않아요.
         </p>
         <div className="mt-3">
           {env.support === "not-ready" ? (

@@ -211,7 +211,7 @@ export function TourClient({ initialGender, nickname, journey, cta }: Props) {
             <span className="py-3 text-center text-muted">관심</span>
             <span className="py-3 text-center text-muted">연결</span>
           </div>
-          <p className="mt-6 text-ink-soft">매일 자정에 결이 맞는 사람 3명을 새로 골라요. 그중 한 명을 먼저 만나볼게요.</p>
+          <p className="mt-6 text-ink-soft">매일 저녁 8시에 결이 맞는 사람 3명을 새로 골라요. 그중 한 명을 먼저 만나볼게요.</p>
 
           <article className="mt-5 overflow-hidden rounded-2xl border border-line bg-surface">
             <div className="px-5 py-5">

@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { chatState, myChatRooms, unreadCounts } from "@/lib/chat/server";
-import { kstDay } from "@/lib/day";
+import { matchDay } from "@/lib/day";
 import { shownIllustrationUrls } from "@/lib/illustration/server";
 import { profileChips, recommendationReason, talkingPoint } from "@/lib/match/explain";
 import { pairStage, type Pair, type PairStage } from "@/lib/match/server";
@@ -59,7 +59,7 @@ const FEEDBACK_AFTER_DAYS = 3;
 const FEEDBACK_REASK_DAYS = 7;
 
 export async function loadDashboard(admin: SupabaseClient, me: string, myScores: Scores): Promise<Dashboard> {
-  const day = kstDay();
+  const day = matchDay();
   const [todayRecs, allRecs, reactions, blocks, myFeedback, contact, notFound] = await Promise.all([
     admin.from("recommendations").select("target_id, reason, score").eq("user_id", me).eq("day", day).order("score", { ascending: false }),
     admin.from("recommendations").select("target_id").eq("user_id", me),

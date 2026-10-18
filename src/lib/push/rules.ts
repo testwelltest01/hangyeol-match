@@ -43,6 +43,12 @@ export type PushMessage = { title: string; body: string; url: string; tag?: stri
  * id는 알림을 받는 사람 입장에서 '상대'의 사용자 ID
  */
 export const pushMessages = {
+  dailyRecommendations: (count: number): PushMessage => ({
+    title: "오늘의 추천이 도착했어요",
+    body: `결이 맞는 ${count}명을 새로 골랐어요. 추천 이유부터 확인해보세요.`,
+    url: "/match",
+    tag: "daily",
+  }),
   mutualInterest: (nickname: string, id: string): PushMessage => ({
     title: "서로 관심을 보냈어요",
     body: `${nickname}님과 서로의 사진이 공개됐어요. 마음에 들면 수락해주세요.`,

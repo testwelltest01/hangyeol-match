@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { requireAdmin } from "@/lib/admin/auth";
 import { loadMembers, loadReports } from "@/lib/admin/data";
-import { kstDay } from "@/lib/day";
+import { matchDay } from "@/lib/day";
 import { fetchAll } from "@/lib/match/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DashboardView } from "./DashboardView";
@@ -21,7 +21,8 @@ export default function AdminPage() {
 async function DashboardGate() {
   await requireAdmin();
   const admin = createAdminClient();
-  const today = kstDay();
+  // 지금 보이는 추천 묶음 (저녁 8시에 바뀐다)
+  const today = matchDay();
   const [{ members, reactions }, reports, recsToday, recsAll, feedback] = await Promise.all([
     loadMembers(admin),
     loadReports(admin),

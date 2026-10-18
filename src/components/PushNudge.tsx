@@ -62,7 +62,7 @@ export function PushNudge() {
     <div className="mb-6 rounded-2xl border border-indigo/25 bg-indigo/5 px-4 py-3.5">
       <div className="flex items-start justify-between gap-3">
         <p className="text-[15px] text-ink">
-          {mode === "ios" ? "홈 화면에 추가하면 서로 관심이나 새 메시지를 알림으로 받을 수 있어요." : "서로 관심이나 새 메시지가 오면 알려드릴까요?"}
+          {mode === "ios" ? "홈 화면에 추가하면 저녁 8시 새 추천과 새 메시지를 알림으로 받을 수 있어요." : "저녁 8시에 새 추천이 오거나 새 메시지가 오면 알려드릴까요?"}
         </p>
         <button type="button" onClick={dismiss} aria-label="닫기" className="-mr-1 -mt-0.5 shrink-0 px-1 text-lg leading-none text-muted hover:text-ink">
           ×

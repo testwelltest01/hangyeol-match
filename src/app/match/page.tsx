@@ -76,7 +76,7 @@ async function TodayGate() {
   return (
     <>
       <MatchNotices data={data} showPaused />
-      <p className="text-ink-soft">매일 자정에 결이 맞는 사람 3명을 새로 골라요. 서로 관심을 보내면 사진이 공개돼요.</p>
+      <p className="text-ink-soft">매일 저녁 8시에 결이 맞는 사람 3명을 새로 골라요. 서로 관심을 보내면 사진이 공개돼요.</p>
 
       <div className="mt-6 space-y-4">
         {d.today.length === 0 ? (

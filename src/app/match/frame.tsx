@@ -7,7 +7,7 @@ import { PushNudge } from "@/components/PushNudge";
 import { personLine } from "@/components/PersonCard";
 import { Shell } from "@/components/Shell";
 import { Notice } from "@/components/ui";
-import { kstDay } from "@/lib/day";
+import { matchDay } from "@/lib/day";
 import { loadDashboard, type Dashboard, type PersonCard } from "@/lib/match/dashboard";
 import { isReady, loadMySetup, type MySetup } from "@/lib/match/me";
 import { generateRecommendations } from "@/lib/match/server";
@@ -39,9 +39,9 @@ export const loadMatch = cache(async (): Promise<MatchData> => {
   const ready = isReady(setup);
   const admin = createAdminClient();
 
-  // 오늘 추천이 아직 없으면(매일 밤 계산 이후에 준비를 마친 경우 등) 지금 만든다
+  // 오늘 추천이 아직 없으면(저녁 8시 계산 이후에 준비를 마쳤거나, 크론보다 먼저 들어온 경우) 지금 만든다
   if (ready && !setup.suspended && !setup.matchProfile?.paused) {
-    const day = kstDay();
+    const day = matchDay();
     const { count } = await admin
       .from("recommendations")
       .select("target_id", { count: "exact", head: true })

@@ -1,11 +1,13 @@
 import { connection } from "next/server";
 import { CHAT_BODY_RETENTION_DAYS } from "@/lib/chat/rules";
-import { kstDay } from "@/lib/day";
+import { matchDay } from "@/lib/day";
 import { generateRecommendations } from "@/lib/match/server";
+import { pushMessages } from "@/lib/push/rules";
+import { sendPushMany } from "@/lib/push/server";
 import { safeEqual } from "@/lib/security";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// Vercel Cron이 매일 한국 시간 자정 무렵 부른다 (vercel.json).
+// Vercel Cron이 매일 한국 시간 저녁 8시 무렵(11:00 UTC, Hobby 요금제는 1시간 안에) 부른다 (vercel.json).
 // CRON_SECRET 환경 변수를 넣어두면 Vercel이 Authorization: Bearer <값>을 붙여 보낸다. 다른 사람은 부를 수 없다.
 export const maxDuration = 300;
 
@@ -21,8 +23,14 @@ export async function GET(request: Request) {
   }
 
   const admin = createAdminClient();
-  const day = kstDay();
-  const created = await generateRecommendations(admin, day);
+  // 저녁 8시에 넘어간 새 추천 하루 (크론보다 먼저 들어온 사람은 그때 이미 만들어졌다)
+  const day = matchDay();
+  const { created, perViewer } = await generateRecommendations(admin, day);
+  // 새 추천을 받은 사람에게 알림 (알림을 켠 사람만. 이미 들어와서 추천을 본 사람은 여기 없다)
+  const notified = await sendPushMany(
+    admin,
+    new Map([...perViewer].map(([userId, count]) => [userId, pushMessages.dailyRecommendations(count)])),
+  ).catch(() => 0);
 
   // 1년 지난 교체 사진 파일 삭제
   const cutoff = new Date(Date.now() - KEEP_REPLACED_DAYS * 86_400_000).toISOString();
@@ -51,5 +59,5 @@ export async function GET(request: Request) {
   // 방문 기록은 처리방침의 '접속 로그 3개월'에 맞춰 90일 뒤 지운다 (0003 전이면 조용히 실패)
   await admin.from("activity_events").delete().lt("created_at", new Date(Date.now() - 90 * 86_400_000).toISOString());
 
-  return Response.json({ day, created, purged, chatPurged: chatPurged ?? 0 });
+  return Response.json({ day, created, notified, purged, chatPurged: chatPurged ?? 0 });
 }

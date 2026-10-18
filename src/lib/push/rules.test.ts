@@ -47,6 +47,13 @@ describe("pushMessages", () => {
     expect(m.url).toBe("/chat/u1");
     expect(pushMessages.connected("도담", "u2", false).url).toBe("/people/u2");
   });
+
+  it("새 추천 알림은 추천 화면으로, 하루 하나로 묶는다", () => {
+    const m = pushMessages.dailyRecommendations(3);
+    expect(m.body).toContain("3명");
+    expect(m.url).toBe("/match");
+    expect(m.tag).toBe("daily");
+  });
 });
 
 describe("shouldNotifyChat", () => {

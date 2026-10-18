@@ -114,10 +114,15 @@ const REPEAT_AFTER_DAYS = 14;
  * 하루 추천을 만들어 저장한다. onlyViewer를 주면 그 사람 것만 만든다(오늘 처음 들어왔는데 추천이 없을 때).
  * 이미 오늘 추천이 있는 사람은 건너뛴다. 오늘 다른 사람 추천에 들어간 횟수도 노출 상한에 반영한다.
  */
-export async function generateRecommendations(admin: Admin, day: string, onlyViewer?: string): Promise<number> {
+export async function generateRecommendations(
+  admin: Admin,
+  day: string,
+  onlyViewer?: string,
+): Promise<{ created: number; perViewer: Map<string, number> }> {
+  const none = { created: 0, perViewer: new Map<string, number>() };
   const pool = await loadPool(admin);
   const candidates = onlyViewer ? (pool.has(onlyViewer) ? [onlyViewer] : []) : [...pool.keys()];
-  if (candidates.length === 0) return 0;
+  if (candidates.length === 0) return none;
 
   const today = await fetchAll<{ user_id: string; target_id: string }>((a, b) =>
     admin.from("recommendations").select("user_id, target_id").eq("day", day).range(a, b),
@@ -127,7 +132,7 @@ export async function generateRecommendations(admin: Admin, day: string, onlyVie
   for (const r of today) exposure.set(r.target_id, (exposure.get(r.target_id) ?? 0) + 1);
 
   const viewers = candidates.filter((v) => !done.has(v));
-  if (viewers.length === 0) return 0;
+  if (viewers.length === 0) return none;
 
   const [reactions, blocks, recent] = await Promise.all([
     fetchAll<{ from_user: string; to_user: string; interest: boolean }>((a, b) =>
@@ -178,12 +183,14 @@ export async function generateRecommendations(admin: Admin, day: string, onlyVie
       reason: recommendationReason(pool.get(viewer)!.scores, pool.get(e.target)!.scores),
     })),
   );
-  if (rows.length === 0) return 0;
+  if (rows.length === 0) return none;
   const { error } = await admin
     .from("recommendations")
     .upsert(rows, { onConflict: "user_id,day,target_id", ignoreDuplicates: true });
   if (error) throw new Error(error.message);
-  return rows.length;
+  const perViewer = new Map<string, number>();
+  for (const r of rows) perViewer.set(r.user_id, (perViewer.get(r.user_id) ?? 0) + 1);
+  return { created: rows.length, perViewer };
 }
 
 /** 두 사람 사이의 관계 */
