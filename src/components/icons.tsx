@@ -187,3 +187,58 @@ export const IconWine = (p: IconProps) => (
 );
 
 export const IconSparkle = IconToday;
+
+// --- 관리자 화면 ---
+
+export const IconGrid = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="4" y="4" width="7" height="7" rx="1.5" />
+    <rect x="13" y="4" width="7" height="4.5" rx="1.5" />
+    <rect x="13" y="10.5" width="7" height="9.5" rx="1.5" />
+    <rect x="4" y="13" width="7" height="7" rx="1.5" />
+  </Svg>
+);
+
+export const IconTrend = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 19.5h16" />
+    <path d="M5 15.5l4.5-4.5 3.5 3 6-6.5" />
+    <path d="M15.5 7.5H19V11" />
+  </Svg>
+);
+
+/** LPA: 점들이 몇 무리로 모인 모양 */
+export const IconClusters = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="7.5" cy="8" r="3" />
+    <circle cx="16.5" cy="7" r="2.3" />
+    <circle cx="12" cy="16.5" r="3.5" />
+  </Svg>
+);
+
+export const IconFlask = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M9.5 3.5h5M10 3.5v6L5 18.2a1.5 1.5 0 0 0 1.3 2.3h11.4a1.5 1.5 0 0 0 1.3-2.3L14 9.5v-6" />
+    <path d="M7.5 14.5h9" />
+  </Svg>
+);
+
+export const IconDownload = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 4v11M7.5 10.5L12 15l4.5-4.5" />
+    <path d="M5 19.5h14" />
+  </Svg>
+);
+
+export const IconExternal = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M13.5 4.5h6v6M19.5 4.5L11 13" />
+    <path d="M17.5 14v4.5a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1H10" />
+  </Svg>
+);
+
+export const IconFlag = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M5.5 20.5v-16M5.5 4.5h11l-2 4 2 4h-11" />
+  </Svg>
+);

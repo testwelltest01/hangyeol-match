@@ -39,7 +39,7 @@ function Chips({ items }: { items: { href: string; label: string; active: boolea
           key={i.href}
           href={i.href}
           aria-current={i.active ? "page" : undefined}
-          className={`rounded-full border px-3 py-1.5 text-sm ${i.active ? "border-ink bg-ink font-semibold text-white" : "border-line bg-surface text-ink-soft"}`}
+          className={`rounded-full px-3.5 py-1.5 text-[13.5px] ${i.active ? "bg-ink font-semibold text-white" : "bg-surface text-ink-soft ring-1 ring-line/80 hover:text-ink"}`}
         >
           {i.label}
         </Link>

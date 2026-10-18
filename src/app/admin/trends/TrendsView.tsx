@@ -24,7 +24,7 @@ function Chips<T extends string | number>({
           key={String(i.id)}
           href={hrefOf(i.id)}
           aria-current={i.id === current ? "page" : undefined}
-          className={`rounded-full border px-3 py-1.5 text-sm ${i.id === current ? "border-ink bg-ink font-semibold text-white" : "border-line bg-surface text-ink-soft"}`}
+          className={`rounded-full px-3.5 py-1.5 text-[13.5px] ${i.id === current ? "bg-ink font-semibold text-white" : "bg-surface text-ink-soft ring-1 ring-line/80 hover:text-ink"}`}
         >
           {i.label}
         </Link>

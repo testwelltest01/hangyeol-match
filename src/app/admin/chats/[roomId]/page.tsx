@@ -74,11 +74,8 @@ async function ChatGate({ params }: { params: PageProps<"/admin/chats/[roomId]">
   }
 
   return (
-    <AdminShell current="users">
-      <Link href={`/admin/users/${room.user_a}`} className="text-sm text-muted underline underline-offset-4">
-        ← {nameOf(room.user_a)}님 상세
-      </Link>
-      <h1 className="mt-4 font-serif text-[1.75rem] font-bold leading-tight">
+    <AdminShell current="users" back={{ href: `/admin/users/${room.user_a}`, label: `${nameOf(room.user_a)}님 상세` }}>
+      <h1 className="font-serif text-[1.6rem] font-bold leading-tight">
         <Link href={`/admin/users/${room.user_a}`} className="hover:underline">
           {nameOf(room.user_a)}
         </Link>{" "}

@@ -20,7 +20,9 @@ import { loadExtraResults } from "@/lib/extra/server";
 import { EXTRA_TESTS } from "@/lib/extra/tests";
 import { ResolveButton, SuspendButton } from "../../AdminButtons";
 import { PhotoHistory, type AttemptEntry, type PhotoEntry } from "./PhotoHistory";
-import { AdminLoading, AdminShell, Chip, Empty, Panel, TableWrap, td, th } from "../../ui";
+import { Avatar } from "@/components/app-ui";
+import { IconCheck } from "@/components/icons";
+import { AdminLoading, AdminShell, Chip, Empty, JumpLinks, Panel, TableWrap, td, th } from "../../ui";
 import { ZoomImage } from "@/components/ZoomImage";
 
 export const metadata: Metadata = { title: "회원 상세 | 한결 관리", robots: { index: false, follow: false } };
@@ -177,28 +179,39 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
   };
 
   return (
-    <AdminShell current="users">
-      <Link href="/admin/users" className="text-sm text-muted underline underline-offset-4">
-        ← 회원 목록
-      </Link>
-
-      <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="font-serif text-[1.75rem] font-bold leading-tight">{name}</h1>
-          <p className="mt-1 break-all text-sm text-muted">
-            {user.email} · <span className="font-mono text-xs">{id}</span>
-          </p>
-          <p className="mt-2 flex flex-wrap gap-1.5">
-            <Chip tone={stage === "ready" ? "moss" : "mist"}>{STAGE_LABEL[stage]}</Chip>
-            {suspended && <Chip tone="alert">정지</Chip>}
-            {setup?.matchProfile?.paused && <Chip>매칭 쉬는 중</Chip>}
-          </p>
+    <AdminShell current="users" back={{ href: "/admin/users", label: "회원 목록" }}>
+      <section className="rounded-[20px] bg-surface px-5 py-5 ring-1 ring-line/80">
+        <div className="flex flex-wrap items-center gap-4">
+          <Avatar name={name} size={56} />
+          <div className="min-w-0 flex-1">
+            <h1 className="font-serif text-[1.6rem] font-bold leading-tight">{name}</h1>
+            <p className="mt-0.5 break-all text-sm text-muted">
+              {user.email} <span className="font-mono text-xs">{id}</span>
+            </p>
+            <p className="mt-2 flex flex-wrap gap-1.5">
+              <Chip tone={stage === "ready" ? "moss" : "mist"}>{STAGE_LABEL[stage]}</Chip>
+              {suspended && <Chip tone="alert">정지</Chip>}
+              {setup?.matchProfile?.paused && <Chip>매칭 쉬는 중</Chip>}
+            </p>
+          </div>
+          <SuspendButton userId={id} suspended={suspended} name={name} />
         </div>
-        <SuspendButton userId={id} suspended={suspended} name={name} />
-      </div>
+      </section>
+
+      <JumpLinks
+        links={[
+          { href: "#info", label: "기본 정보" },
+          { href: "#photos", label: "사진" },
+          { href: "#pairs", label: "관심·수락" },
+          { href: "#chats", label: "대화방" },
+          { href: "#reports", label: "신고·피드백" },
+          { href: "#scores", label: "원점수" },
+          { href: "#report", label: "리포트" },
+        ]}
+      />
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        <Panel title="기본 정보" className="lg:col-span-2">
+        <Panel id="info" title="기본 정보" className="lg:col-span-2">
           <Info
             items={[
               ["성별", setup ? GENDER[setup.gender] : null],
@@ -220,9 +233,13 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
           {setup ? (
             <ul className="space-y-1.5 text-sm">
               {setupSteps(setup).map((s) => (
-                <li key={s.id} className="flex gap-2">
-                  <span className={s.done ? "text-moss" : "text-alert"}>{s.done ? "✓" : "✗"}</span>
-                  <span>{s.label}</span>
+                <li key={s.id} className="flex items-center gap-2.5">
+                  <span
+                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${s.done ? "bg-moss text-white" : "bg-mist text-muted"}`}
+                  >
+                    {s.done ? <IconCheck size={12} strong /> : "–"}
+                  </span>
+                  <span className={s.done ? "" : "text-muted"}>{s.label}</span>
                 </li>
               ))}
             </ul>
@@ -231,7 +248,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
           )}
         </Panel>
 
-        <Panel title="자기소개·사진" lead="신고 확인용이에요. 저장하거나 밖으로 옮기지 말아주세요.">
+        <Panel id="photos" title="자기소개·사진" lead="신고 확인용이에요. 저장하거나 밖으로 옮기지 말아주세요.">
           {setup?.matchProfile?.intro ? (
             <p className="whitespace-pre-line text-sm leading-relaxed">{setup.matchProfile.intro}</p>
           ) : (
@@ -294,7 +311,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
         </Panel>
       )}
 
-      <Panel className="mt-4" title={`관심·수락 기록 ${pairs.length}명`}>
+      <Panel id="pairs" className="mt-4" title={`관심·수락 기록 ${pairs.length}명`}>
         {pairs.length === 0 ? (
           <Empty>아직 주고받은 관심이 없어요.</Empty>
         ) : (
@@ -328,7 +345,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
       </Panel>
 
       {chats.available && (
-        <Panel className="mt-4" title={`대화방 ${chats.rooms.length}개`} lead="내용은 두 사람 사이에 신고가 있을 때만 열 수 있어요.">
+        <Panel id="chats" className="mt-4" title={`대화방 ${chats.rooms.length}개`} lead="내용은 두 사람 사이에 신고가 있을 때만 열 수 있어요.">
           {chats.rooms.length === 0 ? (
             <Empty>아직 대화방이 없어요.</Empty>
           ) : (
@@ -382,7 +399,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
       )}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <Panel title={`신고 ${reportRows.length}건`} lead="받은 신고와 이 회원이 한 신고">
+        <Panel id="reports" title={`신고 ${reportRows.length}건`} lead="받은 신고와 이 회원이 한 신고">
           {reportRows.length === 0 ? (
             <Empty>신고 기록이 없어요.</Empty>
           ) : (
@@ -431,7 +448,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
       </div>
 
       {scores && (
-        <Panel className="mt-4" title="원점수" lead="화면에 보이지 않는 점수까지 그대로 보여줘요.">
+        <Panel id="scores" className="mt-4" title="원점수" lead="화면에 보이지 않는 점수까지 그대로 보여줘요.">
           <div className="grid gap-6 lg:grid-cols-3">
             <div>
               <h3 className="text-sm font-semibold text-muted">성격 5요인 (1~5)</h3>
@@ -525,10 +542,10 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
         </Panel>
       )}
 
-      <section className="mt-10">
-        <h2 className="text-lg font-semibold">회원이 보는 리포트</h2>
+      <section id="report" className="mt-10 scroll-mt-20">
+        <h2 className="text-[16px] font-semibold">회원이 보는 리포트</h2>
         {scores && setup ? (
-          <div className="mt-4 max-w-[600px] rounded-2xl border border-line bg-paper px-5 py-8 sm:px-8">
+          <div className="mt-4 max-w-[600px] rounded-[20px] bg-paper px-5 py-8 ring-1 ring-line/80 sm:px-8">
             <ReportParts
               viewer="admin"
               nickname={setup.nickname}

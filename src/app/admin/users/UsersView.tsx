@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Avatar } from "@/components/app-ui";
 import { fieldClass } from "@/components/ui";
 import { kstTime, memberName, type MemberRow } from "@/lib/admin/data";
 import { STAGE_LABEL, type UserStage } from "@/lib/admin/stats";
@@ -37,7 +38,7 @@ export function UsersView({ members, q, filter }: { members: MemberRow[]; q: str
 
   return (
     <AdminShell current="users">
-      <AdminTitle title="회원" lead={`전체 ${members.length}명 · 가입한 순서 (최근이 위)`} />
+      <AdminTitle title="회원" lead={`전체 ${members.length}명, 가입한 순서 (최근이 위)`} />
 
       <form action="/admin/users" method="get" className="mt-6 flex max-w-md gap-2">
         <label htmlFor="q" className="sr-only">
@@ -59,7 +60,7 @@ export function UsersView({ members, q, filter }: { members: MemberRow[]; q: str
               key={f.label}
               href={hrefWith(q, f.id)}
               aria-current={active ? "page" : undefined}
-              className={`rounded-full border px-3 py-1.5 text-sm ${active ? "border-ink bg-ink font-semibold text-white" : "border-line bg-surface text-ink-soft"}`}
+              className={`rounded-full px-3.5 py-1.5 text-[13.5px] ${active ? "bg-ink font-semibold text-white" : "bg-surface text-ink-soft ring-1 ring-line/80 hover:text-ink"}`}
             >
               {f.label} <span className="tabular-nums opacity-70">{n}</span>
             </Link>
@@ -67,9 +68,11 @@ export function UsersView({ members, q, filter }: { members: MemberRow[]; q: str
         })}
       </nav>
 
-      <div className="mt-6">
+      <div className="mt-6 rounded-[20px] bg-surface px-5 py-3 ring-1 ring-line/80">
         {rows.length === 0 ? (
-          <Empty>{q ? `'${q}'에 맞는 회원이 없어요.` : "해당하는 회원이 없어요."}</Empty>
+          <div className="py-3">
+            <Empty>{q ? `'${q}'에 맞는 회원이 없어요.` : "해당하는 회원이 없어요."}</Empty>
+          </div>
         ) : (
           <TableWrap>
             <thead>
@@ -90,10 +93,13 @@ export function UsersView({ members, q, filter }: { members: MemberRow[]; q: str
               {rows.map((m) => (
                 <tr key={m.id} className="hover:bg-paper">
                   <td className={td}>
-                    <Link href={`/admin/users/${m.id}`} className="font-semibold underline underline-offset-4">
-                      {memberName(m)}
+                    <Link href={`/admin/users/${m.id}`} className="flex items-center gap-2.5">
+                      <Avatar name={memberName(m)} size={32} />
+                      <span className="min-w-0">
+                        <span className="block font-semibold underline-offset-4 hover:underline">{memberName(m)}</span>
+                        {m.nickname && m.email && <span className="mt-0.5 block text-xs text-muted">{m.email}</span>}
+                      </span>
                     </Link>
-                    {m.nickname && m.email && <span className="mt-0.5 block text-xs text-muted">{m.email}</span>}
                   </td>
                   <td className={`${td} whitespace-nowrap`}>
                     {m.gender ? `${GENDER[m.gender]} · ${m.birthYear}` : <span className="text-muted">–</span>}

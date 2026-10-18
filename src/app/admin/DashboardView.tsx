@@ -3,7 +3,8 @@ import { kstTime, memberName, OUTCOME_LABEL, REPORT_REASON_LABEL, type MemberRow
 import { AGE_BANDS, ageBand, dailyCounts, funnel, reactionStats, STAGE_LABEL, type ReactionRow } from "@/lib/admin/stats";
 import { kstDay, kstYear } from "@/lib/day";
 import { ResolveButton, SuspendButton } from "./AdminButtons";
-import { AdminShell, AdminTitle, Chip, Empty, Panel, Stat, TableWrap, td, th } from "./ui";
+import { IconChat, IconFlag, IconFriends, IconHeart, IconPause, IconToday, IconTrend, IconUser } from "@/components/icons";
+import { AdminShell, AdminTitle, Chip, Empty, GroupTitle, Panel, Stat, TableWrap, td, th } from "./ui";
 
 const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : "–");
 
@@ -46,24 +47,88 @@ export function DashboardView({
 
   return (
     <AdminShell current="dashboard">
-      <AdminTitle title="대시보드" lead={`${kstTime(now.toISOString())} 기준 · 한국 시간`} />
+      <AdminTitle title="대시보드" lead={`${kstTime(now.toISOString())} 기준 (한국 시간)`} />
 
-      <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="전체 가입" value={members.length} sub={`최근 7일 +${signups7}`} />
-        <Stat label="검사 완료" value={scored.length} sub={`가입 대비 ${pct(scored.length, members.length)}`} />
-        <Stat
-          label="매칭 준비 완료"
-          value={ready.length}
-          sub={`남 ${readyActive.filter((m) => m.gender === "male").length} · 여 ${readyActive.filter((m) => m.gender === "female").length} (추천 중)`}
-        />
-        <Stat label="처리할 신고" value={openReports.length} sub={`이용 정지 ${suspended.length}명`} />
-        <Stat label="오늘 추천" value={recsToday} sub={`누적 ${recsAll}건`} />
-        <Stat label="보낸 관심" value={totals.interests} sub={`넘기기 ${totals.passes}건`} />
-        <Stat label="서로 관심" value={`${totals.mutualPairs}쌍`} sub="사진 공개" />
-        <Stat label="연결" value={`${totals.connectedPairs}쌍`} sub={`만남 피드백 ${feedback.length}건`} />
+      {/* 1. 처리할 일: 신고와 이용 정지를 먼저 본다 */}
+      <GroupTitle icon={<IconFlag size={18} />}>처리할 일</GroupTitle>
+      <div className="grid gap-4 lg:grid-cols-[1fr_18rem]">
+        <Panel
+          title={openReports.length ? `처리할 신고 ${openReports.length}건` : "처리할 신고가 없어요"}
+          lead="확인을 마친 신고는 '확인 완료'를 눌러주세요. 같은 사람을 서로 다른 3명이 신고하면 자동으로 정지돼요(ID로 찾을 수 없음 제외)."
+          aside={openReports.length ? <Chip tone="alert">확인 필요</Chip> : <Chip tone="moss">깨끗해요</Chip>}
+        >
+          {openReports.length === 0 ? (
+            <Empty>새 신고가 들어오면 여기와 메뉴에 숫자가 떠요.</Empty>
+          ) : (
+            <ul className="divide-y divide-line/70">
+              {openReports.map((r) => {
+                const target = byId.get(r.target);
+                return (
+                  <li key={r.id} className="flex flex-wrap items-start justify-between gap-3 py-3.5 first:pt-0 last:pb-0">
+                    <div className="min-w-0 flex-1 text-sm">
+                      <p className="flex flex-wrap items-center gap-1.5">
+                        <Link href={`/admin/users/${r.target}`} className="text-[15px] font-semibold underline underline-offset-4">
+                          {memberName(target)}
+                        </Link>
+                        {target?.suspended && <Chip tone="alert">정지</Chip>}
+                        <Chip>{REPORT_REASON_LABEL[r.reason] ?? r.reason}</Chip>
+                      </p>
+                      {r.detail && <p className="mt-1.5 whitespace-pre-line break-words text-ink-soft">{r.detail}</p>}
+                      <p className="mt-1.5 text-[13px] text-muted">
+                        <span className="tabular-nums">{kstTime(r.created_at)}</span>, 신고한 사람{" "}
+                        {r.reporter ? (
+                          <Link href={`/admin/users/${r.reporter}`} className="underline underline-offset-4">
+                            {memberName(byId.get(r.reporter))}
+                          </Link>
+                        ) : (
+                          "탈퇴한 회원"
+                        )}
+                      </p>
+                    </div>
+                    <ResolveButton reportId={r.id} />
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Panel>
+
+        <Panel title={`이용 정지 ${suspended.length}명`} icon={<IconPause size={18} />}>
+          {suspended.length === 0 ? (
+            <Empty>정지된 회원이 없어요.</Empty>
+          ) : (
+            <ul className="divide-y divide-line/70">
+              {suspended.map((m) => (
+                <li key={m.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                  <span className="min-w-0">
+                    <Link href={`/admin/users/${m.id}`} className="font-semibold underline underline-offset-4">
+                      {memberName(m)}
+                    </Link>
+                    <span className="mt-0.5 block text-muted">{m.suspendReason}</span>
+                  </span>
+                  <SuspendButton userId={m.id} suspended name={memberName(m)} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
       </div>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+      {/* 2. 회원: 얼마나 들어와서 어디까지 왔는지 */}
+      <GroupTitle icon={<IconFriends size={18} />}>회원</GroupTitle>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat icon={<IconUser size={18} />} label="전체 가입" value={members.length} sub={`최근 7일 +${signups7}`} />
+        <Stat icon={<IconTrend size={18} />} label="검사 완료" value={scored.length} sub={`가입 대비 ${pct(scored.length, members.length)}`} />
+        <Stat
+          icon={<IconHeart size={18} />}
+          label="매칭 준비 완료"
+          value={ready.length}
+          sub={`추천 중 남 ${readyActive.filter((m) => m.gender === "male").length}, 여 ${readyActive.filter((m) => m.gender === "female").length}`}
+        />
+        <Stat icon={<IconFlag size={18} />} label="처리할 신고" value={openReports.length} sub={`이용 정지 ${suspended.length}명`} alert={openReports.length > 0} />
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <Panel title="단계별 전환" lead="앞 단계를 지난 사람만 셉니다. 오른쪽 %는 바로 앞 단계 대비예요.">
           <ol className="space-y-3">
             {steps.map((s) => (
@@ -145,7 +210,14 @@ export function DashboardView({
           </TableWrap>
         </Panel>
 
-        <Panel title="최근 가입">
+        <Panel
+          title="최근 가입"
+          aside={
+            <Link href="/admin/users" className="text-sm text-muted underline underline-offset-4">
+              전체 보기
+            </Link>
+          }
+        >
           {members.length === 0 ? (
             <Empty>아직 가입한 사람이 없어요.</Empty>
           ) : (
@@ -169,91 +241,24 @@ export function DashboardView({
         </Panel>
       </div>
 
-      <Panel
-        className="mt-4"
-        title={`처리할 신고 ${openReports.length}건`}
-        lead="확인을 마친 신고는 '확인 완료'를 눌러주세요. 같은 사람을 서로 다른 3명이 신고하면 자동으로 정지돼요(ID로 찾을 수 없음 제외)."
-      >
-        {openReports.length === 0 ? (
-          <Empty>처리할 신고가 없어요.</Empty>
-        ) : (
-          <TableWrap>
-            <thead>
-              <tr>
-                <th className={th}>신고일</th>
-                <th className={th}>대상</th>
-                <th className={th}>신고한 사람</th>
-                <th className={th}>사유</th>
-                <th className={th}>내용</th>
-                <th className={th} />
-              </tr>
-            </thead>
-            <tbody>
-              {openReports.map((r) => {
-                const target = byId.get(r.target);
-                return (
-                  <tr key={r.id}>
-                    <td className={`${td} whitespace-nowrap tabular-nums`}>{kstTime(r.created_at)}</td>
-                    <td className={td}>
-                      <Link href={`/admin/users/${r.target}`} className="font-semibold underline underline-offset-4">
-                        {memberName(target)}
-                      </Link>
-                      {target?.suspended && <span className="ml-1.5"><Chip tone="alert">정지</Chip></span>}
-                    </td>
-                    <td className={td}>
-                      {r.reporter ? (
-                        <Link href={`/admin/users/${r.reporter}`} className="underline underline-offset-4">
-                          {memberName(byId.get(r.reporter))}
-                        </Link>
-                      ) : (
-                        "탈퇴한 회원"
-                      )}
-                    </td>
-                    <td className={`${td} whitespace-nowrap`}>{REPORT_REASON_LABEL[r.reason] ?? r.reason}</td>
-                    <td className={`${td} max-w-[18rem] whitespace-pre-line break-words text-ink-soft`}>{r.detail ?? ""}</td>
-                    <td className={td}>
-                      <ResolveButton reportId={r.id} />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </TableWrap>
-        )}
-      </Panel>
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <Panel title={`이용 정지 ${suspended.length}명`}>
-          {suspended.length === 0 ? (
-            <Empty>정지된 회원이 없어요.</Empty>
-          ) : (
-            <ul className="divide-y divide-line/70">
-              {suspended.map((m) => (
-                <li key={m.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                  <span className="min-w-0">
-                    <Link href={`/admin/users/${m.id}`} className="font-semibold underline underline-offset-4">
-                      {memberName(m)}
-                    </Link>
-                    <span className="mt-0.5 block text-muted">{m.suspendReason}</span>
-                  </span>
-                  <SuspendButton userId={m.id} suspended name={memberName(m)} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-
-        <Panel title="만남 피드백" lead="연락처가 공개된 뒤 회원이 남긴 답">
-          <ul className="space-y-2 text-sm">
-            {outcomeCounts.map((o) => (
-              <li key={o.k} className="flex justify-between">
-                <span>{OUTCOME_LABEL[o.k]}</span>
-                <span className="tabular-nums font-semibold">{o.n}</span>
-              </li>
-            ))}
-          </ul>
-        </Panel>
+      {/* 3. 매칭: 추천에서 연결까지 */}
+      <GroupTitle icon={<IconHeart size={18} />}>매칭</GroupTitle>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat icon={<IconToday size={18} />} label="지금 추천" value={recsToday} sub={`저녁 8시 묶음, 누적 ${recsAll}건`} />
+        <Stat icon={<IconHeart size={18} />} label="보낸 관심" value={totals.interests} sub={`넘기기 ${totals.passes}건`} />
+        <Stat icon={<IconHeart size={18} />} label="서로 관심" value={`${totals.mutualPairs}쌍`} sub="사진 공개" />
+        <Stat icon={<IconChat size={18} />} label="연결" value={`${totals.connectedPairs}쌍`} sub={`만남 피드백 ${feedback.length}건`} />
       </div>
+      <Panel className="mt-4" title="만남 피드백" lead="연락처가 공개된 뒤 회원이 남긴 답">
+        <ul className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+          {outcomeCounts.map((o) => (
+            <li key={o.k} className="flex justify-between border-b border-line/60 pb-2">
+              <span>{OUTCOME_LABEL[o.k]}</span>
+              <span className="font-semibold tabular-nums">{o.n}</span>
+            </li>
+          ))}
+        </ul>
+      </Panel>
     </AdminShell>
   );
 }
