@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { submitFriendRating } from "@/app/actions";
-import { PrimaryButton, PrimaryLink } from "@/components/buttons";
+import { PrimaryButton } from "@/components/buttons";
+import { OpenInBrowserLink } from "@/components/OpenInBrowserLink";
 import { LikertScale } from "@/components/scales";
 
 export function FriendForm({ token, items }: { token: string; items: { id: string; text: string }[] }) {
@@ -35,7 +36,8 @@ export function FriendForm({ token, items }: { token: string; items: { id: strin
           알아볼 수 있어요.
         </p>
         <div className="mt-8">
-          <PrimaryLink href="/">나도 검사해보기</PrimaryLink>
+          {/* 카카오톡 안에서 열렸으면 기본 브라우저로 넘겨서 연다 (가입·로그인이 카카오톡 창에 묶이지 않게) */}
+          <OpenInBrowserLink href="/">나도 검사해보기</OpenInBrowserLink>
         </div>
       </div>
     );
