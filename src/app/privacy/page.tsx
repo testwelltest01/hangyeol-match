@@ -53,7 +53,7 @@ const ROWS = [
 
 function H({ id, children }: { id?: string; children: React.ReactNode }) {
   return (
-    <h2 id={id} className="mt-10 scroll-mt-6 font-serif text-xl font-bold">
+    <h2 id={id} className="mt-10 scroll-mt-4 font-serif text-xl font-bold">
       {children}
     </h2>
   );

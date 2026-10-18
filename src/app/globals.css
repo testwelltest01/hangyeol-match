@@ -53,6 +53,8 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* 위쪽 바가 화면에 고정돼 있어서(Shell, 높이 52px), #바로가기로 움직일 때 제목이 바 밑에 가리지 않게 */
+  scroll-padding-top: calc(52px + env(safe-area-inset-top));
 }
 
 body {

@@ -98,7 +98,8 @@ export function AdminShell({ current, back, children }: { current?: AdminTab; ba
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-40 border-b border-line/70 bg-paper/85 pt-[env(safe-area-inset-top)] backdrop-blur-md lg:hidden">
+        {/* 좁은 화면의 위쪽 바는 화면에 고정 (당겨서 튕길 때 같이 끌려 내려오지 않게) */}
+        <header className="fixed inset-x-0 top-0 z-40 border-b border-line/70 bg-paper/85 pt-[env(safe-area-inset-top)] backdrop-blur-md lg:hidden">
           <div className="flex h-[52px] items-center justify-between gap-3 px-4">
             <Link href="/admin" className="font-serif text-[1.2rem] font-bold tracking-tight text-ink">
               {brand}
@@ -114,6 +115,7 @@ export function AdminShell({ current, back, children }: { current?: AdminTab; ba
             </div>
           </div>
         </header>
+        <div aria-hidden className="h-[calc(52px+env(safe-area-inset-top))] shrink-0 lg:hidden" />
 
         <main className="mx-auto w-full max-w-[1120px] flex-1 px-5 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6 lg:px-10 lg:pb-16 lg:pt-9">
           {back && (
@@ -191,7 +193,7 @@ export function AdminTitle({ title, lead, aside }: { title: string; lead?: React
 /** 대시보드처럼 패널이 많은 화면의 묶음 제목 */
 export function GroupTitle({ icon, children, id }: { icon?: ReactNode; children: ReactNode; id?: string }) {
   return (
-    <h2 id={id} className="mb-3 mt-10 flex scroll-mt-20 items-center gap-2 text-[15px] font-semibold text-ink-soft">
+    <h2 id={id} className="mb-3 mt-10 flex scroll-mt-4 items-center gap-2 text-[15px] font-semibold text-ink-soft">
       {icon && <span className="text-indigo">{icon}</span>}
       {children}
     </h2>
@@ -216,7 +218,7 @@ export function Panel({
   aside?: ReactNode;
 }) {
   return (
-    <section id={id} className={`min-w-0 scroll-mt-20 rounded-[20px] bg-surface px-5 py-5 ring-1 ring-line/80 ${className}`}>
+    <section id={id} className={`min-w-0 scroll-mt-4 rounded-[20px] bg-surface px-5 py-5 ring-1 ring-line/80 ${className}`}>
       <div className="flex items-start justify-between gap-3">
         <h2 className="flex items-center gap-2 text-[16px] font-semibold text-ink">
           {icon && <span className="text-indigo">{icon}</span>}

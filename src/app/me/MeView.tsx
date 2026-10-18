@@ -97,7 +97,7 @@ export function MeView({ setup, needsDrinking }: { setup: MySetup; needsDrinking
         <ListRow href="/report#extra" icon={<IconGrain size={20} />} label="더 알아보기" sub="짧은 시범 검사로 나를 더 알려요 (선택)" />
       </ListGroup>
 
-      <section id="app" className="scroll-mt-20">
+      <section id="app" className="scroll-mt-4">
         <h2 className="mb-2 px-1 text-[14px] font-semibold text-ink-soft">앱처럼 쓰기</h2>
         <div className="rounded-2xl bg-surface px-4 py-4 ring-1 ring-line/80">
           <p className="text-[14px] text-muted">홈 화면에 한결을 추가하면 앱처럼 바로 열리고, 알림도 받을 수 있어요.</p>

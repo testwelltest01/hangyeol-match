@@ -542,7 +542,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
         </Panel>
       )}
 
-      <section id="report" className="mt-10 scroll-mt-20">
+      <section id="report" className="mt-10 scroll-mt-4">
         <h2 className="text-[16px] font-semibold">회원이 보는 리포트</h2>
         {scores && setup ? (
           <div className="mt-4 max-w-[600px] rounded-[20px] bg-paper px-5 py-8 ring-1 ring-line/80 sm:px-8">

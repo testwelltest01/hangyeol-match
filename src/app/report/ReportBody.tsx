@@ -66,7 +66,7 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="mt-10 scroll-mt-20">
+    <section id={id} className="mt-10 scroll-mt-4">
       <h2 className="flex items-center gap-2 px-1 text-[1.1rem] font-semibold text-ink">
         {icon && <span className="text-indigo">{icon}</span>}
         {title}

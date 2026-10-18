@@ -38,7 +38,7 @@ export function SafetyActions({ targetId, name, connected }: { targetId: string;
   }
 
   return (
-    <section id="safety" className="mt-14 scroll-mt-6 border-t border-line pt-6 text-sm">
+    <section id="safety" className="mt-14 scroll-mt-4 border-t border-line pt-6 text-sm">
       {connected && (
         <button
           type="button"

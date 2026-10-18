@@ -41,7 +41,8 @@ export function Shell({
 }) {
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <header className="sticky top-0 z-40 border-b border-line/70 bg-paper/85 pt-[env(safe-area-inset-top)] backdrop-blur-md">
+      {/* 위쪽 바는 아래 탭처럼 화면에 고정한다. sticky면 iPhone에서 끝까지 당길 때(튕김) 페이지와 같이 끌려 내려온다 */}
+      <header className="fixed inset-x-0 top-0 z-40 border-b border-line/70 bg-paper/85 pt-[env(safe-area-inset-top)] backdrop-blur-md">
         <div className="mx-auto flex h-[52px] w-full max-w-[560px] items-center justify-between gap-3 px-3">
           {back ? (
             back.history ? (
@@ -72,6 +73,7 @@ export function Shell({
           </div>
         </div>
       </header>
+      <div aria-hidden className="h-[calc(52px+env(safe-area-inset-top))] shrink-0" />
 
       <main className={`mx-auto w-full max-w-[560px] flex-1 px-5 pt-6 ${tab ? "pb-[calc(6rem+env(safe-area-inset-bottom))]" : "pb-16"}`}>
         {children}
