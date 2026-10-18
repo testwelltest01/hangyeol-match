@@ -69,6 +69,8 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* 스크롤만 받고 두 번 탭·두 손가락 확대는 받지 않는다 (앱처럼) */
+  touch-action: pan-x pan-y;
   /* 위쪽 바가 화면에 고정돼 있어서(Shell, 높이 52px), #바로가기로 움직일 때 제목이 바 밑에 가리지 않게 */
   scroll-padding-top: calc(52px + env(safe-area-inset-top));
 }

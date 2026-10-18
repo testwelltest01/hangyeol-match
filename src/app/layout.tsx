@@ -38,6 +38,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // 앱처럼 확대되지 않게 (입력칸을 누를 때 iPhone이 저절로 확대하는 것도 막는다).
+  // iOS는 이 설정만으로는 두 손가락 확대를 막지 않아서 PwaRegister가 gesturestart도 막는다
+  maximumScale: 1,
+  userScalable: false,
   // 홈 화면 앱(iPhone)에서 화면 끝까지 그린다. 그래야 env(safe-area-inset-*)가 실제 값이 되어
   // 아래 탭이 홈 막대·둥근 모서리만큼, 위쪽 바가 상태 표시줄만큼 비켜 앉는다 (없으면 0이라 탭이 바닥에 붙는다)
   viewportFit: "cover",
