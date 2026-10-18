@@ -98,7 +98,7 @@ export function IllustrationPanel({ available, missing, consented, remaining, li
                     type="button"
                     disabled={pending}
                     onClick={() => run(() => setIllustrationShown(r.id, true))}
-                    className="rounded-full border border-ink px-4 py-2 text-sm font-semibold text-ink hover:bg-ink hover:text-white disabled:opacity-60"
+                    className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary hover:text-white disabled:opacity-60"
                   >
                     추천 카드에 보여주기
                   </button>

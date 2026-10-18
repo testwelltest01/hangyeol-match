@@ -26,7 +26,7 @@ export function ShareService() {
       <button
         type="button"
         onClick={share}
-        className="w-full rounded-full border border-ink px-6 py-3.5 font-semibold text-ink transition-colors hover:bg-ink hover:text-white"
+        className="w-full rounded-full border border-primary px-6 py-3.5 font-semibold text-primary transition-colors hover:bg-primary hover:text-white"
       >
         친구에게 한결 알려주기
       </button>

@@ -62,7 +62,7 @@ export function PersonCardView({
           href={`/people/${card.id}`}
           className={
             detailButton
-              ? "shrink-0 rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-ink-soft"
+              ? "shrink-0 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-soft"
               : "shrink-0 text-sm text-muted underline underline-offset-4"
           }
         >

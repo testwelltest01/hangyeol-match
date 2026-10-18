@@ -170,7 +170,7 @@ export function NextStepCard({ steps, doneTitle, showList = true }: { steps: Jou
   );
 }
 
-/** 두 결(쪽빛·이끼색)이 단계마다 가까워지다가 끝에서 만난다. 지나온 만큼 색이 찬다 */
+/** 두 결(기본 쪽빛·이끼색, 성별 테마에서는 아이콘의 분홍·하늘)이 단계마다 가까워지다가 끝에서 만난다. 지나온 만큼 색이 찬다 */
 export function Strands({ done, total }: { done: number; total: number }) {
   const pct = total ? (done / total) * 100 : 0;
   const knots = Array.from({ length: total }, (_, i) => 34 + (i * 232) / Math.max(1, total - 1));
@@ -181,8 +181,8 @@ export function Strands({ done, total }: { done: number; total: number }) {
       <g fill="none" strokeWidth="2.2" strokeLinecap="round">
         <path d={a} className="stroke-line" />
         <path d={b} className="stroke-line" />
-        <path d={a} className="stroke-indigo" pathLength={100} strokeDasharray={`${pct} 100`} />
-        <path d={b} className="stroke-moss" pathLength={100} strokeDasharray={`${pct} 100`} />
+        <path d={a} className="stroke-strand-a" pathLength={100} strokeDasharray={`${pct} 100`} />
+        <path d={b} className="stroke-strand-b" pathLength={100} strokeDasharray={`${pct} 100`} />
       </g>
       {knots.map((x, i) => (
         <circle

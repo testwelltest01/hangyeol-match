@@ -33,7 +33,7 @@ function StrictToggle({ value, onChange, label }: { value: boolean; onChange: (v
           role="radio"
           aria-checked={value === o.v}
           onClick={() => onChange(o.v)}
-          className={`rounded-full px-3.5 py-1.5 ${value === o.v ? "bg-ink font-semibold text-white" : "text-muted"}`}
+          className={`rounded-full px-3.5 py-1.5 ${value === o.v ? "bg-primary font-semibold text-white" : "text-muted"}`}
         >
           {o.text}
         </button>

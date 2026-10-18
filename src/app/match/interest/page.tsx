@@ -26,7 +26,7 @@ async function InterestGate() {
           title="아직 주고받은 관심이 없어요"
           body="오늘의 추천에서 마음이 가는 사람에게 관심을 보내보세요."
           action={
-            <Link href="/match" className="inline-block rounded-full border border-ink px-5 py-2.5 text-[15px] font-semibold text-ink hover:bg-ink hover:text-white">
+            <Link href="/match" className="inline-block rounded-full border border-primary px-5 py-2.5 text-[15px] font-semibold text-primary hover:bg-primary hover:text-white">
               오늘의 추천 보기
             </Link>
           }

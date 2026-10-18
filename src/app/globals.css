@@ -1,7 +1,9 @@
 @import "tailwindcss";
 
 /* 한결 디자인 토큰
-   쪽빛(전통 인디고)과 차가운 종이색. 비교가 필요할 때만 이끼색을 쓴다. */
+   쪽빛(전통 인디고)과 차가운 종이색. 비교가 필요할 때만 이끼색을 쓴다.
+   성별을 알면 강조색(indigo)·큰 버튼(primary)·진행 표시(strand)가 앱 아이콘 색으로 바뀐다:
+   남자는 하늘(data-theme="sky"), 여자는 분홍(data-theme="pink"). 글자색(ink)은 그대로 둔다. src/lib/theme.ts */
 @theme {
   --color-paper: #f3f5f8;
   --color-surface: #ffffff;
@@ -11,6 +13,12 @@
   --color-line: #d9dfea;
   --color-mist: #e7ebf3;
   --color-indigo: #2e45a8;
+  /* 큰 버튼·내 말풍선·선택된 항목 바탕 (성별 테마가 없으면 ink와 같다) */
+  --color-primary: #1f2f5c;
+  --color-primary-soft: #3a4a75;
+  /* 진행 표시(Strands)의 두 결 */
+  --color-strand-a: #2e45a8;
+  --color-strand-b: #5e7d63;
   --color-moss: #5e7d63;
   --color-alert: #a8402e;
   /* 받은 관심(하트)에만 쓴다 */
@@ -25,6 +33,22 @@
 
 :root {
   color-scheme: light;
+}
+
+/* 성별 테마: 흰 글씨를 올려도 읽히도록(대비 5:1 이상) 아이콘 색보다 한 단계 진하게. 진행 표시는 아이콘의 두 물결 색 그대로 */
+:root[data-theme="sky"] {
+  --color-indigo: #1170c4;
+  --color-primary: #1170c4;
+  --color-primary-soft: #0e5fa8;
+  --color-strand-a: #ef5f92;
+  --color-strand-b: #3aa6f0;
+}
+:root[data-theme="pink"] {
+  --color-indigo: #c82a62;
+  --color-primary: #c82a62;
+  --color-primary-soft: #ad2255;
+  --color-strand-a: #ef5f92;
+  --color-strand-b: #3aa6f0;
 }
 
 html {

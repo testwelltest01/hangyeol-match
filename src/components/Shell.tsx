@@ -2,7 +2,9 @@ import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { BackButton } from "@/components/BackButton";
 import { IconBack, IconChat, IconGrain, IconHeart, IconLetter, IconToday, IconUser } from "@/components/icons";
+import { ThemeSync } from "@/components/ThemeSync";
 import { loadTabBadges, type TabBadges } from "@/lib/match/badges";
+import { loadMyTheme } from "@/lib/theme-server";
 
 /** 하단 탭. 로그인 후 검사를 마친 사람의 다섯 화면 */
 export type TabId = "today" | "interest" | "chat" | "report" | "me";
@@ -76,7 +78,12 @@ export function Shell({
       </main>
 
       {tab ? (
-        <TabBar current={tab} />
+        <>
+          <TabBar current={tab} />
+          <Suspense fallback={null}>
+            <ThemeGate />
+          </Suspense>
+        </>
       ) : (
         <footer className="mx-auto w-full max-w-[560px] px-5 pb-8 text-sm text-muted">
           <Link href="/privacy" className="underline underline-offset-4">
@@ -102,9 +109,9 @@ function TabBar({ current }: { current: TabId }) {
               <Link
                 href={t.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex h-[60px] flex-col items-center justify-center gap-1 text-[11.5px] ${active ? "font-semibold text-ink" : "text-muted hover:text-ink"}`}
+                className={`flex h-[60px] flex-col items-center justify-center gap-1 text-[11.5px] ${active ? "font-semibold text-primary" : "text-muted hover:text-ink"}`}
               >
-                <span className={`relative flex h-7 w-12 items-center justify-center rounded-full ${active ? "bg-mist" : ""}`}>
+                <span className={`relative flex h-7 w-12 items-center justify-center rounded-full ${active ? "bg-primary/10" : ""}`}>
                   <t.Icon size={22} strong={active} />
                   {t.badge && (
                     <Suspense fallback={null}>
@@ -120,6 +127,11 @@ function TabBar({ current }: { current: TabId }) {
       </ul>
     </nav>
   );
+}
+
+/** 탭 화면마다 내 성별 테마를 확인해 기기에 기억한다 (남자 하늘, 여자 분홍) */
+async function ThemeGate() {
+  return <ThemeSync theme={await loadMyTheme()} />;
 }
 
 async function TabBadge({ kind, label }: { kind: keyof TabBadges; label: string }) {

@@ -30,7 +30,7 @@ export function ReactButtons({ targetId, mode }: { targetId: string; mode: "inte
           type="button"
           disabled={pending}
           onClick={() => send(yes)}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-ink px-4 py-3 font-semibold text-white disabled:bg-line disabled:text-muted"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-3 font-semibold text-white disabled:bg-line disabled:text-muted"
         >
           {mode === "interest" && <IconHeart size={18} strong />}
           {mode === "interest" ? "관심 있어요" : "수락하기"}

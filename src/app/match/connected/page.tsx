@@ -28,7 +28,7 @@ function chatNote(c: Connected): { note: string; waiting: boolean } {
 }
 
 const toInterest = (
-  <Link href="/match/interest" className="inline-block rounded-full border border-ink px-5 py-2.5 text-[15px] font-semibold text-ink hover:bg-ink hover:text-white">
+  <Link href="/match/interest" className="inline-block rounded-full border border-primary px-5 py-2.5 text-[15px] font-semibold text-primary hover:bg-primary hover:text-white">
     관심 보기
   </Link>
 );

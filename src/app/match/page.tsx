@@ -43,7 +43,7 @@ function todayState(c: PersonCard, chatAvailable: boolean): { actions: ReactNode
   }
 }
 
-const secondaryLink = "inline-block rounded-full border border-ink px-5 py-2.5 text-[15px] font-semibold text-ink hover:bg-ink hover:text-white";
+const secondaryLink = "inline-block rounded-full border border-primary px-5 py-2.5 text-[15px] font-semibold text-primary hover:bg-primary hover:text-white";
 
 async function TodayGate() {
   const data = await loadMatch();

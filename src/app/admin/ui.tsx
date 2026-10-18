@@ -11,6 +11,7 @@ import {
   IconGrid,
   IconTrend,
 } from "@/components/icons";
+import { ClearTheme } from "@/components/ThemeSync";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type AdminTab = "dashboard" | "users" | "trends" | "lpa" | "extra";
@@ -55,6 +56,7 @@ const brand = (
 export function AdminShell({ current, back, children }: { current?: AdminTab; back?: { href: string; label: string }; children: ReactNode }) {
   return (
     <div className="flex min-h-full flex-1">
+      <ClearTheme />
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-line/80 bg-mist/40 px-3 py-6 lg:flex">
         <Link href="/admin" className="px-3 font-serif text-xl font-bold tracking-tight text-ink">
           {brand}

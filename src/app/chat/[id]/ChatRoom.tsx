@@ -196,7 +196,7 @@ export function ChatRoom({ otherId, name, initialMessages, initialState, initial
                 <div className={`flex items-end gap-1.5 ${m.mine ? "flex-row-reverse" : ""}`}>
                   <p
                     className={`max-w-[78%] whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-[15px] leading-relaxed ${
-                      m.mine ? "rounded-br-md bg-ink text-white" : "rounded-bl-md border border-line bg-surface text-ink"
+                      m.mine ? "rounded-br-md bg-primary text-white" : "rounded-bl-md border border-line bg-surface text-ink"
                     } ${m.body === null ? "italic opacity-70" : ""}`}
                   >
                     {m.body ?? "보관 기간이 지나 지워진 메시지예요"}
@@ -257,7 +257,7 @@ export function ChatRoom({ otherId, name, initialMessages, initialState, initial
               <button
                 type="submit"
                 disabled={sending || !text.trim()}
-                className="shrink-0 rounded-xl bg-ink px-4 py-3 font-semibold text-white disabled:bg-line disabled:text-muted"
+                className="shrink-0 rounded-xl bg-primary px-4 py-3 font-semibold text-white disabled:bg-line disabled:text-muted"
               >
                 보내기
               </button>
@@ -334,7 +334,7 @@ function ContactPanel({
         <p className="text-[15px]">
           <strong>{name}님</strong>이 연락처를 주고받고 싶어해요.
         </p>
-        <button type="button" disabled={pending} onClick={() => onToggle(true)} className="shrink-0 rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
+        <button type="button" disabled={pending} onClick={() => onToggle(true)} className="shrink-0 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
           연락처 전달
         </button>
       </div>
@@ -357,7 +357,7 @@ function ContactPanel({
         type="button"
         disabled={pending}
         onClick={() => onToggle(true)}
-        className="shrink-0 rounded-full border border-ink px-4 py-2 text-sm font-semibold text-ink hover:bg-ink hover:text-white disabled:opacity-60"
+        className="shrink-0 rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary hover:text-white disabled:opacity-60"
       >
         연락처 전달
       </button>

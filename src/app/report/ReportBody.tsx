@@ -37,7 +37,7 @@ function ExtraCards({ cards, admin }: { cards: ExtraCard[]; admin: boolean }) {
               {admin ? (
                 <span className="text-sm text-muted">아직 안 했어요</span>
               ) : (
-                <Link href={`/extra/${c.id}`} className="shrink-0 rounded-full border border-ink px-4 py-1.5 text-sm font-semibold text-ink hover:bg-ink hover:text-white">
+                <Link href={`/extra/${c.id}`} className="shrink-0 rounded-full border border-primary px-4 py-1.5 text-sm font-semibold text-primary hover:bg-primary hover:text-white">
                   시작하기
                 </Link>
               )}
@@ -77,7 +77,7 @@ function Section({
   );
 }
 
-const pill = "inline-block rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white hover:bg-ink-soft";
+const pill = "inline-block rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-soft";
 
 export function ReportParts({
   nickname,

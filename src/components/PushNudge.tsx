@@ -78,7 +78,7 @@ export function PushNudge() {
             type="button"
             disabled={busy}
             onClick={turnOn}
-            className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white disabled:bg-line disabled:text-muted"
+            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:bg-line disabled:text-muted"
           >
             {busy ? "켜는 중" : "알림 켜기"}
           </button>

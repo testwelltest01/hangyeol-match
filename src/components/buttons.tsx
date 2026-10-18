@@ -19,7 +19,7 @@ export function PrimaryButton({
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className="w-full rounded-full bg-ink px-6 py-4 text-base font-semibold text-white transition-colors hover:bg-ink-soft disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
+      className="w-full rounded-full bg-primary px-6 py-4 text-base font-semibold text-white transition-colors hover:bg-primary-soft disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
     >
       {children}
     </button>
@@ -30,7 +30,7 @@ export function PrimaryLink({ href, children }: { href: string; children: ReactN
   return (
     <Link
       href={href}
-      className="block w-full rounded-full bg-ink px-6 py-4 text-center text-base font-semibold text-white transition-colors hover:bg-ink-soft"
+      className="block w-full rounded-full bg-primary px-6 py-4 text-center text-base font-semibold text-white transition-colors hover:bg-primary-soft"
     >
       {children}
     </Link>

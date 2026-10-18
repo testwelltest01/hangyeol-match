@@ -57,7 +57,7 @@ export function InviteBox({ initialToken, count, minCount }: { initialToken: str
         type="button"
         onClick={() => (link ? share(link) : makeLink())}
         disabled={pending}
-        className="mt-4 w-full rounded-full border border-ink px-6 py-3.5 font-semibold text-ink transition-colors hover:bg-ink hover:text-white disabled:opacity-60"
+        className="mt-4 w-full rounded-full border border-primary px-6 py-3.5 font-semibold text-primary transition-colors hover:bg-primary hover:text-white disabled:opacity-60"
       >
         {pending ? "링크 만드는 중" : link ? "평가 링크 보내기" : "평가 링크 만들기"}
       </button>

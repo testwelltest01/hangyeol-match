@@ -27,7 +27,7 @@ export function SecondaryLink({ href, children }: { href: string; children: Reac
   return (
     <Link
       href={href}
-      className="block w-full rounded-full border border-ink px-6 py-3.5 text-center font-semibold text-ink transition-colors hover:bg-ink hover:text-white"
+      className="block w-full rounded-full border border-primary px-6 py-3.5 text-center font-semibold text-primary transition-colors hover:bg-primary hover:text-white"
     >
       {children}
     </Link>

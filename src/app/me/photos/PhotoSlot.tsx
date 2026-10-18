@@ -147,7 +147,7 @@ export function PhotoSlot({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={disabled}
-            className="w-full rounded-full bg-ink px-5 py-3.5 font-semibold text-white disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
+            className="w-full rounded-full bg-primary px-5 py-3.5 font-semibold text-white disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
           >
             {busy
               ? "AI가 사진을 보는 중"
@@ -166,7 +166,7 @@ export function PhotoSlot({
               type="button"
               onClick={() => galleryRef.current?.click()}
               disabled={disabled}
-              className="w-full rounded-full border border-ink px-5 py-3 font-semibold text-ink transition-colors hover:bg-ink hover:text-white disabled:cursor-not-allowed disabled:border-line disabled:text-muted disabled:hover:bg-transparent"
+              className="w-full rounded-full border border-primary px-5 py-3 font-semibold text-primary transition-colors hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:border-line disabled:text-muted disabled:hover:bg-transparent"
             >
               갤러리에서 고르기
             </button>
