@@ -98,7 +98,7 @@ export function AdminShell({ current, back, children }: { current?: AdminTab; ba
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-40 border-b border-line/70 bg-paper/85 backdrop-blur-md lg:hidden">
+        <header className="sticky top-0 z-40 border-b border-line/70 bg-paper/85 pt-[env(safe-area-inset-top)] backdrop-blur-md lg:hidden">
           <div className="flex h-[52px] items-center justify-between gap-3 px-4">
             <Link href="/admin" className="font-serif text-[1.2rem] font-bold tracking-tight text-ink">
               {brand}
@@ -130,7 +130,7 @@ export function AdminShell({ current, back, children }: { current?: AdminTab; ba
 
         <nav
           aria-label="관리 메뉴"
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-line/80 bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-line/80 bg-surface/95 pb-[max(env(safe-area-inset-bottom),0.375rem)] backdrop-blur-md lg:hidden"
         >
           <ul className="grid grid-cols-5">
             {TABS.map((t) => {

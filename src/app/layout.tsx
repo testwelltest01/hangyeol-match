@@ -38,6 +38,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // 홈 화면 앱(iPhone)에서 화면 끝까지 그린다. 그래야 env(safe-area-inset-*)가 실제 값이 되어
+  // 아래 탭이 홈 막대·둥근 모서리만큼, 위쪽 바가 상태 표시줄만큼 비켜 앉는다 (없으면 0이라 탭이 바닥에 붙는다)
+  viewportFit: "cover",
   themeColor: "#f3f5f8",
 };
 

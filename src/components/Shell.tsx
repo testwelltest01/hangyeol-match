@@ -41,7 +41,7 @@ export function Shell({
 }) {
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <header className="sticky top-0 z-40 border-b border-line/70 bg-paper/85 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-line/70 bg-paper/85 pt-[env(safe-area-inset-top)] backdrop-blur-md">
         <div className="mx-auto flex h-[52px] w-full max-w-[560px] items-center justify-between gap-3 px-3">
           {back ? (
             back.history ? (
@@ -99,7 +99,7 @@ function TabBar({ current }: { current: TabId }) {
   return (
     <nav
       aria-label="주요 메뉴"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-line/80 bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-line/80 bg-surface/95 pb-[max(env(safe-area-inset-bottom),0.375rem)] backdrop-blur-md"
     >
       <ul className="mx-auto grid max-w-[560px] grid-cols-5">
         {TABS.map((t) => {
