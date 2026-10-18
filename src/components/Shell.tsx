@@ -1,70 +1,141 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
-import { AppNav, PublicNav, type NavId } from "@/components/ui";
+import { Suspense, type ReactNode } from "react";
+import { BackButton } from "@/components/BackButton";
+import { IconBack, IconChat, IconGrain, IconHeart, IconLetter, IconToday, IconUser } from "@/components/icons";
+import { loadTabBadges, type TabBadges } from "@/lib/match/badges";
+
+/** 하단 탭. 로그인 후 검사를 마친 사람의 다섯 화면 */
+export type TabId = "today" | "interest" | "chat" | "report" | "me";
+
+const TABS: { id: TabId; href: string; label: string; Icon: typeof IconToday; badge?: keyof TabBadges }[] = [
+  { id: "today", href: "/match", label: "오늘", Icon: IconToday, badge: "today" },
+  { id: "interest", href: "/match/interest", label: "관심", Icon: IconHeart, badge: "interest" },
+  { id: "chat", href: "/match/connected", label: "대화", Icon: IconChat, badge: "chat" },
+  { id: "report", href: "/report", label: "내 결", Icon: IconGrain },
+  { id: "me", href: "/me", label: "내 정보", Icon: IconUser },
+];
+
+/** 위쪽 뒤로가기. href로 정해진 곳에 가거나, history면 브라우저 뒤로(처음 연 화면이면 href) */
+export type Back = { href: string; label?: string; history?: boolean };
 
 /**
- * 모든 화면의 공통 틀: 상단 워드마크·메뉴 + 좁은 본문 폭.
- * nav를 주면 로그인 후 메뉴, 아니면 편지 링크 옆에 right를 붙인다. header는 오른쪽 전체를 바꾼다.
+ * 모든 화면의 공통 틀.
+ * - 위: 고정 바. 탭 화면은 워드마크, 하위 화면은 뒤로가기. 오른쪽에 만든 사람의 편지(시험 기간이라 늘 위에 둔다)
+ * - 아래: tab을 주면 고정 탭(오늘·관심·대화·내 결·내 정보)과 답할 차례 숫자
  */
 export function Shell({
   children,
-  nav,
+  tab,
+  back,
   right,
-  header,
+  hideLetter = false,
 }: {
   children: ReactNode;
-  nav?: NavId;
+  tab?: TabId;
+  back?: Back;
+  /** 위쪽 바 오른쪽에 덧붙이는 것 (로그인 전 화면의 '로그인' 등) */
   right?: ReactNode;
-  header?: ReactNode;
+  hideLetter?: boolean;
 }) {
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <header className="mx-auto flex w-full max-w-[560px] items-center justify-between px-5 pt-5">
-        <Link href="/" className="font-serif text-xl font-bold tracking-tight text-ink">
-          한결
-        </Link>
-        {header ?? (nav ? <AppNav current={nav} /> : <PublicNav>{right}</PublicNav>)}
+      <header className="sticky top-0 z-40 border-b border-line/70 bg-paper/85 backdrop-blur-md">
+        <div className="mx-auto flex h-[52px] w-full max-w-[560px] items-center justify-between gap-3 px-3">
+          {back ? (
+            back.history ? (
+              <BackButton fallback={back.href} label={back.label ?? "뒤로"} />
+            ) : (
+              <Link href={back.href} className="-ml-1 flex h-10 items-center gap-0.5 rounded-full pl-1 pr-3 text-[15px] text-ink hover:bg-mist">
+                <IconBack size={22} />
+                {back.label ?? "뒤로"}
+              </Link>
+            )
+          ) : (
+            <Link href={tab ? "/match" : "/"} className="px-2 font-serif text-[1.3rem] font-bold tracking-tight text-ink">
+              한결
+            </Link>
+          )}
+          <div className="flex items-center gap-1 text-[15px]">
+            {right}
+            {!hideLetter && (
+              <Link
+                href="/letter"
+                className="flex h-10 items-center gap-1.5 rounded-full px-3 text-muted hover:bg-mist hover:text-ink"
+                aria-label="만든 사람의 편지"
+              >
+                <IconLetter size={20} />
+                <span className="text-[14px]">편지</span>
+              </Link>
+            )}
+          </div>
+        </div>
       </header>
-      <main className="mx-auto w-full max-w-[560px] flex-1 px-5 pb-16 pt-8">{children}</main>
-      <footer className="mx-auto w-full max-w-[560px] px-5 pb-8 text-sm text-muted">
-        <Link href="/privacy" className="underline underline-offset-4">
-          개인정보처리방침
-        </Link>
-      </footer>
+
+      <main className={`mx-auto w-full max-w-[560px] flex-1 px-5 pt-6 ${tab ? "pb-[calc(6rem+env(safe-area-inset-bottom))]" : "pb-16"}`}>
+        {children}
+      </main>
+
+      {tab ? (
+        <TabBar current={tab} />
+      ) : (
+        <footer className="mx-auto w-full max-w-[560px] px-5 pb-8 text-sm text-muted">
+          <Link href="/privacy" className="underline underline-offset-4">
+            개인정보처리방침
+          </Link>
+        </footer>
+      )}
     </div>
   );
 }
 
-export function PrimaryButton({
-  children,
-  disabled,
-  type = "button",
-  onClick,
-}: {
-  children: ReactNode;
-  disabled?: boolean;
-  type?: "button" | "submit";
-  onClick?: () => void;
-}) {
+function TabBar({ current }: { current: TabId }) {
   return (
-    <button
-      type={type}
-      disabled={disabled}
-      onClick={onClick}
-      className="w-full rounded-full bg-ink px-6 py-4 text-base font-semibold text-white transition-colors hover:bg-ink-soft disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
+    <nav
+      aria-label="주요 메뉴"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-line/80 bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md"
     >
-      {children}
-    </button>
+      <ul className="mx-auto grid max-w-[560px] grid-cols-5">
+        {TABS.map((t) => {
+          const active = t.id === current;
+          return (
+            <li key={t.id}>
+              <Link
+                href={t.href}
+                aria-current={active ? "page" : undefined}
+                className={`flex h-[60px] flex-col items-center justify-center gap-1 text-[11.5px] ${active ? "font-semibold text-ink" : "text-muted hover:text-ink"}`}
+              >
+                <span className={`relative flex h-7 w-12 items-center justify-center rounded-full ${active ? "bg-mist" : ""}`}>
+                  <t.Icon size={22} strong={active} />
+                  {t.badge && (
+                    <Suspense fallback={null}>
+                      <TabBadge kind={t.badge} label={t.label} />
+                    </Suspense>
+                  )}
+                </span>
+                {t.label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
 
-export function PrimaryLink({ href, children }: { href: string; children: ReactNode }) {
+async function TabBadge({ kind, label }: { kind: keyof TabBadges; label: string }) {
+  const n = (await loadTabBadges())[kind];
+  if (!n) return null;
   return (
-    <Link
-      href={href}
-      className="block w-full rounded-full bg-ink px-6 py-4 text-center text-base font-semibold text-white transition-colors hover:bg-ink-soft"
-    >
-      {children}
-    </Link>
+    <>
+      <span
+        aria-hidden
+        className="absolute -top-1 right-0 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose px-1 text-[10.5px] font-semibold leading-none text-white ring-2 ring-surface"
+      >
+        {n > 99 ? "99+" : n}
+      </span>
+      <span className="sr-only">
+        ({label} {n}개)
+      </span>
+    </>
   );
 }

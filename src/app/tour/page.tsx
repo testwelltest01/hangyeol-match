@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
-import { AppNav, PageTitle } from "@/components/ui";
+import { PageTitle } from "@/components/ui";
 import { loadMySetup, setupSteps, type MySetup } from "@/lib/match/me";
 import { getProgress, type Progress } from "@/lib/progress";
 import { createClient, getUserId } from "@/lib/supabase/server";
@@ -108,7 +108,7 @@ async function TourGate() {
 
   return (
     <Shell
-      header={progress === "report" ? <AppNav /> : undefined}
+      back={{ href: progress === "report" ? "/match" : "/", label: "뒤로", history: true }}
       right={
         progress === "login" ? (
           <Link href="/login" className="text-[15px] text-muted hover:text-ink">

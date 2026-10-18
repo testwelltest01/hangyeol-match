@@ -66,5 +66,7 @@
 ## UI 문구
 
 - 친근한 존댓말, 짧고 구체적으로. 같은 행동을 하는 버튼을 한 화면에 두 번 두지 않는다
-- 상단 메뉴: 로그인 후 `추천 / 내 결 / 내 정보 / 편지`(`<Shell nav="…">` → `AppNav`), 로그인 전 `편지`(+ `right`로 로그인 등). 시험 기간이라 만든 사람의 편지(`/letter`)는 하단이 아니라 상단 메뉴에 둔다
+- 화면 틀(`src/components/Shell.tsx`): 위쪽 고정 바 + 아래쪽 고정 탭. 탭 화면은 `<Shell tab="today|interest|chat|report|me">`(오늘 `/match`, 관심 `/match/interest`, 대화 `/match/connected`, 내 결 `/report`, 내 정보 `/me`). 탭 숫자는 내가 답할 차례만(`src/lib/match/badges.ts`: 오늘 추천 중 안 답한 사람, 서로 관심이라 수락할 차례, 안 읽은 메시지·연락처 전달 요청). 하위 화면은 탭 없이 `back`(사람 자세히·편지·둘러보기·처리방침은 `history`로 브라우저 뒤로, 내 정보 하위는 `/me`, 대화방은 대화 탭, 더 알아보기는 내 결). 로그인 전·검사 전 화면은 워드마크 + `right`(로그인 등). 시험 기간이라 만든 사람의 편지(`/letter`)는 위쪽 바 오른쪽에 늘 둔다(편지 화면 자체는 `hideLetter`)
+- 화면 조각(`src/components/app-ui.tsx`): `PageHeader`(제목만 고운바탕), `ListGroup`/`ListRow`(하얀 묶음 목록), `StatusChip`(이끼=완료, 쪽빛=내 차례, 회색=기다림), `EmptyState`(빈 화면은 할 일을 알려준다), `Avatar`(사진 공개 전 이름 첫 글자), `NextStepCard`(매칭까지 남은 단계와 다음 버튼, 두 결이 모이는 진행 표시 `Strands`), `Callout`. 아이콘은 `src/components/icons.tsx`(24px, 1.75 선). 큰 버튼 `PrimaryButton`/`PrimaryLink`는 `src/components/buttons.tsx`(Shell은 server-only라 클라이언트에서 import하지 않는다)
+- 다음 단계로 자연스럽게: 매칭 준비 중이면 오늘 탭·내 정보에 `NextStepCard`, 리포트 맨 위에 다음 할 일 안내, 사진 화면 끝 버튼은 '다음: (다음 단계 이름)'(`nextSetupStep`)
 - 디자인 토큰은 `src/app/globals.css` (paper, ink, indigo, moss). 본문 Pretendard, 제목 Gowun Batang

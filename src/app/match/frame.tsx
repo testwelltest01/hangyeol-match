@@ -2,6 +2,8 @@ import "server-only";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cache, Suspense, type ReactNode } from "react";
+import { Avatar, PageHeader, StatusChip } from "@/components/app-ui";
+import { IconChevron } from "@/components/icons";
 import { Loading } from "@/components/Loading";
 import { PushNudge } from "@/components/PushNudge";
 import { personLine } from "@/components/PersonCard";
@@ -18,13 +20,6 @@ import { getUserId } from "@/lib/supabase/server";
 
 export type MatchTab = "today" | "interest" | "connected";
 
-const TABS: { id: MatchTab; href: string; label: string }[] = [
-  { id: "today", href: "/match", label: "오늘" },
-  { id: "interest", href: "/match/interest", label: "관심" },
-  { id: "connected", href: "/match/connected", label: "연결" },
-];
-
-/** needsDrinking: 음주 문항(2026-10-v3) 전에 검사를 마쳐서 아직 답하지 않음 */
 export type MatchData = { setup: MySetup; ready: boolean; d: Dashboard; needsDrinking: boolean };
 
 /**
@@ -57,63 +52,13 @@ export const loadMatch = cache(async (): Promise<MatchData> => {
   return { setup, ready, d, needsDrinking: !scores.dealbreakers.drinking };
 });
 
-/** 연결 탭에서 내가 봐야 할 사람: 새 메시지, 상대의 연락처 전달 요청, 만남 피드백 */
-export function needsAttention(c: Dashboard["connected"][number]): boolean {
-  const chat = c.chat;
-  return c.needsFeedback || Boolean(chat && !chat.closed && (chat.unread > 0 || (chat.contactTheirs && !chat.contactMine && !chat.exchanged)));
-}
-
-/** 탭 옆 숫자: 내가 답해야 할 사람 수 */
-async function TabCount({ tab }: { tab: MatchTab }) {
-  const { d } = await loadMatch();
-  const n = tab === "interest" ? d.photos.length : tab === "connected" ? d.connected.filter(needsAttention).length : 0;
-  if (!n) return null;
+/** 추천 화면 공통 틀: 하단 탭(오늘·관심·대화)과 화면 제목. 제목은 정적이고 본문만 나중에 채운다 */
+export function MatchFrame({ current, title, sub, children }: { current: MatchTab; title: string; sub?: string; children: ReactNode }) {
   return (
-    <>
-      <span
-        aria-hidden
-        className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo px-1.5 text-xs font-semibold text-white"
-      >
-        {n}
-      </span>
-      <span className="sr-only">(답할 사람 {n}명)</span>
-    </>
-  );
-}
-
-/** 추천 화면 공통 틀: 상단 메뉴, 오늘·관심·연결 탭. 탭은 정적이고 숫자와 본문만 나중에 채운다 */
-export function MatchFrame({ current, title, children }: { current: MatchTab; title: string; children: ReactNode }) {
-  return (
-    <Shell nav="match">
-      <h1 className="sr-only">{title}</h1>
-      <nav aria-label="추천 보기" className="sticky top-0 z-10 grid grid-cols-3 border-b border-line bg-paper">
-        {TABS.map((t) => {
-          const active = t.id === current;
-          return (
-            <Link
-              key={t.id}
-              href={t.href}
-              aria-current={active ? "page" : undefined}
-              className={`relative flex items-center justify-center gap-1.5 py-3 text-[16px] ${
-                active
-                  ? "font-semibold text-ink after:absolute after:inset-x-3 after:-bottom-px after:h-0.5 after:rounded-full after:bg-ink"
-                  : "text-muted hover:text-ink"
-              }`}
-            >
-              {t.label}
-              {t.id !== "today" && (
-                <Suspense fallback={null}>
-                  <TabCount tab={t.id} />
-                </Suspense>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-      <div className="pt-7">
-        <PushNudge />
-        <Suspense fallback={<Loading />}>{children}</Suspense>
-      </div>
+    <Shell tab={current === "today" ? "today" : current === "interest" ? "interest" : "chat"}>
+      <PageHeader title={title} sub={sub} />
+      <PushNudge />
+      <Suspense fallback={<Loading />}>{children}</Suspense>
     </Shell>
   );
 }
@@ -146,17 +91,18 @@ export function MatchNotices({ data, showPaused = false }: { data: MatchData; sh
   );
 }
 
+/** 사람 목록 묶음: 제목과 짧은 설명, 하얀 바탕 안의 줄들 */
 export function Section({ title, lead, children }: { title: string; lead?: string; children: ReactNode }) {
   return (
     <section>
-      <h2 className="font-serif text-xl font-bold">{title}</h2>
-      {lead && <p className="mt-1.5 text-[15px] text-ink-soft">{lead}</p>}
-      <div className="mt-4 space-y-3">{children}</div>
+      <h2 className="px-1 text-[15px] font-semibold text-ink">{title}</h2>
+      {lead && <p className="mt-1 px-1 text-[13.5px] leading-relaxed text-muted">{lead}</p>}
+      <div className="mt-3 divide-y divide-line/70 overflow-hidden rounded-2xl bg-surface ring-1 ring-line/80">{children}</div>
     </section>
   );
 }
 
-/** 목록 한 줄. 내가 할 일이 있으면 쪽빛, 기다리는 중이면 회색으로 적는다 */
+/** 목록 한 줄. 내가 할 일이 있으면 쪽빛 칩, 기다리는 중이면 회색 칩 */
 export function PairRow({
   card,
   note,
@@ -172,19 +118,14 @@ export function PairRow({
   sub?: string;
 }) {
   return (
-    <Link
-      href={href ?? `/people/${card.id}`}
-      className="flex items-center justify-between gap-4 rounded-2xl border border-line bg-surface px-5 py-4"
-    >
-      <span className="min-w-0">
-        <span className="font-semibold">{card.nickname}</span>
-        <span className="mt-0.5 block text-sm text-muted">{sub ?? personLine(card)}</span>
+    <Link href={href ?? `/people/${card.id}`} className="flex items-center gap-3.5 px-4 py-3.5 transition-colors hover:bg-mist/60">
+      <Avatar name={card.nickname} size={44} />
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold text-ink">{card.nickname}</span>
+        <span className="mt-0.5 block truncate text-[13px] text-muted">{sub ?? personLine(card)}</span>
       </span>
-      <span className={`shrink-0 text-sm ${waiting ? "text-muted" : "font-semibold text-indigo"}`}>{note}</span>
+      <StatusChip tone={waiting ? "wait" : "turn"}>{note}</StatusChip>
+      <IconChevron size={18} className="-mr-1 shrink-0 text-muted/70" />
     </Link>
   );
-}
-
-export function EmptyText({ children }: { children: ReactNode }) {
-  return <p className="leading-relaxed text-ink-soft">{children}</p>;
 }

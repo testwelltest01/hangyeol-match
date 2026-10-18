@@ -9,7 +9,7 @@ import { getUserId } from "@/lib/supabase/server";
 export default function SignupPage() {
   return (
     <Shell>
-      <h1 className="font-serif text-3xl font-bold">가입하기</h1>
+      <h1 className="font-serif text-[1.65rem] font-bold leading-tight">가입하기</h1>
       <p className="mt-3 text-ink-soft">이메일로 받은 인증 코드로 확인한 뒤, 다음부터 쓸 비밀번호를 만들어요.</p>
       <Suspense
         fallback={

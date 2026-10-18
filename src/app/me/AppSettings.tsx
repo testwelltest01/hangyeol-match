@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PrimaryButton } from "@/components/Shell";
+import { PrimaryButton } from "@/components/buttons";
 import { Notice } from "@/components/ui";
 import {
   currentSubscription,

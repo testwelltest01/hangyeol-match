@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
+import { Avatar } from "@/components/app-ui";
 import { LikedBadge } from "@/components/LikedBadge";
 import { Loading } from "@/components/Loading";
 import { personLine } from "@/components/PersonCard";
 import { ReactButtons } from "@/components/ReactButtons";
-import { PrimaryLink, Shell } from "@/components/Shell";
+import { PrimaryLink } from "@/components/buttons";
+import { Shell } from "@/components/Shell";
 import { Notice } from "@/components/ui";
 import { getChatRoom, unreadCounts } from "@/lib/chat/server";
 import { decryptText } from "@/lib/crypto";
@@ -28,7 +30,7 @@ import { ZoomImage } from "@/components/ZoomImage";
 
 export default function PersonPage({ params }: PageProps<"/people/[id]">) {
   return (
-    <Shell nav="match">
+    <Shell back={{ href: "/match", label: "뒤로", history: true }}>
       <Suspense fallback={<Loading />}>
         <PersonGate params={params} />
       </Suspense>
@@ -114,14 +116,19 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
 
   return (
     <article>
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="font-serif text-[1.9rem] font-bold leading-tight">{name}</h1>
+      <div className="flex items-center gap-4">
+        {!showPhotos && !illustrationUrl && <Avatar name={name} size={56} />}
+        <div className="min-w-0 flex-1">
+          <h1 className="font-serif text-[1.8rem] font-bold leading-tight">{name}</h1>
+          <p className="mt-0.5 text-[14px] text-muted">{personLine({ birthYear: profile.data.birth_year, region: mp.data.region, height: mp.data.height })}</p>
+        </div>
         {stage === "new" && pair.theirs?.interest === true && <LikedBadge />}
       </div>
-      <p className="mt-1 text-muted">{personLine({ birthYear: profile.data.birth_year, region: mp.data.region, height: mp.data.height })}</p>
 
-      <p className="mt-6 border-l-2 border-indigo pl-3 font-serif text-[1.05rem] leading-relaxed">{reason}</p>
-      {talk && <p className="mt-3 text-ink-soft">{talk}</p>}
+      <div className="mt-5 rounded-[22px] bg-surface px-5 py-4 ring-1 ring-line/80">
+        <p className="font-serif text-[1.05rem] leading-relaxed text-ink">{reason}</p>
+        {talk && <p className="mt-2 text-[14.5px] text-ink-soft">{talk}</p>}
+      </div>
 
       {!showPhotos && illustrationUrl && (
         <section className="mt-8">
@@ -149,7 +156,7 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
         </section>
       )}
 
-      <section className="mt-8">
+      <section className="mt-6 rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
         <h2 className="text-sm font-semibold text-muted">자기소개</h2>
         <p className="mt-2 whitespace-pre-line leading-relaxed">{mp.data.intro}</p>
         {chips.length > 0 && (
@@ -164,7 +171,7 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
       </section>
 
       {extraChips.length > 0 && (
-        <section className="mt-8">
+        <section className="mt-4 rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
           <h2 className="text-sm font-semibold text-muted">더 알아본 {name}님</h2>
           {extraCommon.length > 0 && (
             <ul className="mt-3 space-y-1.5 rounded-xl bg-mist px-4 py-3 text-[15px]">
@@ -192,7 +199,7 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
         </section>
       )}
 
-      <section className="mt-8">
+      <section className="mt-4 rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
         <h2 className="text-sm font-semibold text-muted">나와 비슷한 정도</h2>
         <ul className="mt-3 space-y-2.5">
           {domains.map((d) => (

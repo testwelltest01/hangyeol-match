@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
-import { PrimaryButton } from "@/components/Shell";
+import { PrimaryButton } from "@/components/buttons";
 import { ErrorText, fieldClass } from "@/components/ui";
 import {
   HEIGHT_TOLERANCE,
@@ -401,7 +401,7 @@ export function FiltersForm({
         )}
       </Section>
 
-      <div className="sticky bottom-0 -mx-5 border-t border-line bg-paper/95 px-5 pb-5 pt-4 backdrop-blur">
+      <div className="sticky bottom-0 -mx-5 border-t border-line bg-paper/95 px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-4 backdrop-blur">
         <p className="mb-3 text-center text-[15px]" aria-live="polite">
           {count === null
             ? "조건에 맞는 사람을 세는 중이에요"

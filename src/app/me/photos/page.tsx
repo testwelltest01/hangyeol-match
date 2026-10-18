@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Loading } from "@/components/Loading";
-import { PrimaryLink, Shell } from "@/components/Shell";
+import { PrimaryLink } from "@/components/buttons";
+import { Shell } from "@/components/Shell";
 import { PageTitle, SecondaryLink } from "@/components/ui";
 import { ILLUSTRATIONS_PER_ACCOUNT } from "@/lib/illustration/prompt";
 import { loadIllustrations, usedByAccount } from "@/lib/illustration/server";
-import { loadMySetup, nextSetupPath, signedPhotoUrls } from "@/lib/match/me";
+import { loadMySetup, nextSetupStep, signedPhotoUrls } from "@/lib/match/me";
 import { COUNTED_RESULTS, PHOTO_UPLOADS_PER_ACCOUNT, remainingUploads } from "@/lib/photo/rules";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
@@ -17,7 +18,7 @@ export const maxDuration = 60;
 
 export default function PhotosPage({ searchParams }: PageProps<"/me/photos">) {
   return (
-    <Shell nav="me">
+    <Shell back={{ href: "/me", label: "내 정보" }}>
       <PageTitle
         title="사진 2장"
         lead="사진은 서로 관심을 보낸 사람에게만 보여요. 올리면 AI가 분위기를 중심으로 더 좋은 사진을 찍는 방법을 알려줘요."
@@ -49,6 +50,7 @@ async function PhotosGate({ searchParams }: { searchParams: PageProps<"/me/photo
   ]);
   const remaining = remainingUploads((attempts ?? []).map((a) => a.result));
   const done = Boolean(face && body);
+  const nextStep = nextSetupStep(setup, "photos");
   const offerIllustration = done && !fromIllustration && Boolean(setup.matchProfile) && (await canStartIllustration(userId!));
 
   return (
@@ -75,8 +77,8 @@ async function PhotosGate({ searchParams }: { searchParams: PageProps<"/me/photo
         순위에는 쓰지 않아요.
       </p>
       {offerIllustration && (
-        <section className="rounded-2xl border border-line bg-surface px-5 py-5">
-          <h2 className="font-serif text-lg font-bold">사진 2장이 준비됐어요</h2>
+        <section className="rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
+          <h2 className="text-[1.05rem] font-semibold">사진 2장이 준비됐어요</h2>
           <p className="mt-1 text-sm text-ink-soft">
             이 사진과 자기소개로 AI가 그림 프로필을 그려줘요. 추천 카드에 보여주면 사진이 공개되기 전에도 내 분위기를 전할 수 있어요.
             (선택, 계정당 {ILLUSTRATIONS_PER_ACCOUNT}번)
@@ -90,7 +92,11 @@ async function PhotosGate({ searchParams }: { searchParams: PageProps<"/me/photo
         (fromIllustration ? (
           <PrimaryLink href="/me/illustration">그림 프로필로 돌아가기</PrimaryLink>
         ) : (
-          <SecondaryLink href={nextSetupPath(setup, "photos")}>{offerIllustration ? "그림 없이 다음" : "다음"}</SecondaryLink>
+          offerIllustration ? (
+            <SecondaryLink href={nextStep?.href ?? "/match"}>그림 없이 {nextStep ? `다음: ${nextStep.label}` : "오늘의 추천 보기"}</SecondaryLink>
+          ) : (
+            <PrimaryLink href={nextStep?.href ?? "/match"}>{nextStep ? `다음: ${nextStep.label}` : "오늘의 추천 보기"}</PrimaryLink>
+          )
         ))}
     </div>
   );

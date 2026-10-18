@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { saveMeetingFeedback, type MeetingInput } from "@/app/match/actions";
-import { PrimaryButton } from "@/components/Shell";
+import { PrimaryButton } from "@/components/buttons";
 
 const OUTCOMES: { id: MeetingInput["outcome"]; label: string }[] = [
   { id: "met", label: "만났어요" },

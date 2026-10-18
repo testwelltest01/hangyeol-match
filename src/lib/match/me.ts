@@ -80,11 +80,16 @@ export function setupSteps(s: MySetup): SetupStep[] {
 
 export const isReady = (s: MySetup) => setupSteps(s).every((step) => step.done);
 
-/** 다음으로 채울 화면. 다 채웠으면 추천 화면 */
-export function nextSetupPath(s: MySetup, after?: SetupStep["id"]): string {
+/** 다음으로 채울 단계. 다 채웠으면 null */
+export function nextSetupStep(s: MySetup, after?: SetupStep["id"]): SetupStep | null {
   const steps = setupSteps(s);
   const start = after ? steps.findIndex((x) => x.id === after) + 1 : 0;
-  return steps.slice(start).find((x) => !x.done)?.href ?? "/match";
+  return steps.slice(start).find((x) => !x.done) ?? null;
+}
+
+/** 다음으로 채울 화면. 다 채웠으면 추천 화면 */
+export function nextSetupPath(s: MySetup, after?: SetupStep["id"]): string {
+  return nextSetupStep(s, after)?.href ?? "/match";
 }
 
 /** 사진 서명 주소 (10분) */

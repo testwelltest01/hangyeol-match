@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { saveAnswers } from "@/app/actions";
-import { PrimaryButton } from "@/components/Shell";
+import { PrimaryButton } from "@/components/buttons";
 import { BipolarScale, ImportanceQuestion, LikertQuestion, SingleQuestion } from "@/components/scales";
 import { STEPS, isStepComplete, visibleItems, type Answers, type Item, type TestGender } from "@/lib/items";
 

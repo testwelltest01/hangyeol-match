@@ -10,7 +10,7 @@ import { ProfileForm } from "./ProfileForm";
 
 export default function ProfilePage() {
   return (
-    <Shell nav="me">
+    <Shell back={{ href: "/me", label: "내 정보" }}>
       <PageTitle
         title="내 정보와 자기소개"
         lead="추천 카드에는 사진 없이 이 정보와 검사 결과만 보여요. 사진은 서로 관심을 보낸 뒤에 공개돼요."

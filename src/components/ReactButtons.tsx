@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { react } from "@/app/match/actions";
+import { IconHeart } from "@/components/icons";
 
 /** 관심 있어요/넘기기, 수락/넘기기 버튼 */
 export function ReactButtons({ targetId, mode }: { targetId: string; mode: "interest" | "accept" }) {
@@ -29,8 +30,9 @@ export function ReactButtons({ targetId, mode }: { targetId: string; mode: "inte
           type="button"
           disabled={pending}
           onClick={() => send(yes)}
-          className="flex-1 rounded-full bg-ink px-4 py-3 font-semibold text-white disabled:bg-line disabled:text-muted"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-ink px-4 py-3 font-semibold text-white disabled:bg-line disabled:text-muted"
         >
+          {mode === "interest" && <IconHeart size={18} strong />}
           {mode === "interest" ? "관심 있어요" : "수락하기"}
         </button>
         <button

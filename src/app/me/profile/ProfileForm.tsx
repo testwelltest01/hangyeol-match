@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { RegionSelect } from "@/components/RegionSelect";
-import { PrimaryButton } from "@/components/Shell";
+import { PrimaryButton } from "@/components/buttons";
 import { ErrorText, fieldClass } from "@/components/ui";
 import { INTRO_MAX, MAX_HEIGHT, MIN_HEIGHT, RELIGIONS, type Religion } from "@/lib/match/filters";
 import { saveMatchProfile, type FormState } from "../actions";

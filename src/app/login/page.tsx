@@ -8,7 +8,7 @@ import { getUserId } from "@/lib/supabase/server";
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <Shell>
-      <h1 className="font-serif text-3xl font-bold">로그인</h1>
+      <h1 className="font-serif text-[1.65rem] font-bold leading-tight">로그인</h1>
       <Suspense
         fallback={
           <div className="mt-8">

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { PrimaryButton, PrimaryLink } from "@/components/Shell";
+import { PrimaryButton, PrimaryLink } from "@/components/buttons";
 import { Notice } from "@/components/ui";
 import { createIllustration, deleteIllustration, setIllustrationShown } from "./actions";
 import { ZoomImage } from "@/components/ZoomImage";

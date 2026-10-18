@@ -18,7 +18,7 @@ export const metadata: Metadata = { title: "대화 | 한결", robots: { index: f
 
 export default function ChatPage({ params }: PageProps<"/chat/[id]">) {
   return (
-    <Shell nav="match">
+    <Shell back={{ href: "/match/connected", label: "대화" }}>
       <Suspense fallback={<Loading />}>
         <ChatGate params={params} />
       </Suspense>

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { saveExtra } from "@/app/extra/actions";
 import { ChoiceGroup, LikertScale } from "@/components/scales";
-import { PrimaryButton } from "@/components/Shell";
+import { PrimaryButton } from "@/components/buttons";
 import type { ExtraAnswers, ExtraTest } from "@/lib/extra/tests";
 
 export function ExtraForm({ test, initial, initialShare }: { test: ExtraTest; initial: ExtraAnswers; initialShare: boolean }) {

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { submitFriendRating } from "@/app/actions";
-import { PrimaryButton, PrimaryLink } from "@/components/Shell";
+import { PrimaryButton, PrimaryLink } from "@/components/buttons";
 import { LikertScale } from "@/components/scales";
 
 export function FriendForm({ token, items }: { token: string; items: { id: string; text: string }[] }) {

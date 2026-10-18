@@ -164,20 +164,17 @@ export function ChatRoom({ otherId, name, initialMessages, initialState, initial
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-3 text-sm">
-        <Link href="/match/connected" className="text-muted hover:text-ink">
-          ← 연결
-        </Link>
-        <Link href={`/people/${otherId}#safety`} className="text-muted underline underline-offset-4">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="font-serif text-[1.5rem] font-bold leading-tight">
+          <Link href={`/people/${otherId}`} className="underline-offset-4 hover:underline">
+            {name}
+          </Link>
+          님과의 대화
+        </h1>
+        <Link href={`/people/${otherId}#safety`} className="shrink-0 text-sm text-muted underline underline-offset-4">
           신고·차단
         </Link>
       </div>
-      <h1 className="mt-3 font-serif text-[1.6rem] font-bold leading-tight">
-        <Link href={`/people/${otherId}`} className="underline-offset-4 hover:underline">
-          {name}
-        </Link>
-        님과의 대화
-      </h1>
 
       <ContactPanel state={state} name={name} contact={contact} pending={contactPending} onToggle={toggleContact} otherId={otherId} />
 
@@ -218,7 +215,7 @@ export function ChatRoom({ otherId, name, initialMessages, initialState, initial
       )}
       <div ref={bottomRef} />
 
-      <div className="sticky bottom-0 -mx-5 mt-6 border-t border-line bg-paper/95 px-5 pb-4 pt-3 backdrop-blur">
+      <div className="sticky bottom-0 -mx-5 mt-6 border-t border-line bg-paper/95 px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
         {error && (
           <p role="alert" className="mb-2 text-sm text-alert">
             {error}

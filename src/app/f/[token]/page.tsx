@@ -49,7 +49,7 @@ async function FriendGate({ params }: { params: PageProps<"/f/[token]">["params"
 
   return (
     <>
-      <h1 className="font-serif text-3xl font-bold leading-tight">{name}님은 어떤 사람인가요?</h1>
+      <h1 className="font-serif text-[1.65rem] font-bold leading-tight leading-tight">{name}님은 어떤 사람인가요?</h1>
       <p className="mt-3 text-ink-soft">
         10문항, 1분이면 끝나요. 답은 다른 친구들의 답과 합쳐서 평균으로만 보여주고, 누가 어떻게 답했는지는 {name}님에게
         보이지 않아요. 이름이나 연락처는 받지 않아요.

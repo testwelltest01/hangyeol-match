@@ -18,7 +18,7 @@ export const maxDuration = 300;
 
 export default function IllustrationPage() {
   return (
-    <Shell nav="me">
+    <Shell back={{ href: "/me", label: "내 정보" }}>
       <PageTitle
         title="그림 프로필"
         lead="실제 사진 2장과 자기소개·검사 결과를 바탕으로 AI가 따뜻한 손그림 애니메이션 풍 그림을 그려요. 마음에 들면 추천 카드에 보여줄 수 있어요."

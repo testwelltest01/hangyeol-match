@@ -1,17 +1,18 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { PersonCardView } from "@/components/PersonCard";
+import { EmptyState, NextStepCard } from "@/components/app-ui";
 import { DrinkingQuestion } from "@/components/DrinkingQuestion";
+import { IconMoon, IconPause } from "@/components/icons";
+import { PersonCardView } from "@/components/PersonCard";
 import { ReactButtons } from "@/components/ReactButtons";
 import { TourInvite } from "@/components/TourInvite";
-import { SecondaryLink } from "@/components/ui";
 import type { PersonCard } from "@/lib/match/dashboard";
 import { setupSteps } from "@/lib/match/me";
-import { EmptyText, loadMatch, MatchFrame, MatchNotices } from "./frame";
+import { loadMatch, MatchFrame, MatchNotices } from "./frame";
 
 export default function MatchPage() {
   return (
-    <MatchFrame current="today" title="오늘의 추천">
+    <MatchFrame current="today" title="오늘의 추천" sub="매일 저녁 8시에 결이 맞는 3명을 새로 골라요. 서로 관심을 보내면 사진이 공개돼요.">
       <TodayGate />
     </MatchFrame>
   );
@@ -42,35 +43,20 @@ function todayState(c: PersonCard, chatAvailable: boolean): { actions: ReactNode
   }
 }
 
+const secondaryLink = "inline-block rounded-full border border-ink px-5 py-2.5 text-[15px] font-semibold text-ink hover:bg-ink hover:text-white";
+
 async function TodayGate() {
   const data = await loadMatch();
   const { setup, ready, d } = data;
 
   if (!ready) {
-    const steps = setupSteps(setup);
     return (
-      <>
+      <div className="space-y-5">
         <MatchNotices data={data} />
         {data.needsDrinking && <DrinkingQuestion />}
-        <h2 className="font-serif text-2xl font-bold">매칭 준비</h2>
-        <p className="mt-2 text-ink-soft">
-          아래를 모두 채우면 바로 오늘의 추천이 열려요. 추천 카드에는 사진이 없고, 서로 관심을 보내면 사진이 공개돼요.
-        </p>
-        <div className="mt-5">
-          <TourInvite title="준비를 마치면 이렇게 소개받아요" body="가상 인물과 추천부터 연락처 교환까지 미리 해보세요." />
-        </div>
-        <ol className="mt-6 space-y-3">
-          {steps.map((s, i) => (
-            <li key={s.id}>
-              <Link href={s.href} className="flex items-center gap-4 rounded-2xl border border-line bg-surface px-5 py-4">
-                <span className={`font-serif text-xl ${s.done ? "text-moss" : "text-indigo"}`}>{s.done ? "✓" : i + 1}</span>
-                <span className="flex-1">{s.label}</span>
-                <span className="text-sm text-muted">{s.done ? "완료" : "채우기"}</span>
-              </Link>
-            </li>
-          ))}
-        </ol>
-      </>
+        <NextStepCard steps={setupSteps(setup)} />
+        <TourInvite title="준비를 마치면 이렇게 소개받아요" body="가상 인물과 추천부터 연락처 교환까지 미리 해보세요." />
+      </div>
     );
   }
 
@@ -79,25 +65,38 @@ async function TodayGate() {
     <>
       <MatchNotices data={data} showPaused />
       {data.needsDrinking && <DrinkingQuestion />}
-      <p className="text-ink-soft">매일 저녁 8시에 결이 맞는 사람 3명을 새로 골라요. 서로 관심을 보내면 사진이 공개돼요.</p>
-
-      <div className="mt-6 space-y-4">
-        {d.today.length === 0 ? (
-          <>
-            <EmptyText>
-              {stopped
-                ? "지금은 추천이 멈춰 있어요."
-                : "오늘은 조건에 맞는 새 사람이 없어요. 사람이 계속 늘고 있으니 내일 다시 확인해주세요. 조건을 조금 넓히면 더 많이 만날 수 있어요."}
-            </EmptyText>
-            {!stopped && <SecondaryLink href="/me/filters">조건 살펴보기</SecondaryLink>}
-          </>
+      {d.today.length === 0 ? (
+        stopped ? (
+          <EmptyState
+            icon={<IconPause size={26} />}
+            title="지금은 추천이 멈춰 있어요"
+            body="매칭을 다시 시작하면 다음 저녁 8시부터 새 추천이 와요."
+            action={
+              <Link href="/me" className={secondaryLink}>
+                내 정보에서 다시 시작하기
+              </Link>
+            }
+          />
         ) : (
-          d.today.map((c) => {
+          <EmptyState
+            icon={<IconMoon size={26} />}
+            title="오늘은 새로 소개할 사람이 없어요"
+            body="조건에 맞는 사람이 계속 늘고 있어요. 저녁 8시에 다시 골라드릴게요. 조건을 조금 넓히면 더 많이 만날 수 있어요."
+            action={
+              <Link href="/me/filters" className={secondaryLink}>
+                조건 살펴보기
+              </Link>
+            }
+          />
+        )
+      ) : (
+        <div className="space-y-4">
+          {d.today.map((c) => {
             const { actions, detailLabel, detailButton } = todayState(c, d.chatAvailable);
             return <PersonCardView key={c.id} card={c} actions={actions} detailLabel={detailLabel} detailButton={detailButton} />;
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
     </>
   );
 }

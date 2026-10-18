@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { saveProfile, type FormState } from "@/app/actions";
-import { PrimaryButton } from "@/components/Shell";
+import { PrimaryButton } from "@/components/buttons";
 
 const fieldClass =
   "mt-2 w-full rounded-xl border border-line bg-surface px-4 py-3.5 text-base text-ink focus:border-indigo focus:outline-none";

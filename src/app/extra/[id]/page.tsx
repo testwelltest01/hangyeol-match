@@ -16,7 +16,7 @@ export const metadata: Metadata = { title: "더 알아보기 | 한결", robots: 
 
 export default function ExtraPage({ params }: PageProps<"/extra/[id]">) {
   return (
-    <Shell nav="report">
+    <Shell back={{ href: "/report#extra", label: "내 결" }}>
       <Suspense fallback={<Loading />}>
         <ExtraGate params={params} />
       </Suspense>

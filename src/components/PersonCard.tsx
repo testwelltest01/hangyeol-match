@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Avatar } from "@/components/app-ui";
 import { LikedBadge } from "@/components/LikedBadge";
 import type { PersonCard as Card } from "@/lib/match/dashboard";
 import { regionLabel } from "@/lib/regions";
@@ -23,46 +24,50 @@ export function PersonCardView({
   detailButton?: boolean;
 }) {
   return (
-    <article className="overflow-hidden rounded-2xl border border-line bg-surface">
+    <article className="overflow-hidden rounded-[22px] bg-surface ring-1 ring-line/80">
       {card.illustrationUrl && (
         <div className="aspect-[4/3] bg-mist">
           <ZoomImage src={card.illustrationUrl} alt={`${card.nickname}님의 그림 프로필`} className="h-full w-full object-cover object-top" />
         </div>
       )}
-      <div className="px-5 py-5">
-        <div className="flex items-baseline justify-between gap-3">
-          <h3 className="font-serif text-xl font-bold">{card.nickname}</h3>
-          {card.likedMe && card.stage === "new" && <LikedBadge />}
+      <div className="px-5 pb-5 pt-5">
+        <div className="flex items-center gap-3">
+          {!card.illustrationUrl && <Avatar name={card.nickname} size={48} />}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <h3 className="font-serif text-xl font-bold leading-tight">{card.nickname}</h3>
+              {card.likedMe && card.stage === "new" && <LikedBadge />}
+            </div>
+            <p className="mt-0.5 text-[13px] text-muted">{personLine(card)}</p>
+          </div>
         </div>
-        <p className="mt-1 text-sm text-muted">{personLine(card)}</p>
 
-        <p className="mt-4 border-l-2 border-indigo pl-3 font-serif leading-relaxed">{card.reason}</p>
+        <p className="mt-4 rounded-2xl bg-paper px-4 py-3 font-serif text-[15.5px] leading-relaxed text-ink">{card.reason}</p>
 
         {card.chips.length > 0 && (
-          <ul className="mt-4 flex flex-wrap gap-2" aria-label="성향">
+          <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="성향">
             {card.chips.map((c) => (
-              <li key={c} className="rounded-full bg-mist px-3 py-1 text-sm text-ink-soft">
+              <li key={c} className="rounded-full bg-mist px-3 py-1 text-[13px] text-ink-soft">
                 {c}
               </li>
             ))}
           </ul>
         )}
 
-        <p className="mt-4 line-clamp-4 whitespace-pre-line text-[15px] text-ink-soft">{card.intro}</p>
-
-        <div className="mt-5 flex items-center gap-3">
-          <div className="flex-1">{actions}</div>
-          <Link
-            href={`/people/${card.id}`}
-            className={
-              detailButton
-                ? "shrink-0 rounded-full border border-ink px-4 py-2 text-sm font-semibold text-ink transition-colors hover:bg-ink hover:text-white"
-                : "shrink-0 text-sm text-muted underline underline-offset-4"
-            }
-          >
-            {detailLabel}
-          </Link>
-        </div>
+        <p className="mt-3 line-clamp-3 whitespace-pre-line text-[15px] leading-relaxed text-ink-soft">{card.intro}</p>
+      </div>
+      <div className="flex items-center gap-3 border-t border-line/70 px-5 py-3.5">
+        <div className="flex-1">{actions}</div>
+        <Link
+          href={`/people/${card.id}`}
+          className={
+            detailButton
+              ? "shrink-0 rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-ink-soft"
+              : "shrink-0 text-sm text-muted underline underline-offset-4"
+          }
+        >
+          {detailLabel}
+        </Link>
       </div>
     </article>
   );

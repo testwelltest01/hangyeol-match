@@ -15,7 +15,7 @@ import { ReportParts } from "./ReportBody";
 
 export default function ReportPage() {
   return (
-    <Shell nav="report">
+    <Shell tab="report">
       <Suspense fallback={<Loading />}>
         <ReportGate />
       </Suspense>

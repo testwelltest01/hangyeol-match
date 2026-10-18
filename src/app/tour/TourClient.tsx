@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { LikedBadge } from "@/components/LikedBadge";
 import { personLine } from "@/components/PersonCard";
-import { PrimaryButton, PrimaryLink } from "@/components/Shell";
+import { PrimaryButton, PrimaryLink } from "@/components/buttons";
 import { Notice } from "@/components/ui";
 import { ZoomImage } from "@/components/ZoomImage";
 import { checkChatMessage, MAX_MESSAGE_CHARS, MESSAGES_PER_PERSON } from "@/lib/chat/rules";

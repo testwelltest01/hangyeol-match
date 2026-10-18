@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { GrainMark } from "@/components/GrainMark";
-import { PrimaryLink, Shell } from "@/components/Shell";
+import { PrimaryLink } from "@/components/buttons";
+import { Shell } from "@/components/Shell";
 
 const STEPS = [
   {

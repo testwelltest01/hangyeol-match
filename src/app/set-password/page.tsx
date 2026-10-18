@@ -30,7 +30,7 @@ async function SetPasswordGate({ searchParams }: { searchParams: PageProps<"/set
   const t = TEXT[mode];
   return (
     <>
-      <h1 className="font-serif text-3xl font-bold">{t.title}</h1>
+      <h1 className="font-serif text-[1.65rem] font-bold leading-tight">{t.title}</h1>
       <p className="mt-3 text-ink-soft">{t.lead}</p>
       <SetPasswordForm mode={mode} />
     </>

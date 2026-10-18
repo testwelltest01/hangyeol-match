@@ -63,8 +63,8 @@ const P = ({ children }: { children: React.ReactNode }) => <p className="mt-3 te
 
 export default function PrivacyPage() {
   return (
-    <Shell>
-      <h1 className="font-serif text-3xl font-bold">개인정보처리방침</h1>
+    <Shell back={{ href: "/", label: "뒤로", history: true }}>
+      <h1 className="font-serif text-[1.65rem] font-bold leading-tight">개인정보처리방침</h1>
       <P>
         한결(이하 &quot;서비스&quot;)은 「개인정보 보호법」 제30조에 따라 이용자의 개인정보를 어떻게 처리하는지 알리기 위해 이
         처리방침을 둡니다.

@@ -11,10 +11,10 @@ import { ContactForm } from "./ContactForm";
 
 export default function ContactPage() {
   return (
-    <Shell nav="me">
+    <Shell back={{ href: "/me", label: "내 정보" }}>
       <PageTitle
         title="연락처"
-        lead="한결에는 채팅이 없어요. 서로 수락하면 이 아이디가 상대에게 공개되고, 그때부터 직접 연락해요."
+        lead="서로 수락하면 대화방이 먼저 열려요. 둘 다 '연락처 전달'을 눌렀을 때만 이 아이디가 상대에게 보여요."
       />
       <Suspense fallback={<Loading />}>
         <ContactGate />
