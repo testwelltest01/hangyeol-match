@@ -119,7 +119,7 @@ export function PairRow({
 }) {
   return (
     <Link href={href ?? `/people/${card.id}`} className="flex items-center gap-3.5 px-4 py-3.5 transition-colors hover:bg-mist/60">
-      <Avatar name={card.nickname} size={44} />
+      <Avatar name={card.nickname} size={44} src={card.faceUrl ?? card.illustrationUrl} />
       <span className="min-w-0 flex-1">
         <span className="block font-semibold text-ink">{card.nickname}</span>
         <span className="mt-0.5 block truncate text-[13px] text-muted">{sub ?? personLine(card)}</span>

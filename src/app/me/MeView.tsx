@@ -48,7 +48,7 @@ function stepSub(s: SetupStep, setup: MySetup): string {
 }
 
 /** 내 정보 화면: 나, 매칭 준비, 매칭 정보 목록, 앱·알림, 매칭 쉬기, 계정 */
-export function MeView({ setup, needsDrinking }: { setup: MySetup; needsDrinking: boolean }) {
+export function MeView({ setup, needsDrinking, faceUrl }: { setup: MySetup; needsDrinking: boolean; faceUrl: string | null }) {
   const steps = setupSteps(setup);
   const ready = isReady(setup);
   const paused = Boolean(setup.matchProfile?.paused);
@@ -59,7 +59,7 @@ export function MeView({ setup, needsDrinking }: { setup: MySetup; needsDrinking
   return (
     <div className="space-y-8">
       <section className="flex items-center gap-4">
-        <Avatar name={setup.nickname} size={60} />
+        <Avatar name={setup.nickname} size={60} src={faceUrl} />
         <div className="min-w-0 flex-1">
           <h1 className="font-serif text-[1.5rem] font-bold leading-tight">{setup.nickname}</h1>
           <p className="mt-0.5 text-[14px] text-muted">{line}</p>

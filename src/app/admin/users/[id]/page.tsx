@@ -182,7 +182,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
     <AdminShell current="users" back={{ href: "/admin/users", label: "회원 목록" }}>
       <section className="rounded-[20px] bg-surface px-5 py-5 ring-1 ring-line/80">
         <div className="flex flex-wrap items-center gap-4">
-          <Avatar name={name} size={56} />
+          <Avatar name={name} size={56} src={setup?.photos.face ? urls.get(setup.photos.face.path) : null} />
           <div className="min-w-0 flex-1">
             <h1 className="font-serif text-[1.6rem] font-bold leading-tight">{name}</h1>
             <p className="mt-0.5 break-all text-sm text-muted">

@@ -96,8 +96,23 @@ export function EmptyState({ icon, title, body, action }: { icon: ReactNode; tit
 
 const AVATAR_TINTS = ["bg-mist", "bg-indigo/10", "bg-moss/15", "bg-rose/10", "bg-ochre/15"];
 
-/** 사진이 공개되기 전 사람을 가리키는 이름 첫 글자 동그라미 */
-export function Avatar({ name, size = 44 }: { name: string; size?: number }) {
+/**
+ * 사람을 가리키는 작은 동그라미. src(얼굴 사진·그림 프로필, 서명 주소)가 있으면 그 사진, 없으면 이름 첫 글자.
+ * 다른 사람의 얼굴은 사진이 공개된 단계(photosVisible)에서만 넘긴다
+ */
+export function Avatar({ name, size = 44, src }: { name: string; size?: number; src?: string | null }) {
+  if (src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- 10분짜리 서명 주소라 next/image 최적화를 쓰지 않는다
+      <img
+        src={src}
+        alt=""
+        aria-hidden
+        className="aspect-square max-w-none shrink-0 rounded-full bg-mist object-cover object-top ring-1 ring-line/60"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
   const tint = AVATAR_TINTS[[...name].reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_TINTS.length];
   return (
     <span

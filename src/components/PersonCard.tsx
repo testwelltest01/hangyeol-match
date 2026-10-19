@@ -32,7 +32,7 @@ export function PersonCardView({
       )}
       <div className="px-5 pb-5 pt-5">
         <div className="flex items-center gap-3">
-          {!card.illustrationUrl && <Avatar name={card.nickname} size={48} />}
+          {!card.illustrationUrl && <Avatar name={card.nickname} size={48} src={card.faceUrl} />}
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <h3 className="font-serif text-xl font-bold leading-tight">{card.nickname}</h3>

@@ -16,6 +16,7 @@ import { loadExtraResults, sharedScores } from "@/lib/extra/server";
 import { EXTRA_TESTS, extraCommonalities, summarizeExtra } from "@/lib/extra/tests";
 import { domainComparison, profileChips, recommendationReason, talkingPoint } from "@/lib/match/explain";
 import { signedPhotoUrls } from "@/lib/match/me";
+import { photosVisible } from "@/lib/match/rules";
 import { FIRST_MEETING_GUIDE } from "@/lib/match/safety";
 import { loadPair, pairStage } from "@/lib/match/server";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
@@ -79,7 +80,7 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
   const chips = profileChips(theirs);
   const domains = domainComparison(mine, theirs);
 
-  const showPhotos = stage === "photos" || stage === "waiting_accept" || stage === "connected";
+  const showPhotos = photosVisible(stage);
   let photos: { slot: string; url: string }[] = [];
   if (showPhotos) {
     const { data } = await admin.from("photos").select("slot, path").eq("user_id", id).is("replaced_at", null);

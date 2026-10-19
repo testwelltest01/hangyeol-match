@@ -4,6 +4,7 @@ import { chatState, myChatRooms, unreadCounts } from "@/lib/chat/server";
 import { matchDay } from "@/lib/day";
 import { shownIllustrationUrls } from "@/lib/illustration/server";
 import { profileChips, recommendationReason, talkingPoint } from "@/lib/match/explain";
+import { photosVisible } from "@/lib/match/rules";
 import { pairStage, type Pair, type PairStage } from "@/lib/match/server";
 import type { Scores } from "@/lib/scoring";
 
@@ -22,6 +23,8 @@ export type PersonCard = {
   likedMe: boolean;
   /** 상대가 추천 카드에 보여주기로 한 그림 프로필 (10분 서명 주소) */
   illustrationUrl: string | null;
+  /** 얼굴 사진 (10분 서명 주소). 사진이 공개된 단계(서로 관심 이후)에서만 채운다 */
+  faceUrl: string | null;
 };
 
 /** 연결된 사람과의 대화방 요약 */
@@ -100,7 +103,11 @@ export async function loadDashboard(admin: SupabaseClient, me: string, myScores:
       ])
     : [{ data: [] }, { data: [] }, { data: [] }];
 
-  const illustrations = await shownIllustrationUrls(admin, visible);
+  // 그림은 회원이 추천 카드에 보여주기로 한 것만, 얼굴은 사진이 공개된 단계(서로 관심 이후)인 사람만
+  const [illustrations, faces] = await Promise.all([
+    shownIllustrationUrls(admin, visible),
+    revealedFaceUrls(admin, visible.filter((id) => photosVisible(stages.get(id)!))),
+  ]);
   const profileById = new Map((profiles.data ?? []).map((p) => [p.id, p]));
   const mpById = new Map((matchProfiles.data ?? []).map((p) => [p.user_id, p]));
   const scoreById = new Map((scores.data ?? []).map((s) => [s.user_id, s.scores as Scores]));
@@ -123,6 +130,7 @@ export async function loadDashboard(admin: SupabaseClient, me: string, myScores:
       stage: stages.get(id)!,
       likedMe: theirs.get(id)?.interest === true,
       illustrationUrl: illustrations.get(id) ?? null,
+      faceUrl: faces.get(id) ?? null,
     };
   };
 
@@ -167,4 +175,20 @@ export async function loadDashboard(admin: SupabaseClient, me: string, myScores:
     chatAvailable,
     contactNotFound: Boolean(lastNotFound && contact.data && lastNotFound > contact.data.updated_at),
   };
+}
+
+/** 사진이 공개된 사람들의 지금 얼굴 사진 (회원 id → 10분 서명 주소). 부르는 쪽이 공개 단계인 사람만 넘긴다 */
+async function revealedFaceUrls(admin: SupabaseClient, userIds: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (!userIds.length) return out;
+  const { data } = await admin.from("photos").select("user_id, path").in("user_id", userIds).eq("slot", "face").is("replaced_at", null);
+  const rows = (data ?? []) as { user_id: string; path: string }[];
+  if (!rows.length) return out;
+  const { data: signed } = await admin.storage.from("photos").createSignedUrls(rows.map((r) => r.path), 600);
+  const byPath = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
+  for (const r of rows) {
+    const url = byPath.get(r.path);
+    if (url) out.set(r.user_id, url);
+  }
+  return out;
 }
