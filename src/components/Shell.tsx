@@ -32,6 +32,7 @@ export function Shell({
   back,
   right,
   hideLetter = false,
+  hideFooter = false,
 }: {
   children: ReactNode;
   tab?: TabId;
@@ -39,6 +40,8 @@ export function Shell({
   /** 위쪽 바 오른쪽에 덧붙이는 것 (로그인 전 화면의 '로그인' 등) */
   right?: ReactNode;
   hideLetter?: boolean;
+  /** 화면 아래에 고정된 입력창이 있는 화면(대화방)은 처리방침 줄을 두지 않는다 */
+  hideFooter?: boolean;
 }) {
   return (
     <div className="flex min-h-full flex-1 flex-col">
@@ -87,7 +90,7 @@ export function Shell({
             <ThemeGate />
           </Suspense>
         </>
-      ) : (
+      ) : hideFooter ? null : (
         <footer className="mx-auto w-full max-w-[560px] px-5 pb-8 text-sm text-muted">
           <Link href="/privacy" className="underline underline-offset-4">
             개인정보처리방침

@@ -44,6 +44,32 @@ export function ChatRoom({ otherId, name, initialMessages, initialState, initial
   /** 마지막으로 대화가 오간 시각 (자주 확인할지 정할 때 쓴다) */
   const activeAt = useRef(0);
   const bottomRef = useRef<HTMLDivElement>(null);
+  /** 화면 아래에 고정한 입력창. 그 높이만큼 메시지 아래에 빈칸을 둬서 마지막 메시지가 가리지 않게 한다 */
+  const barRef = useRef<HTMLDivElement>(null);
+  const [barH, setBarH] = useState(0);
+  /** 휴대폰 키보드가 가린 높이. 입력창을 그만큼 올려서 키보드 바로 위에 붙인다 */
+  const [keyboard, setKeyboard] = useState(0);
+
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    // 처음 관찰을 시작할 때도 한 번 불린다
+    const ro = new ResizeObserver(() => setBarH(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setKeyboard(Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)));
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
 
   const merge = useCallback((incoming: ChatMessageView[]) => {
     if (!incoming.length) return;
@@ -113,6 +139,12 @@ export function ChatRoom({ otherId, name, initialMessages, initialState, initial
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [poll]);
+
+  // 입력창 높이를 잰 뒤(빈칸이 생긴 뒤)에도 맨 아래를 보고 있었다면 다시 맨 아래로. 처음 열 때 마지막 메시지가 입력창에 가리지 않게
+  useEffect(() => {
+    const nearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - barH - 320;
+    if (barH && nearBottom) bottomRef.current?.scrollIntoView({ block: "end" });
+  }, [barH]);
 
   // 새 메시지가 오면 아래로 (위쪽을 읽는 중이 아니면)
   const count = messages.length;
@@ -213,65 +245,74 @@ export function ChatRoom({ otherId, name, initialMessages, initialState, initial
           })}
         </ol>
       )}
+      {/* 고정 입력창 높이만큼 빈칸. 아래로 내릴 때는 이 빈칸까지 내려서 마지막 메시지가 입력창 위에 오게 */}
+      <div aria-hidden className="mt-6" style={{ height: barH }} />
       <div ref={bottomRef} />
 
-      <div className="sticky bottom-0 -mx-5 mt-6 border-t border-line bg-paper/95 px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
-        {error && (
-          <p role="alert" className="mb-2 text-sm text-alert">
-            {error}
-          </p>
-        )}
-        {state.closed ? (
-          <p className="text-[15px] text-muted">대화가 닫혀서 더 보낼 수 없어요.</p>
-        ) : !canSend ? (
-          <p className="text-[15px] text-ink-soft">
-            메시지를 모두 보냈어요. {state.exchanged ? "연락처로 이어서 이야기해보세요." : "더 이야기하고 싶으면 위에서 '연락처 전달'을 눌러보세요."}
-          </p>
-        ) : (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              send();
-            }}
-          >
-            <label htmlFor="chat-text" className="sr-only">
-              메시지
-            </label>
-            <div className="flex items-end gap-2">
-              <textarea
-                id="chat-text"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={(e) => {
-                  // 컴퓨터에서는 Enter로 보내고 Shift+Enter로 줄바꿈. 휴대폰은 보내기 버튼으로
-                  if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && window.matchMedia("(pointer: fine)").matches) {
-                    e.preventDefault();
-                    send();
-                  }
-                }}
-                rows={2}
-                maxLength={MAX_MESSAGE_CHARS}
-                placeholder="메시지를 입력하세요"
-                className="min-h-[3rem] flex-1 resize-none rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-muted focus:border-indigo focus:outline-none"
-              />
-              <button
-                type="submit"
-                disabled={sending || !text.trim()}
-                className="shrink-0 rounded-xl bg-primary transition active:scale-[0.98] active:opacity-80 px-4 py-3 font-semibold text-white disabled:bg-line disabled:text-muted"
-              >
-                보내기
-              </button>
-            </div>
-            <p className="mt-1.5 flex justify-between text-xs text-muted">
-              <span>
-                보낼 수 있는 메시지 {remaining}개 · {name}님 {state.limit - state.theirCount}개
-              </span>
-              <span className="tabular-nums">
-                {text.length}/{MAX_MESSAGE_CHARS}
-              </span>
+      {/* 입력창은 위쪽 바처럼 화면 맨 아래에 고정한다 (메시지가 적어도 아래에, 끝까지 당겨 튕겨도 제자리) */}
+      <div
+        ref={barRef}
+        className="fixed inset-x-0 z-30 border-t border-line bg-paper/95 pt-3 backdrop-blur-md"
+        style={{ bottom: keyboard, paddingBottom: keyboard > 0 ? 12 : "calc(0.75rem + env(safe-area-inset-bottom))" }}
+      >
+        <div className="mx-auto w-full max-w-[560px] px-5">
+          {error && (
+            <p role="alert" className="mb-2 text-sm text-alert">
+              {error}
             </p>
-          </form>
-        )}
+          )}
+          {state.closed ? (
+            <p className="text-[15px] text-muted">대화가 닫혀서 더 보낼 수 없어요.</p>
+          ) : !canSend ? (
+            <p className="text-[15px] text-ink-soft">
+              메시지를 모두 보냈어요. {state.exchanged ? "연락처로 이어서 이야기해보세요." : "더 이야기하고 싶으면 위에서 '연락처 전달'을 눌러보세요."}
+            </p>
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                send();
+              }}
+            >
+              <label htmlFor="chat-text" className="sr-only">
+                메시지
+              </label>
+              <div className="flex items-end gap-2">
+                <textarea
+                  id="chat-text"
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  onKeyDown={(e) => {
+                    // 컴퓨터에서는 Enter로 보내고 Shift+Enter로 줄바꿈. 휴대폰은 보내기 버튼으로
+                    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && window.matchMedia("(pointer: fine)").matches) {
+                      e.preventDefault();
+                      send();
+                    }
+                  }}
+                  rows={2}
+                  maxLength={MAX_MESSAGE_CHARS}
+                  placeholder="메시지를 입력하세요"
+                  className="min-h-[3rem] flex-1 resize-none rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-muted focus:border-indigo focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={sending || !text.trim()}
+                  className="shrink-0 rounded-xl bg-primary transition active:scale-[0.98] active:opacity-80 px-4 py-3 font-semibold text-white disabled:bg-line disabled:text-muted"
+                >
+                  보내기
+                </button>
+              </div>
+              <p className="mt-1.5 flex justify-between text-xs text-muted">
+                <span>
+                  보낼 수 있는 메시지 {remaining}개 · {name}님 {state.limit - state.theirCount}개
+                </span>
+                <span className="tabular-nums">
+                  {text.length}/{MAX_MESSAGE_CHARS}
+                </span>
+              </p>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );
