@@ -115,7 +115,7 @@ export function PhotoSlot({
                 className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--color-indigo)]"
               />
               <span>
-                사진 피드백을 위해 사진과 성별을 미국 OpenAI로 보내는 데 동의해요 (필수).{" "}
+                사진 피드백을 위해 OpenAI로 전송된 사진은 학습에 이용되지 않아요 (확인).{" "}
                 <a href="/privacy#overseas" target="_blank" className="underline underline-offset-4">
                   자세히
                 </a>
