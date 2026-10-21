@@ -10,19 +10,20 @@ const CHROME_ANDROID = "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537
 const CHROME_PC = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36";
 
 describe("installGuide", () => {
-  it("아이폰 Safari·Chrome·다른 브라우저를 나눈다", () => {
+  it("아이폰은 Safari면 Safari 방법, 아니면(Chrome·Firefox·카카오톡) Safari로 열기", () => {
     expect(installGuide(SAFARI)).toBe("ios-safari");
-    expect(installGuide(CHROME_IOS)).toBe("ios-chrome");
-    expect(installGuide(SAFARI.replace("Version/26.0", "FxiOS/140.0"))).toBe("ios-other");
+    expect(installGuide(CHROME_IOS)).toBe("ios-open-safari");
+    expect(installGuide(SAFARI.replace("Version/26.0", "FxiOS/140.0"))).toBe("ios-open-safari");
+    expect(installGuide(KAKAO_IOS)).toBe("ios-open-safari");
   });
 
-  it("UA에 CriOS가 없어도 Chrome이 넣은 스크립트가 있으면 Chrome", () => {
-    expect(installGuide(SAFARI, false, true)).toBe("ios-chrome");
-    expect(installGuide(IPAD_DESKTOP, true, true)).toBe("ios-chrome");
+  it("UA에 CriOS가 없어도 Chrome이 넣은 스크립트가 있으면 Safari로 열기", () => {
+    expect(installGuide(SAFARI, false, true)).toBe("ios-open-safari");
+    expect(installGuide(IPAD_DESKTOP, true, true)).toBe("ios-open-safari");
   });
 
-  it("앱 안 브라우저는 아이폰이어도 기본 브라우저로 넘기라고 한다", () => {
-    expect(installGuide(KAKAO_IOS)).toBe("in-app");
+  it("안드로이드 앱 안 브라우저는 기본 브라우저로 넘기라고 한다", () => {
+    expect(installGuide(SAMSUNG.replace("SamsungBrowser/28.0", "KAKAOTALK 10.8.0"))).toBe("in-app");
   });
 
   it("맥 UA인데 터치가 되면 아이패드 Safari", () => {

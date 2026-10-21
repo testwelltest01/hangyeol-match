@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { externalBrowserUrl, isInAppBrowser } from "./inapp";
+import { externalBrowserUrl, isInAppBrowser, isSafariIOS, safariUrl } from "./inapp";
 
 const URL_ = "https://hangyeol-match.vercel.app/";
 const KAKAO_IOS = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 KAKAOTALK 10.8.0";
@@ -33,5 +33,19 @@ describe("externalBrowserUrl", () => {
     expect(externalBrowserUrl(CHROME_ANDROID, URL_)).toBeNull();
     expect(isInAppBrowser(SAFARI)).toBe(false);
     expect(isInAppBrowser(KAKAO_IOS)).toBe(true);
+  });
+});
+
+describe("Safari로 열기 (아이폰)", () => {
+  it("https 주소를 x-safari-https로 바꾼다", () => {
+    expect(safariUrl("https://hangyeol-match.vercel.app/me#app")).toBe("x-safari-https://hangyeol-match.vercel.app/me#app");
+  });
+
+  it("Safari만 Safari로 본다", () => {
+    expect(isSafariIOS(SAFARI)).toBe(true);
+    expect(isSafariIOS(KAKAO_IOS)).toBe(false);
+    expect(isSafariIOS(INSTA_IOS)).toBe(false);
+    expect(isSafariIOS(SAFARI.replace("Version/18.0", "CriOS/140.0"))).toBe(false);
+    expect(isSafariIOS(CHROME_ANDROID)).toBe(false);
   });
 });
