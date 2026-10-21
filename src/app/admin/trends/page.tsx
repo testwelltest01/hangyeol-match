@@ -28,7 +28,7 @@ async function TrendsGate({ searchParams }: { searchParams: PageProps<"/admin/tr
   // 한국 날짜로 기간 첫날 0시부터
   const since = new Date(`${daysBefore(today, days - 1)}T00:00:00+09:00`).toISOString();
   const admin = createAdminClient();
-  const [genderOf, { events, available }] = await Promise.all([loadGenderOf(admin), loadTrendEvents(admin, metric, since)]);
+  const [genderOf, events] = await Promise.all([loadGenderOf(admin), loadTrendEvents(admin, metric, since)]);
 
-  return <TrendsView metric={metric} days={days} trend={buildTrend(events, genderOf, days, today)} available={available} />;
+  return <TrendsView metric={metric} days={days} trend={buildTrend(events, genderOf, days, today)} />;
 }

@@ -33,9 +33,6 @@ async function ProfileGate() {
   if (!setup) redirect("/start");
 
   return (
-    <ProfileForm
-      initial={setup.matchProfile ? { ...setup.matchProfile } : null}
-      hasReligionConsent={setup.consents.religion}
-    />
+    <ProfileForm initial={setup.matchProfile ? { ...setup.matchProfile } : null} />
   );
 }

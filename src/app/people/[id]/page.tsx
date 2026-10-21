@@ -89,12 +89,10 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
     photos = rows.flatMap((r) => (urls.get(r.path) ? [{ slot: r.slot, url: urls.get(r.path)! }] : []));
   }
 
-  // 대화방: 서로 수락하면 열린다. 연락처는 둘 다 '연락처 전달'을 눌러야 보인다.
-  // 0005 SQL 전(대화방 없음)이면 예전처럼 서로 수락하면 바로 연락처를 보여준다
-  const chat = stage === "connected" || stage === "photos" || stage === "waiting_accept" ? await getChatRoom(admin, userId!, id) : null;
-  const chatAvailable = chat?.available ?? false;
-  const exchanged = stage === "connected" && (!chatAvailable || Boolean(chat?.room?.exchanged_at));
-  const unread = chatAvailable && chat?.room ? ((await unreadCounts(admin, [chat.room], userId!)).get(chat.room.id) ?? 0) : 0;
+  // 대화방: 서로 수락하면 열린다. 연락처는 둘 다 '연락처 전달'을 눌러야 보인다
+  const room = stage === "connected" ? await getChatRoom(admin, userId!, id) : null;
+  const exchanged = Boolean(room?.exchanged_at);
+  const unread = room ? ((await unreadCounts(admin, [room], userId!)).get(room.id) ?? 0) : 0;
 
   let contact: { instagram: string | null; kakao: string | null } | null = null;
   let feedback: { outcome: string } | null = null;
@@ -109,9 +107,9 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
 
   const name = profile.data.nickname;
   // 추가 검사: 상대가 보여주기로 한 결과만. 공통점은 내 결과(보여주기 여부와 상관없이)와 비교한다
-  const theirShared = sharedScores(theirExtra.rows);
+  const theirShared = sharedScores(theirExtra);
   const extraChips = EXTRA_TESTS.flatMap((t) => (theirShared[t.id] ? summarizeExtra(t, theirShared[t.id]!).chips : []));
-  const mineExtra = Object.fromEntries(Object.values(myExtra.rows).map((r) => [r!.test_id, r!.scores]));
+  const mineExtra = Object.fromEntries(Object.values(myExtra).map((r) => [r!.test_id, r!.scores]));
   const extraCommon = extraCommonalities(mineExtra, theirShared, name);
   const canCompare = EXTRA_TESTS.some((t) => theirShared[t.id] && mineExtra[t.id]);
 
@@ -223,17 +221,17 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
         {stage === "photos" && (
           <>
             <p className="mb-4 text-ink-soft">
-              사진을 보고 마음에 들면 수락해주세요. {chatAvailable ? "서로 수락하면 대화방이 열려요." : "서로 수락하면 연락처가 공개돼요."}
+              사진을 보고 마음에 들면 수락해주세요. 서로 수락하면 대화방이 열려요.
             </p>
             <ReactButtons targetId={id} mode="accept" />
           </>
         )}
         {stage === "waiting_accept" && <Notice>수락했어요. {name}님의 답을 기다리고 있어요.</Notice>}
-        {stage === "connected" && chatAvailable && (
+        {stage === "connected" && (
           <div className="mb-10">
             <h2 className="font-serif text-xl font-bold">대화</h2>
             <p className="mt-2 text-ink-soft">
-              {chat?.room?.closed_at
+              {room?.closed_at
                 ? "대화가 닫혔어요."
                 : exchanged
                   ? "연락처를 주고받았어요. 대화방도 남은 메시지만큼 계속 쓸 수 있어요."
@@ -247,7 +245,7 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
         {exchanged && contact && (
           <>
             <h2 className="font-serif text-xl font-bold">연락처</h2>
-            <p className="mt-2 text-ink-soft">{chatAvailable ? "둘 다 연락처 전달을 눌렀어요." : "서로 수락했어요. 먼저 인사를 건네보세요."}</p>
+            <p className="mt-2 text-ink-soft">둘 다 연락처 전달을 눌렀어요.</p>
             <dl className="mt-4 space-y-3">
               {contact.instagram && (
                 <div className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3">

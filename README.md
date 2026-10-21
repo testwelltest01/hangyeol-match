@@ -49,9 +49,7 @@
 ## 1. Supabase 설정
 
 1. 프로젝트 Region은 **Northeast Asia (Seoul)**.
-2. **SQL Editor**에서 순서대로 한 번씩 실행합니다.
-   - `supabase/migrations/0001_init.sql` (0단계, 이미 실행함)
-   - `supabase/migrations/0002_matching.sql` (1단계 테이블, 사진 저장소, 보안 강화, 요청 횟수 제한)
+2. **SQL Editor**에서 `supabase/migrations/0001_init.sql`을 통째로 한 번 실행합니다 (전체 테이블·함수·권한·사진 저장소). 이후 변경은 `0002_*.sql`부터 새 파일로 더합니다.
 3. **Authentication > URL Configuration**
    - Site URL: `https://hangyeol-match.vercel.app`
    - Redirect URLs: `http://localhost:3000/**`, `https://hangyeol-match.vercel.app/**`

@@ -103,8 +103,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
       .select("id, slot, path, feedback, internal, created_at, replaced_at, purged_at")
       .eq("user_id", id)
       .order("created_at", { ascending: false }),
-    // 사유 칸(detail)은 0004 SQL 뒤에 생기므로 * 로 읽는다
-    admin.from("photo_attempts").select("*").eq("user_id", id).order("created_at", { ascending: false }).limit(300),
+    admin.from("photo_attempts").select("id, slot, result, detail, created_at").eq("user_id", id).order("created_at", { ascending: false }).limit(300),
     loadExtraResults(admin, id),
     myChatRooms(admin, id),
     admin
@@ -142,6 +141,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
     hasMatchProfile: Boolean(setup?.matchProfile),
     photoCount: setup ? Number(Boolean(setup.photos.face)) + Number(Boolean(setup.photos.body)) : 0,
     hasContact: Boolean(setup?.contact),
+    hasIllustration: Boolean(setup?.illustration.done),
   });
 
   const photoRows = setup ? [setup.photos.face, setup.photos.body].filter((p) => p !== null) : [];
@@ -346,59 +346,57 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
         )}
       </Panel>
 
-      {chats.available && (
-        <Panel id="chats" className="mt-4" title={`대화방 ${chats.rooms.length}개`} lead="내용은 두 사람 사이에 신고가 있을 때만 열 수 있어요.">
-          {chats.rooms.length === 0 ? (
-            <Empty>아직 대화방이 없어요.</Empty>
-          ) : (
-            <TableWrap>
-              <thead>
-                <tr>
-                  <th className={th}>상대</th>
-                  <th className={th}>열린 시각</th>
-                  <th className={`${th} text-right`}>메시지 (회원/상대)</th>
-                  <th className={th}>연락처</th>
-                  <th className={th}>마지막 메시지</th>
-                  <th className={th} />
-                </tr>
-              </thead>
-              <tbody className="tabular-nums">
-                {chats.rooms
-                  .sort((a, b) => ((a.last_message_at ?? a.opened_at) < (b.last_message_at ?? b.opened_at) ? 1 : -1))
-                  .map((r) => {
-                    const isA = r.user_a === id;
-                    const other = isA ? r.user_b : r.user_a;
-                    const mineAt = isA ? r.contact_a_at : r.contact_b_at;
-                    const theirsAt = isA ? r.contact_b_at : r.contact_a_at;
-                    return (
-                      <tr key={r.id}>
-                        <td className={td}>
-                          <Link href={`/admin/users/${other}`} className="font-semibold underline underline-offset-4">
-                            {otherName(other)}
-                          </Link>
-                          {r.closed_at && <span className="ml-1.5"><Chip tone="alert">닫힘</Chip></span>}
-                        </td>
-                        <td className={`${td} whitespace-nowrap`}>{kstTime(r.opened_at)}</td>
-                        <td className={`${td} text-right`}>
-                          {isA ? r.count_a : r.count_b}/{isA ? r.count_b : r.count_a}
-                        </td>
-                        <td className={`${td} whitespace-nowrap`}>
-                          {r.exchanged_at ? "교환됨" : mineAt ? "회원이 누름" : theirsAt ? "상대가 누름" : "–"}
-                        </td>
-                        <td className={`${td} whitespace-nowrap text-muted`}>{kstTime(r.last_message_at)}</td>
-                        <td className={td}>
-                          <Link href={`/admin/chats/${r.id}`} className="text-sm underline underline-offset-4">
-                            보기
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })}
-              </tbody>
-            </TableWrap>
-          )}
-        </Panel>
-      )}
+      <Panel id="chats" className="mt-4" title={`대화방 ${chats.length}개`} lead="내용은 두 사람 사이에 신고가 있을 때만 열 수 있어요.">
+        {chats.length === 0 ? (
+          <Empty>아직 대화방이 없어요.</Empty>
+        ) : (
+          <TableWrap>
+            <thead>
+              <tr>
+                <th className={th}>상대</th>
+                <th className={th}>열린 시각</th>
+                <th className={`${th} text-right`}>메시지 (회원/상대)</th>
+                <th className={th}>연락처</th>
+                <th className={th}>마지막 메시지</th>
+                <th className={th} />
+              </tr>
+            </thead>
+            <tbody className="tabular-nums">
+              {chats
+                .sort((a, b) => ((a.last_message_at ?? a.opened_at) < (b.last_message_at ?? b.opened_at) ? 1 : -1))
+                .map((r) => {
+                  const isA = r.user_a === id;
+                  const other = isA ? r.user_b : r.user_a;
+                  const mineAt = isA ? r.contact_a_at : r.contact_b_at;
+                  const theirsAt = isA ? r.contact_b_at : r.contact_a_at;
+                  return (
+                    <tr key={r.id}>
+                      <td className={td}>
+                        <Link href={`/admin/users/${other}`} className="font-semibold underline underline-offset-4">
+                          {otherName(other)}
+                        </Link>
+                        {r.closed_at && <span className="ml-1.5"><Chip tone="alert">닫힘</Chip></span>}
+                      </td>
+                      <td className={`${td} whitespace-nowrap`}>{kstTime(r.opened_at)}</td>
+                      <td className={`${td} text-right`}>
+                        {isA ? r.count_a : r.count_b}/{isA ? r.count_b : r.count_a}
+                      </td>
+                      <td className={`${td} whitespace-nowrap`}>
+                        {r.exchanged_at ? "교환됨" : mineAt ? "회원이 누름" : theirsAt ? "상대가 누름" : "–"}
+                      </td>
+                      <td className={`${td} whitespace-nowrap text-muted`}>{kstTime(r.last_message_at)}</td>
+                      <td className={td}>
+                        <Link href={`/admin/chats/${r.id}`} className="text-sm underline underline-offset-4">
+                          보기
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </TableWrap>
+        )}
+      </Panel>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <Panel id="reports" title={`신고 ${reportRows.length}건`} lead="받은 신고와 이 회원이 한 신고">
@@ -509,40 +507,38 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
         </Panel>
       )}
 
-      {extra.available && (
-        <Panel className="mt-4" title="추가 검사 점수" lead="한결 시범 검사의 하위척도 평균 (1~5). 추천에는 쓰지 않아요.">
-          <div className="grid gap-6 lg:grid-cols-3">
-            {EXTRA_TESTS.map((t) => {
-              const r = extra.rows[t.id];
-              return (
-                <div key={t.id}>
-                  <h3 className="text-sm font-semibold text-muted">{t.title}</h3>
-                  {r ? (
-                    <>
-                      <ul className="mt-2 space-y-1 text-sm tabular-nums">
-                        {t.scales.map((sc) => (
-                          <li key={sc.id} className="flex justify-between gap-3 border-b border-line/70 py-1.5">
-                            <span>
-                              {sc.group === "want" ? "받고 싶은 위로 · " : sc.group === "give" ? "주는 위로 · " : ""}
-                              {sc.label}
-                            </span>
-                            <span>{r.scores.scales[sc.id]?.toFixed(2)}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <p className="mt-2 text-xs text-muted">
-                        {kstTime(r.completed_at)} · {r.version} · {r.share ? "상대에게 보여줌" : "나만 봄"}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="mt-2 text-sm text-muted">아직 안 했어요.</p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </Panel>
-      )}
+      <Panel className="mt-4" title="추가 검사 점수" lead="한결 시범 검사의 하위척도 평균 (1~5). 추천에는 쓰지 않아요.">
+        <div className="grid gap-6 lg:grid-cols-3">
+          {EXTRA_TESTS.map((t) => {
+            const r = extra[t.id];
+            return (
+              <div key={t.id}>
+                <h3 className="text-sm font-semibold text-muted">{t.title}</h3>
+                {r ? (
+                  <>
+                    <ul className="mt-2 space-y-1 text-sm tabular-nums">
+                      {t.scales.map((sc) => (
+                        <li key={sc.id} className="flex justify-between gap-3 border-b border-line/70 py-1.5">
+                          <span>
+                            {sc.group === "want" ? "받고 싶은 위로 · " : sc.group === "give" ? "주는 위로 · " : ""}
+                            {sc.label}
+                          </span>
+                          <span>{r.scores.scales[sc.id]?.toFixed(2)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-2 text-xs text-muted">
+                      {kstTime(r.completed_at)} · {r.version} · {r.share ? "상대에게 보여줌" : "나만 봄"}
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-2 text-sm text-muted">아직 안 했어요.</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </Panel>
 
       <section id="report" className="mt-10 scroll-mt-4">
         <h2 className="text-[16px] font-semibold">회원이 보는 리포트</h2>
@@ -556,7 +552,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
               friendCount={friends.count}
               minFriendCount={MIN_FRIEND_RATINGS_TO_SHOW}
               inviteToken={null}
-              extras={extra.available ? extraCards(extra.rows) : null}
+              extras={extraCards(extra)}
             />
           </div>
         ) : (

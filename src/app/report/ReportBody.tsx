@@ -84,7 +84,7 @@ export function ReportParts({
   minFriendCount,
   inviteToken,
   viewer = "owner",
-  extras = null,
+  extras,
 }: {
   nickname: string;
   report: Report;
@@ -94,8 +94,8 @@ export function ReportParts({
   inviteToken: string | null;
   /** admin이면 관리자 화면 안에서 읽기 전용으로 보여준다 (초대·공유·매칭 버튼 없음) */
   viewer?: "owner" | "admin";
-  /** 추가 검사 카드. null이면 섹션을 숨긴다 (0004 SQL 전) */
-  extras?: ExtraCard[] | null;
+  /** 추가 검사 카드 ('더 알아보기' 탭) */
+  extras: ExtraCard[];
 }) {
   const admin = viewer === "admin";
   return (
@@ -206,19 +206,15 @@ export function ReportParts({
               </Section>
             ),
           },
-          ...(extras
-            ? [
-                {
-                  id: "extra",
-                  label: "더 알아보기",
-                  content: (
-                    <Section plain lead="한결이 직접 만든 짧은 시범 검사예요. 하고 싶은 것만 골라서 해보세요. 추천 계산에는 쓰지 않아요.">
-                      <ExtraCards cards={extras} admin={admin} />
-                    </Section>
-                  ),
-                },
-              ]
-            : []),
+          {
+            id: "extra",
+            label: "더 알아보기",
+            content: (
+              <Section plain lead="한결이 직접 만든 짧은 시범 검사예요. 하고 싶은 것만 골라서 해보세요. 추천 계산에는 쓰지 않아요.">
+                <ExtraCards cards={extras} admin={admin} />
+              </Section>
+            ),
+          },
         ]}
       />
 

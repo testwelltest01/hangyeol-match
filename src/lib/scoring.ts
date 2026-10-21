@@ -24,8 +24,7 @@ export type Scores = {
     /** 영역별 중요도 원점수 (1~4) */
     importance: Record<Domain, number>;
   };
-  /** drinking(D4)은 2026-10-v3에 추가돼서 그 전 점수에는 없을 수 있다 */
-  dealbreakers: { marriage: string; children: string; smoking: string; drinking?: string };
+  dealbreakers: { marriage: string; children: string; smoking: string; drinking: string };
   /** 특성별 평균 (1~5). 정서 안정성은 높을수록 안정적 */
   bigFive: Record<Trait, number>;
   /** 0~18. 화면에 보여주지 않는다 */

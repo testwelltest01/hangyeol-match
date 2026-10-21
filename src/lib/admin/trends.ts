@@ -2,8 +2,6 @@
 import { daysBefore, kstDay } from "@/lib/day";
 
 export type GenderKey = "male" | "female" | "unknown";
-export const GENDER_KEYS: GenderKey[] = ["male", "female", "unknown"];
-export const GENDER_LABEL: Record<GenderKey, string> = { male: "남", female: "여", unknown: "성별 미입력" };
 export const WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"] as const;
 
 export type TrendEvent = { userId: string; at: string };

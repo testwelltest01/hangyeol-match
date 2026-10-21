@@ -10,14 +10,11 @@ export type ChatRoom = ChatRoomMeta;
 const ROOM_COLUMNS =
   "id, user_a, user_b, opened_at, first_message_at, last_message_at, count_a, count_b, contact_a_at, contact_b_at, exchanged_at, closed_at, close_reason";
 
-/**
- * 두 사람의 대화방. 0005 SQL을 실행하기 전이면 available=false (예전처럼 수락하면 바로 연락처 공개).
- */
-export async function getChatRoom(admin: Admin, me: string, other: string): Promise<{ available: boolean; room: ChatRoom | null }> {
+/** 두 사람의 대화방 (서로 수락하면 열린다). 없으면 null */
+export async function getChatRoom(admin: Admin, me: string, other: string): Promise<ChatRoom | null> {
   const [a, b] = orderPair(me, other);
-  const { data, error } = await admin.from("chat_rooms").select(ROOM_COLUMNS).eq("user_a", a).eq("user_b", b).maybeSingle();
-  if (error) return { available: false, room: null };
-  return { available: true, room: (data as ChatRoom | null) ?? null };
+  const { data } = await admin.from("chat_rooms").select(ROOM_COLUMNS).eq("user_a", a).eq("user_b", b).maybeSingle();
+  return (data as ChatRoom | null) ?? null;
 }
 
 /** 방 열기 (이미 있으면 그대로). 실패해도 수락 자체는 되돌리지 않는다 */
@@ -27,12 +24,12 @@ export async function openChatRoom(admin: Admin, me: string, other: string): Pro
     console.warn("open_chat_room skipped:", error.message);
     return null;
   }
-  return (await getChatRoom(admin, me, other)).room;
+  return getChatRoom(admin, me, other);
 }
 
 /** 차단·신고로 방 닫기 */
 export async function closeChatRoom(admin: Admin, me: string, other: string, reason: "blocked" | "reported"): Promise<void> {
-  const { room } = await getChatRoom(admin, me, other);
+  const room = await getChatRoom(admin, me, other);
   if (!room || room.closed_at) return;
   await admin.from("chat_rooms").update({ closed_at: new Date().toISOString(), close_reason: reason }).eq("id", room.id);
   await admin.from("chat_events").insert({ room_id: room.id, user_id: me, kind: "closed" });
@@ -107,9 +104,8 @@ export async function unreadCounts(admin: Admin, rooms: ChatRoom[], me: string):
   return out;
 }
 
-/** 내가 들어 있는 대화방 전체. 0005 전이면 available=false */
-export async function myChatRooms(admin: Admin, me: string): Promise<{ available: boolean; rooms: ChatRoom[] }> {
-  const { data, error } = await admin.from("chat_rooms").select(ROOM_COLUMNS).or(`user_a.eq.${me},user_b.eq.${me}`);
-  if (error) return { available: false, rooms: [] };
-  return { available: true, rooms: (data ?? []) as ChatRoom[] };
+/** 내가 들어 있는 대화방 전체 */
+export async function myChatRooms(admin: Admin, me: string): Promise<ChatRoom[]> {
+  const { data } = await admin.from("chat_rooms").select(ROOM_COLUMNS).or(`user_a.eq.${me},user_b.eq.${me}`);
+  return (data ?? []) as ChatRoom[];
 }

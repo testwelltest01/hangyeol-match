@@ -58,7 +58,6 @@ async function PhotosGate({ searchParams }: { searchParams: PageProps<"/me/photo
         tip="얼굴이 잘 보이는 최근 사진을 갤러리에서 골라주세요. 혼자 나오고, 밝은 곳에서 찍은 사진이 좋아요. 새로 찍는다면 창문을 마주 보고, 거울 앞에서 2배 줌으로 찍으면 얼굴이 덜 왜곡돼요."
         current={face ? { url: urls.get(face.path) ?? null, feedback: face.feedback } : null}
         canUpload={remaining > 0}
-        needsConsent={!setup.consents.photoOverseas}
       />
       <PhotoSlot
         slot="body"
@@ -66,7 +65,6 @@ async function PhotosGate({ searchParams }: { searchParams: PageProps<"/me/photo
         tip="다른 사람이 찍어준 사진을 갤러리에서 골라주세요. 최소 무릎 위까지 나와야 해요."
         current={body ? { url: urls.get(body.path) ?? null, feedback: body.feedback } : null}
         canUpload={remaining > 0}
-        needsConsent={!setup.consents.photoOverseas}
       />
       <p className="text-sm text-muted">
         사진은 얼굴·전신을 합쳐 계정당 {PHOTO_UPLOADS_PER_ACCOUNT}번까지 올릴 수 있어요(기준에 맞지 않아 거절된 사진 포함). {remaining}번

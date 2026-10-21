@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Callout, EmptyState, NextStepCard } from "@/components/app-ui";
-import { DrinkingQuestion } from "@/components/DrinkingQuestion";
 import { IconGrain, IconMoon, IconPause } from "@/components/icons";
 import { PersonCardView } from "@/components/PersonCard";
 import { ReactButtons } from "@/components/ReactButtons";
@@ -24,7 +23,7 @@ export default function MatchPage() {
 }
 
 /** 오늘 추천받은 사람은 관심·수락이 진행돼도 하루 동안 카드에 남기고, 지금 단계를 한 줄로 알려준다 */
-function todayState(c: PersonCard, chatAvailable: boolean): { actions: ReactNode; detailLabel?: string; detailButton?: boolean } {
+function todayState(c: PersonCard): { actions: ReactNode; detailLabel?: string; detailButton?: boolean } {
   const note = (text: string, strong = false) => (
     <p className={`text-sm ${strong ? "font-semibold text-indigo" : "text-moss"}`}>{text}</p>
   );
@@ -39,7 +38,7 @@ function todayState(c: PersonCard, chatAvailable: boolean): { actions: ReactNode
       return { actions: note("수락했어요. 상대의 답을 기다리고 있어요.") };
     case "connected":
       return {
-        actions: note(chatAvailable ? "서로 수락했어요. 대화방이 열렸어요." : "서로 수락했어요. 연락처가 공개됐어요.", true),
+        actions: note("서로 수락했어요. 대화방이 열렸어요.", true),
         detailLabel: "프로필 보기",
         detailButton: true,
       };
@@ -60,7 +59,6 @@ async function TodayGate() {
     return (
       <div className="space-y-5">
         <MatchNotices data={data} />
-        {data.needsDrinking && <DrinkingQuestion />}
         {/* 검사를 마치면 이 화면으로 온다. 결과는 '내 결' 탭에 있다고 알려준다 */}
         <Callout
           icon={<IconGrain size={22} />}
@@ -79,9 +77,9 @@ async function TodayGate() {
   }
 
   const stopped = setup.suspended || setup.matchProfile!.paused;
-  // 새로고침 쿠폰: 0008 SQL 뒤에, 추천이 멈추지 않았고 오늘 추천이 있을 때. 바꿀 수 있는 사람은 아직 답하지 않았고 나에게 먼저 관심을 보내지 않은 사람
+  // 새로고침 쿠폰: 추천이 멈추지 않았고 오늘 추천이 있을 때. 바꿀 수 있는 사람은 아직 답하지 않았고 나에게 먼저 관심을 보내지 않은 사람
   const coupon =
-    data.coupons.available && !stopped && d.today.length > 0 ? (
+    !stopped && d.today.length > 0 ? (
       <RefreshCoupon
         balance={data.coupons.balance}
         usedToday={data.coupons.usedToday}
@@ -91,7 +89,6 @@ async function TodayGate() {
   return (
     <>
       <MatchNotices data={data} showPaused />
-      {data.needsDrinking && <DrinkingQuestion />}
       {d.today.length === 0 ? (
         stopped ? (
           <EmptyState
@@ -119,7 +116,7 @@ async function TodayGate() {
       ) : (
         <div className="space-y-4">
           {d.today.map((c) => {
-            const { actions, detailLabel, detailButton } = todayState(c, d.chatAvailable);
+            const { actions, detailLabel, detailButton } = todayState(c);
             return <PersonCardView key={c.id} card={c} actions={actions} detailLabel={detailLabel} detailButton={detailButton} />;
           })}
         </div>

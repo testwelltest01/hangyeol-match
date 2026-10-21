@@ -43,11 +43,11 @@ export type MatchPerson = {
   birthYear: number;
   region: string;
   height: number;
-  religion: Religion | null;
+  religion: Religion;
   /** 검사 D3: none | ecig | yes */
   smoking: string;
-  /** 검사 D4: none | rarely | weekly | often. 2026-10-v3 전에 검사를 마치고 아직 답하지 않았으면 null */
-  drinking: string | null;
+  /** 검사 D4: none | rarely | weekly | often */
+  drinking: string;
   /** 검사 D1, D2: yes | unsure | no */
   marriage: string;
   children: string;
@@ -102,8 +102,6 @@ export function meets(key: FilterKey, viewer: MatchPerson, cand: MatchPerson, ye
       return cand.smoking === "none";
     case "drinking":
       if (f.drinking.mode === "any") return true;
-      // 음주에 아직 답하지 않은 사람은 음주 조건을 건 사람에게 '꼭'이면 보이지 않고 '되도록'이면 감점
-      if (cand.drinking === null) return false;
       if (f.drinking.mode === "not_often") return cand.drinking !== "often";
       if (f.drinking.mode === "rarely_or_less") return cand.drinking === "none" || cand.drinking === "rarely";
       return cand.drinking === "none";
@@ -111,8 +109,6 @@ export function meets(key: FilterKey, viewer: MatchPerson, cand: MatchPerson, ye
       return !clash(viewer.marriage, cand.marriage) && !clash(viewer.children, cand.children);
     case "religion":
       if (f.religion.mode === "any") return true;
-      // 종교를 입력하지 않은 사람은 종교 조건을 건 사람에게 보이지 않는다
-      if (cand.religion === null) return false;
       if (f.religion.mode === "same") return cand.religion === viewer.religion;
       return f.religion.list.includes(cand.religion);
   }
@@ -130,12 +126,6 @@ function isActive(key: FilterKey, f: Filters): boolean {
 const KEYS: FilterKey[] = ["age", "regions", "height", "smoking", "drinking", "family", "religion"];
 
 const DRINKING_MODES: DrinkingMode[] = ["any", "not_often", "rarely_or_less", "none_only"];
-
-/** DB에 저장된 조건을 읽을 때: 나중에 생긴 조건(음주)이 없으면 '상관없음'으로 채운다 */
-export function withFilterDefaults(f: Filters): Filters {
-  const d = (f as Partial<Filters>).drinking;
-  return d && DRINKING_MODES.includes(d.mode) ? f : { ...f, drinking: { mode: "any", strict: true } };
-}
 
 export type OneWay = { blocked: boolean; softMisses: number; failed: FilterKey[] };
 
@@ -172,7 +162,7 @@ const int = (v: unknown) => (typeof v === "number" && Number.isInteger(v) ? v : 
 const bool = (v: unknown) => v === true;
 
 /** 사용자가 보낸 조건을 검증해 정리한다. 잘못되면 사용자에게 보여줄 문장을 돌려준다 */
-export function sanitizeFilters(input: unknown, me: { religion: Religion | null }): Filters | { error: string } {
+export function sanitizeFilters(input: unknown): Filters | { error: string } {
   if (!input || typeof input !== "object") return { error: "조건을 다시 확인해주세요." };
   const raw = input as Record<string, Record<string, unknown>>;
 
@@ -201,8 +191,7 @@ export function sanitizeFilters(input: unknown, me: { religion: Religion | null 
     return { error: "흡연 조건을 확인해주세요." };
   }
 
-  // 음주 조건이 없던 예전 화면에서 보낸 값이면 '상관없음'으로 본다
-  const drinkingMode = raw.drinking?.mode ?? "any";
+  const drinkingMode = raw.drinking?.mode;
   if (!DRINKING_MODES.includes(drinkingMode as DrinkingMode)) return { error: "음주 조건을 확인해주세요." };
 
   const religionMode = raw.religion?.mode;
@@ -210,9 +199,6 @@ export function sanitizeFilters(input: unknown, me: { religion: Religion | null 
     return { error: "종교 조건을 확인해주세요." };
   }
   const religionList = Array.isArray(raw.religion?.list) ? [...new Set(raw.religion.list as unknown[])].filter(isReligion) : [];
-  if (religionMode !== "any" && me.religion === null) {
-    return { error: "종교 조건을 걸려면 내 정보에서 내 종교를 먼저 입력해주세요." };
-  }
   if (religionMode === "specific" && religionList.length === 0) return { error: "만나고 싶은 종교를 하나 이상 골라주세요." };
 
   return {
@@ -220,14 +206,14 @@ export function sanitizeFilters(input: unknown, me: { religion: Religion | null 
     regions: { list, strict: bool(raw.regions?.strict) },
     height: { mode: heightMode, min: hMin, max: hMax, strict: bool(raw.height?.strict) },
     smoking: { mode: smokingMode, strict: bool(raw.smoking?.strict) },
-    drinking: { mode: drinkingMode as DrinkingMode, strict: raw.drinking ? bool(raw.drinking.strict) : true },
+    drinking: { mode: drinkingMode as DrinkingMode, strict: bool(raw.drinking?.strict) },
     family: { strict: bool(raw.family?.strict) },
     religion: { mode: religionMode, list: religionMode === "specific" ? religionList : [], strict: bool(raw.religion?.strict) },
   };
 }
 
 // ---------------------------------------------------------------------------
-// 자기소개 검증: 연락처는 서로 수락한 뒤에만 공개되므로 자기소개에 적지 못하게 한다
+// 자기소개 검증: 연락처는 대화방에서 둘 다 '연락처 전달'을 누른 뒤에만 공개되므로 자기소개에 적지 못하게 한다
 // ---------------------------------------------------------------------------
 
 export const INTRO_MAX = 300;

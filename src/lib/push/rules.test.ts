@@ -45,7 +45,7 @@ describe("pushMessages", () => {
     const m = pushMessages.chatMessage("윤슬", "u1");
     expect(m.body).toContain("윤슬");
     expect(m.url).toBe("/chat/u1");
-    expect(pushMessages.connected("도담", "u2", false).url).toBe("/people/u2");
+    expect(pushMessages.connected("도담", "u2").url).toBe("/chat/u2");
   });
 
   it("새 추천 알림은 추천 화면으로, 하루 하나로 묶는다", () => {

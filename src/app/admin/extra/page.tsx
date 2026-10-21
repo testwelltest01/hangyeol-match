@@ -20,7 +20,7 @@ export default function ExtraAdminPage() {
 async function ExtraGate() {
   await requireAdmin();
   const admin = createAdminClient();
-  const [{ available, rows }, genderOf] = await Promise.all([loadAllExtra(admin), loadGenderOf(admin)]);
+  const [rows, genderOf] = await Promise.all([loadAllExtra(admin), loadGenderOf(admin)]);
   const all: Row[] = rows.map((r) => ({ ...r, gender: genderOf(r.user_id) }));
-  return <ExtraView available={available} all={all} />;
+  return <ExtraView all={all} />;
 }

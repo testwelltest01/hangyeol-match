@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { DeleteAccount } from "@/app/report/DeleteAccount";
 import { Avatar, ListGroup, ListRow, NextStepCard, StatusChip } from "@/components/app-ui";
-import { DrinkingQuestion } from "@/components/DrinkingQuestion";
 import {
   IconBrush,
   IconCamera,
@@ -50,7 +49,7 @@ function stepSub(s: SetupStep, setup: MySetup): string {
 }
 
 /** 내 정보 화면: 나, 매칭 준비, 매칭 정보 목록, 앱·알림, 매칭 쉬기, 계정 */
-export function MeView({ setup, needsDrinking, faceUrl }: { setup: MySetup; needsDrinking: boolean; faceUrl: string | null }) {
+export function MeView({ setup, faceUrl }: { setup: MySetup; faceUrl: string | null }) {
   const steps = setupSteps(setup);
   const ready = isReady(setup);
   const paused = Boolean(setup.matchProfile?.paused);
@@ -78,7 +77,6 @@ export function MeView({ setup, needsDrinking, faceUrl }: { setup: MySetup; need
       </section>
 
       {setup.suspended && <Notice tone="alert">신고가 접수되어 매칭이 잠시 멈춰 있어요. 운영자가 확인한 뒤 다시 열려요.</Notice>}
-      {needsDrinking && <DrinkingQuestion />}
       {!ready && <NextStepCard steps={steps} showList={false} />}
 
       <ListGroup title="매칭 정보" note={ready ? "언제든 고칠 수 있어요. 바꾼 내용은 다음 추천부터 반영돼요." : undefined}>
@@ -101,10 +99,6 @@ export function MeView({ setup, needsDrinking, faceUrl }: { setup: MySetup; need
       </ListGroup>
 
       <ListGroup title="나를 더 보여주기">
-        {/* 0006 SQL 전에는 그림 프로필이 준비 단계에 없어서 여기서 들어간다(화면은 '준비 중' 안내) */}
-        {!setup.illustration.available && (
-          <ListRow href="/me/illustration" icon={<IconBrush size={20} />} label="그림 프로필" sub="사진과 자기소개로 그린 그림을 추천 카드에 보여줘요" />
-        )}
         <ListRow href="/report#extra" icon={<IconGrain size={20} />} label="더 알아보기" sub="짧은 시범 검사로 나를 더 알려요 (선택)" />
       </ListGroup>
 

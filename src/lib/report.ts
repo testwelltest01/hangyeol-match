@@ -174,7 +174,7 @@ export function buildReport(scores: Scores): Report {
       { label: "흡연", value: DEALBREAKER_LABEL.smoking[scores.dealbreakers.smoking] },
       {
         label: "음주",
-        value: scores.dealbreakers.drinking ? DEALBREAKER_LABEL.drinking[scores.dealbreakers.drinking] : "아직 답하지 않았어요",
+        value: DEALBREAKER_LABEL.drinking[scores.dealbreakers.drinking],
       },
     ],
   };

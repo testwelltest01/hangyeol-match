@@ -9,7 +9,7 @@ export const MATCH_HOUR_KST = 20;
 /**
  * 추천의 '하루' 'YYYY-MM-DD'. 저녁 8시에 다음 날로 넘어간다.
  * 10월 19일 20:00 ~ 10월 20일 19:59(한국)에 받은 추천은 '2026-10-20' 추천이다.
- * (예전에 자정에 만든 '그날' 추천이 저녁 8시까지 그대로 이어지도록 다음 날 이름을 붙인다)
+ * (저녁 8시에 나온 추천은 다음 날 하루 동안 보는 추천이라 다음 날 이름을 붙인다)
  */
 export function matchDay(date: Date = new Date()): string {
   return kstDay(new Date(date.getTime() + (24 - MATCH_HOUR_KST) * 60 * 60 * 1000));

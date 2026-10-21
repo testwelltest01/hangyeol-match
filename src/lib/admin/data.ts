@@ -27,6 +27,7 @@ export type MemberRow = {
   paused: boolean;
   photoCount: number;
   hasContact: boolean;
+  hasIllustration: boolean;
   suspended: boolean;
   suspendReason: string | null;
   friendCount: number;
@@ -101,7 +102,7 @@ export async function loadMembers(admin: Admin): Promise<{ members: MemberRow[];
       hasMatchProfile: Boolean(mp),
       photoCount: photoCount.get(u.id) ?? 0,
       hasContact: contactIds.has(u.id),
-      hasIllustration: illustrated ? illustrated.has(u.id) : undefined,
+      hasIllustration: illustrated.has(u.id),
     };
     return {
       id: u.id,
@@ -122,6 +123,7 @@ export async function loadMembers(admin: Admin): Promise<{ members: MemberRow[];
       paused: mp?.paused ?? false,
       photoCount: facts.photoCount,
       hasContact: facts.hasContact,
+      hasIllustration: facts.hasIllustration,
       suspended: Boolean(flag?.suspended_at),
       suspendReason: flag?.suspended_at ? flag.reason : null,
       friendCount: facts.friendCount,

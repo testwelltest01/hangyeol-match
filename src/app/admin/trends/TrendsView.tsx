@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Notice } from "@/components/ui";
 import { METRICS, PERIODS, WEEKDAYS, peakIndex, shares, type Metric, type Trend } from "@/lib/admin/trends";
 import { GenderLegend, GroupedBars, Heatmap, StackedDays } from "../charts";
 import { AdminShell, AdminTitle, Panel, Stat } from "../ui";
@@ -36,7 +35,7 @@ function Chips<T extends string | number>({
 const hourLabel = (h: number | null) => (h === null ? "–" : `${h}시`);
 const dayLabel = (d: number | null) => (d === null ? "–" : `${WEEKDAYS[d]}요일`);
 
-export function TrendsView({ metric, days, trend, available }: { metric: Metric; days: number; trend: Trend; available: boolean }) {
+export function TrendsView({ metric, days, trend }: { metric: Metric; days: number; trend: Trend }) {
   const m = METRICS.find((x) => x.id === metric)!;
   const daily = metric === "visit" ? trend.dailyUsers : trend.daily;
   const hours = Array.from({ length: 24 }, (_, h) => String(h));
@@ -51,14 +50,6 @@ export function TrendsView({ metric, days, trend, available }: { metric: Metric;
         <Chips label="기간" items={PERIODS.map((p) => ({ id: p as number, label: `최근 ${p}일` }))} current={days} hrefOf={(d) => href(metric, d)} />
       </div>
       <p className="mt-3 text-sm text-muted">{m.lead}</p>
-
-      {!available && (
-        <div className="mt-4">
-          <Notice>
-            방문 기록 테이블이 아직 없어요. Supabase SQL Editor에서 <code>0003_activity.sql</code>을 실행하면 그때부터 쌓여요.
-          </Notice>
-        </div>
-      )}
 
       <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label={`남 · ${m.label}`} value={trend.totals.male} sub={`${trend.users.male}명`} />

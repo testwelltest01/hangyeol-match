@@ -33,16 +33,15 @@ const dailyCap = () => Number(process.env.ILLUSTRATION_DAILY_CAP) || 300;
 
 const COLUMNS = "id, status, path, model, prompt_version, features, error, shown, created_at, completed_at";
 
-/** 내 그림들 (지운 것 제외, 최근 순). 0006 SQL 전이면 available=false */
-export async function loadIllustrations(admin: Admin, userId: string): Promise<{ available: boolean; rows: IllustrationRow[] }> {
-  const { data, error } = await admin
+/** 내 그림들 (지운 것 제외, 최근 순). 멈춘 '그리는 중'은 실패로 정리한다 */
+export async function loadIllustrations(admin: Admin, userId: string): Promise<IllustrationRow[]> {
+  const { data } = await admin
     .from("illustrations")
     .select(COLUMNS)
     .eq("user_id", userId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(10);
-  if (error) return { available: false, rows: [] };
   const rows = (data ?? []) as IllustrationRow[];
   // 너무 오래 멈춰 있는 것은 실패로 정리한다
   const stale = rows.filter((r) => r.status === "pending" && Date.now() - new Date(r.created_at).getTime() > STALE_MS);
@@ -50,7 +49,7 @@ export async function loadIllustrations(admin: Admin, userId: string): Promise<{
     await markStale(admin, stale.map((r) => r.id));
     for (const r of stale) Object.assign(r, { status: "failed", error: STALE_ERROR });
   }
-  return { available: true, rows };
+  return rows;
 }
 
 const STALE_ERROR = "그리는 데 너무 오래 걸려서 멈췄어요. 다시 시도해주세요.";
@@ -87,7 +86,7 @@ export async function collectFeatures(admin: Admin, userId: string): Promise<Ill
     loadExtraResults(admin, userId),
   ]);
   if (!profile.data || !score.data) return null;
-  const extraChips = EXTRA_TESTS.flatMap((t) => (extra.rows[t.id] ? summarizeExtra(t, extra.rows[t.id]!.scores).chips : []));
+  const extraChips = EXTRA_TESTS.flatMap((t) => (extra[t.id] ? summarizeExtra(t, extra[t.id]!.scores).chips : []));
   return buildFeatures({
     gender: profile.data.gender,
     birthYear: profile.data.birth_year,
@@ -162,7 +161,7 @@ export async function runIllustration(admin: Admin, userId: string, id: string, 
 
 /**
  * 추천 카드에 보여줄 그림 (회원 id → 서명 주소 10분): 회원이 고른 그림, 없으면 가장 최근에 다 그린 그림.
- * 그림 프로필은 매칭에 꼭 필요해서 후보 풀에 있는 사람은 모두 하나씩 있다. 0006 전이면 빈 결과
+ * 그림 프로필은 매칭에 꼭 필요해서 후보 풀에 있는 사람은 모두 하나씩 있다
  */
 export async function shownIllustrationUrls(admin: Admin, userIds: string[]): Promise<Map<string, string>> {
   const out = new Map<string, string>();
@@ -196,8 +195,7 @@ export async function shownIllustrationUrls(admin: Admin, userIds: string[]): Pr
 /**
  * 그림 프로필 자동 만들기 준비. 그림 프로필에 동의했고(consents 'illustration'), 내 정보·사진 2장·검사가 갖춰졌고, 정지되지 않았고,
  * 다 그린 그림도 그리는 중인 그림도 없고, 횟수가 남았고, 마지막 시도에서 30분이 지났고 오늘 실패가 3번 미만이면(`autoDrawDue`)
- * '그리는 중' 기록을 만들어 돌려준다. 실제로 그리기는 부르는 쪽이 응답 뒤 after()에서 runIllustration으로 한다.
- * 0006 SQL 전이면 아무것도 하지 않는다
+ * '그리는 중' 기록을 만들어 돌려준다. 실제로 그리기는 부르는 쪽이 응답 뒤 after()에서 runIllustration으로 한다
  */
 export async function prepareAutoIllustration(admin: Admin, userId: string): Promise<{ id: string; features: IllustrationFeatures } | null> {
   const [attempts, consent, mp, photos, flag] = await Promise.all([
@@ -207,7 +205,7 @@ export async function prepareAutoIllustration(admin: Admin, userId: string): Pro
     admin.from("photos").select("slot").eq("user_id", userId).is("replaced_at", null),
     admin.from("user_flags").select("suspended_at").eq("user_id", userId).maybeSingle(),
   ]);
-  if (attempts.error || !consent.data || !mp.data || flag.data?.suspended_at) return null;
+  if (!consent.data || !mp.data || flag.data?.suspended_at) return null;
   const slots = new Set((photos.data ?? []).map((p) => p.slot));
   if (!slots.has("face") || !slots.has("body")) return null;
 

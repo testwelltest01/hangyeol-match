@@ -9,17 +9,10 @@ import { saveMatchProfile, type FormState } from "../actions";
 
 const HEIGHTS = Array.from({ length: MAX_HEIGHT - MIN_HEIGHT - 39 }, (_, i) => MIN_HEIGHT + 10 + i); // 140~200
 
-export function ProfileForm({
-  initial,
-  hasReligionConsent,
-}: {
-  initial: { region: string; height: number; intro: string; religion: Religion | null } | null;
-  hasReligionConsent: boolean;
-}) {
+export function ProfileForm({ initial }: { initial: { region: string; height: number; intro: string; religion: Religion } | null }) {
   const [state, action, pending] = useActionState<FormState, FormData>(saveMatchProfile, { error: null });
   const [intro, setIntro] = useState(initial?.intro ?? "");
   const [religion, setReligion] = useState<string>(initial?.religion ?? "");
-  const needsConsent = religion !== "" && !hasReligionConsent;
 
   return (
     <form action={action} className="mt-8 space-y-8">
@@ -60,7 +53,7 @@ export function ProfileForm({
           placeholder="주말에 주로 하는 일, 요즘 빠져 있는 것, 만나면 같이 해보고 싶은 것처럼 대화가 시작될 만한 이야기를 써주세요."
           className={`${fieldClass} resize-y leading-relaxed`}
         />
-        <span className="mt-2 block text-sm text-muted">연락처와 SNS 아이디는 적을 수 없어요. 서로 수락하면 따로 공개돼요.</span>
+        <span className="mt-2 block text-sm text-muted">연락처와 SNS 아이디는 적을 수 없어요. 대화방에서 둘 다 &lsquo;연락처 전달&rsquo;을 누르면 따로 공개돼요.</span>
       </label>
 
       <fieldset>
@@ -84,20 +77,6 @@ export function ProfileForm({
           ))}
         </div>
         <p className="mt-2 text-sm text-muted">종교 조건에 맞는 상대를 추천하는 데만 쓰고, 상대에게 그대로 보여주지 않아요.</p>
-        {needsConsent && (
-          <div className="mt-4 rounded-xl bg-mist px-4 py-4 text-sm text-ink-soft">
-            <p className="font-semibold text-ink">민감정보 수집·이용 동의 (필수)</p>
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              <li>항목: 종교</li>
-              <li>목적: 종교 조건에 맞는 상대 추천</li>
-              <li>보유기간: 탈퇴할 때까지</li>
-            </ul>
-            <label className="mt-3 flex items-start gap-3 text-ink">
-              <input type="checkbox" name="agreeReligion" required className="mt-1 h-5 w-5 accent-[var(--color-indigo)]" />
-              <span>종교 정보 수집·이용에 동의해요.</span>
-            </label>
-          </div>
-        )}
       </fieldset>
 
       <p className="text-sm text-muted">결혼·자녀 생각과 흡연·음주 여부는 검사에서 답한 내용을 조건 비교에 써요. 상대에게 그대로 보이지는 않아요.</p>

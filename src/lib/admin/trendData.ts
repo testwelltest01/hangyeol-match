@@ -15,56 +15,48 @@ export async function loadGenderOf(admin: Admin): Promise<(id: string) => Gender
   return (id) => map.get(id) ?? "unknown";
 }
 
-/**
- * 지표별 기록 (since 이후). 방문 기록은 0003 SQL을 실행해야 생기므로, 테이블이 없으면 available=false.
- */
-export async function loadTrendEvents(admin: Admin, metric: Metric, since: string): Promise<{ events: TrendEvent[]; available: boolean }> {
-  const read = async <T,>(make: (a: number, b: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>) =>
-    fetchAll<T>(make);
+/** 지표별 기록 (since 이후) */
+export async function loadTrendEvents(admin: Admin, metric: Metric, since: string): Promise<TrendEvent[]> {
   switch (metric) {
     case "visit": {
-      try {
-        const rows = await read<{ user_id: string; created_at: string }>((a, b) =>
-          admin.from("activity_events").select("user_id, created_at").eq("kind", "visit").gte("created_at", since).order("id").range(a, b),
-        );
-        return { events: rows.map((r) => ({ userId: r.user_id, at: r.created_at })), available: true };
-      } catch {
-        return { events: [], available: false };
-      }
+      const rows = await fetchAll<{ user_id: string; created_at: string }>((a, b) =>
+        admin.from("activity_events").select("user_id, created_at").eq("kind", "visit").gte("created_at", since).order("id").range(a, b),
+      );
+      return rows.map((r) => ({ userId: r.user_id, at: r.created_at }));
     }
     case "signup": {
       const users = await listAuthUsers(admin);
-      return { events: users.filter((u) => u.created_at >= since).map((u) => ({ userId: u.id, at: u.created_at })), available: true };
+      return users.filter((u) => u.created_at >= since).map((u) => ({ userId: u.id, at: u.created_at }));
     }
     case "test": {
-      const rows = await read<{ user_id: string; computed_at: string }>((a, b) =>
+      const rows = await fetchAll<{ user_id: string; computed_at: string }>((a, b) =>
         admin.from("test_scores").select("user_id, computed_at").gte("computed_at", since).range(a, b),
       );
-      return { events: rows.map((r) => ({ userId: r.user_id, at: r.computed_at })), available: true };
+      return rows.map((r) => ({ userId: r.user_id, at: r.computed_at }));
     }
     case "interest": {
-      const rows = await read<{ from_user: string; interest_at: string }>((a, b) =>
+      const rows = await fetchAll<{ from_user: string; interest_at: string }>((a, b) =>
         admin.from("reactions").select("from_user, interest_at").eq("interest", true).gte("interest_at", since).range(a, b),
       );
-      return { events: rows.map((r) => ({ userId: r.from_user, at: r.interest_at })), available: true };
+      return rows.map((r) => ({ userId: r.from_user, at: r.interest_at }));
     }
     case "accept": {
-      const rows = await read<{ from_user: string; accept_at: string }>((a, b) =>
+      const rows = await fetchAll<{ from_user: string; accept_at: string }>((a, b) =>
         admin.from("reactions").select("from_user, accept_at").eq("accept", true).gte("accept_at", since).range(a, b),
       );
-      return { events: rows.map((r) => ({ userId: r.from_user, at: r.accept_at })), available: true };
+      return rows.map((r) => ({ userId: r.from_user, at: r.accept_at }));
     }
     case "photo": {
-      const rows = await read<{ user_id: string; created_at: string }>((a, b) =>
+      const rows = await fetchAll<{ user_id: string; created_at: string }>((a, b) =>
         admin.from("photo_attempts").select("user_id, created_at").in("result", ["registered", "rejected"]).gte("created_at", since).order("id").range(a, b),
       );
-      return { events: rows.map((r) => ({ userId: r.user_id, at: r.created_at })), available: true };
+      return rows.map((r) => ({ userId: r.user_id, at: r.created_at }));
     }
     case "friend": {
-      const rows = await read<{ user_id: string; created_at: string }>((a, b) =>
+      const rows = await fetchAll<{ user_id: string; created_at: string }>((a, b) =>
         admin.from("friend_ratings").select("user_id, created_at").gte("created_at", since).order("id").range(a, b),
       );
-      return { events: rows.map((r) => ({ userId: r.user_id, at: r.created_at })), available: true };
+      return rows.map((r) => ({ userId: r.user_id, at: r.created_at }));
     }
   }
 }

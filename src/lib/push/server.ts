@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 import { pushMessages, shouldNotifyChat, type PushMessage } from "@/lib/push/rules";
 
-// 알림(웹 푸시) 보내기. 키가 없거나(환경 변수) 0007 SQL 전이면 조용히 아무것도 하지 않는다.
+// 알림(웹 푸시) 보내기. 키(환경 변수)가 없으면 조용히 아무것도 하지 않는다.
 // 환경 변수: NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, (선택) VAPID_SUBJECT
 
 type Admin = SupabaseClient;
@@ -56,11 +56,10 @@ export async function sendPushMany(admin: Admin, messages: Map<string, PushMessa
   const ids = [...messages.keys()];
   const subs: { id: string; user_id: string; endpoint: string; p256dh: string; auth: string }[] = [];
   for (let i = 0; i < ids.length; i += 200) {
-    const { data, error } = await admin
+    const { data } = await admin
       .from("push_subscriptions")
       .select("id, user_id, endpoint, p256dh, auth")
       .in("user_id", ids.slice(i, i + 200));
-    if (error) return 0; // 0007 SQL 전
     subs.push(...(data ?? []));
   }
   let sent = 0;
@@ -98,7 +97,7 @@ export async function notifyPair(
   admin: Admin,
   from: string,
   to: string,
-  kind: "mutualInterest" | "connectedChat" | "connectedContact" | "contactRequest" | "contactExchanged",
+  kind: "mutualInterest" | "connected" | "contactRequest" | "contactExchanged",
 ): Promise<void> {
   if (!setup()) return;
   const name = await nickname(admin, from);
@@ -106,13 +105,11 @@ export async function notifyPair(
   const message =
     kind === "mutualInterest"
       ? pushMessages.mutualInterest(name, from)
-      : kind === "connectedChat"
-        ? pushMessages.connected(name, from, true)
-        : kind === "connectedContact"
-          ? pushMessages.connected(name, from, false)
-          : kind === "contactRequest"
-            ? pushMessages.contactRequest(name, from)
-            : pushMessages.contactExchanged(name, from);
+      : kind === "connected"
+        ? pushMessages.connected(name, from)
+        : kind === "contactRequest"
+          ? pushMessages.contactRequest(name, from)
+          : pushMessages.contactExchanged(name, from);
   await sendPush(admin, to, message);
 }
 

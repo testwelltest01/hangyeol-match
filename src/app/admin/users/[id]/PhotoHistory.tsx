@@ -111,7 +111,7 @@ function AttemptCard({ a }: { a: AttemptEntry }) {
         <Chip tone={rejected ? "alert" : "mist"}>{rejected ? "등록 거절" : "오류"}</Chip>
       </p>
       <p className="mt-1.5 text-ink-soft">
-        {a.detail ?? <span className="text-muted">사유 기록 없음 (0004 SQL 실행 전 시도)</span>}
+        {a.detail ?? <span className="text-muted">사유 기록 없음</span>}
       </p>
       {rejected && <p className="mt-1 text-xs text-muted">거절된 사진은 저장하지 않아서 이미지가 없어요.</p>}
     </div>

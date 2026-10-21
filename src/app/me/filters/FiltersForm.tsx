@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { PrimaryButton } from "@/components/buttons";
@@ -169,7 +168,7 @@ export function FiltersForm({
   first,
 }: {
   initial: Filters;
-  me: { age: number; height: number; religion: Religion | null; region: string };
+  me: { age: number; height: number; religion: Religion; region: string };
   year: number;
   first: boolean;
 }) {
@@ -354,16 +353,7 @@ export function FiltersForm({
           ) : undefined
         }
       >
-        {me.religion === null ? (
-          <p className="text-ink-soft">
-            종교 조건을 걸려면{" "}
-            <Link href="/me/profile" className="underline underline-offset-4">
-              내 정보
-            </Link>
-            에서 내 종교를 먼저 입력해주세요. 지금은 종교와 상관없이 추천돼요.
-          </p>
-        ) : (
-          <>
+        <>
             <Radio
               name="religion"
               value={f.religion.mode}
@@ -394,11 +384,7 @@ export function FiltersForm({
                 })}
               </div>
             )}
-            {f.religion.mode !== "any" && (
-              <p className="mt-2 text-sm text-muted">종교를 입력하지 않은 사람은 추천에서 빠져요.</p>
-            )}
-          </>
-        )}
+        </>
       </Section>
 
       <div className="sticky bottom-0 -mx-5 border-t border-line bg-paper/95 px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-4 backdrop-blur">

@@ -10,7 +10,7 @@ export function personLine(c: { birthYear: number; region: string; height: numbe
   return `${String(c.birthYear).slice(2)}년생 · ${regionLabel(c.region)} · ${c.height}cm`;
 }
 
-/** 추천 카드: 실제 사진 없이 검사 요약, 자기소개, 추천 이유와 AI 그림 프로필(매칭에 꼭 필요, 0006 전에는 없음)을 보여준다 */
+/** 추천 카드: 실제 사진 없이 그림 프로필, 검사 요약, 자기소개, 추천 이유를 보여준다 */
 export function PersonCardView({
   card,
   actions,

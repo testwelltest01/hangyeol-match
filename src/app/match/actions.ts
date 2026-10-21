@@ -45,12 +45,11 @@ export async function react(targetId: string, kind: (typeof KINDS)[number]): Pro
   }
   const after = await loadPair(admin, userId, targetId);
   const stageAfter = pairStage(after);
-  // 서로 수락하면 대화방이 열린다 (0005 SQL 전이면 조용히 넘어간다)
-  const room = stageAfter === "connected" ? await openChatRoom(admin, userId, targetId) : null;
-  // 상대에게 알림: 서로 관심(사진 공개), 서로 수락(대화방 또는 연락처 공개). 응답을 보낸 뒤에 보낸다
+  // 서로 수락하면 대화방이 열린다
+  if (stageAfter === "connected") await openChatRoom(admin, userId, targetId);
+  // 상대에게 알림: 서로 관심(사진 공개), 서로 수락(대화방). 응답을 보낸 뒤에 보낸다
   if (kind === "interest" && stageAfter === "photos") afterResponse(() => notifyPair(admin, userId, targetId, "mutualInterest"));
-  if (kind === "accept" && stageAfter === "connected")
-    afterResponse(() => notifyPair(admin, userId, targetId, room ? "connectedChat" : "connectedContact"));
+  if (kind === "accept" && stageAfter === "connected") afterResponse(() => notifyPair(admin, userId, targetId, "connected"));
   return { ok: true, stage: stageAfter };
 }
 
@@ -70,7 +69,7 @@ const AUTO_SUSPEND_REPORTERS = 3;
 export async function reportUser(targetId: string, reason: ReportReason, detail: string): Promise<Result> {
   const ctx = await context(targetId);
   if ("error" in ctx) return { ok: false, error: ctx.error! };
-  const { userId, admin, pair, stage } = ctx;
+  const { userId, admin, pair } = ctx;
   const validReason = reason === "contact_not_found" || REPORT_REASONS.some((r) => r.id === reason);
   if (!validReason) return { ok: false, error: "신고 사유를 골라주세요." };
   if (typeof detail !== "string") return { ok: false, error: "잘못된 요청이에요." };
@@ -78,10 +77,9 @@ export async function reportUser(targetId: string, reason: ReportReason, detail:
   // 추천받았거나 관심·수락으로 이어진 사람만 신고할 수 있다
   if (!pair.recommended && !pair.mine && !pair.theirs) return { ok: false, error: "신고할 수 없는 사람이에요." };
   if (reason === "contact_not_found") {
-    // 대화방이 있으면 연락처를 서로 전달한 뒤에만, 없으면(0005 전) 서로 수락한 뒤에만
+    // 연락처를 서로 전달한 뒤에만
     const room = await getChatRoom(admin, userId, targetId);
-    const exchanged = room.available ? Boolean(room.room?.exchanged_at) : stage === "connected";
-    if (!exchanged) return { ok: false, error: "연락처가 공개된 뒤에 알려주세요." };
+    if (!room?.exchanged_at) return { ok: false, error: "연락처가 공개된 뒤에 알려주세요." };
   }
 
   const { error } = await admin
@@ -165,7 +163,6 @@ export async function refreshToday(): Promise<RefreshResult> {
   const admin = createAdminClient();
   const day = matchDay();
   const coupons = await loadCoupons(admin, userId, day);
-  if (!coupons.available) return { ok: false, error: "아직 준비 중인 기능이에요." };
   if (coupons.usedToday) return { ok: false, error: "오늘은 이미 새로고침을 썼어요. 저녁 8시 새 추천 뒤에 다시 쓸 수 있어요." };
   if (coupons.balance <= 0) return { ok: false, error: "쿠폰이 없어요. 친구가 평가를 남기면 1장씩 받아요." };
 

@@ -131,13 +131,6 @@ export const IconBrush = (p: IconProps) => (
   </Svg>
 );
 
-export const IconBell = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 2h-14z" />
-    <path d="M10 20.5a2.2 2.2 0 0 0 4 0" />
-  </Svg>
-);
-
 export const IconPause = (p: IconProps) => (
   <Svg {...p}>
     <circle cx="12" cy="12" r="8.5" />
@@ -178,15 +171,6 @@ export const IconMoon = (p: IconProps) => (
     <path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10z" />
   </Svg>
 );
-
-export const IconWine = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M8 3.5h8l-.6 5.3A3.4 3.4 0 0 1 12 12a3.4 3.4 0 0 1-3.4-3.2z" />
-    <path d="M12 12v8M8.5 20.5h7" />
-  </Svg>
-);
-
-export const IconSparkle = IconToday;
 
 // --- 관리자 화면 ---
 

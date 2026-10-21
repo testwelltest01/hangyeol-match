@@ -20,7 +20,7 @@ export const loadTabBadges = cache(async (): Promise<TabBadges> => {
   const me = await getUserId();
   if (!me) return none;
   const admin = createAdminClient();
-  const [reactions, blocks, recs, chat] = await Promise.all([
+  const [reactions, blocks, recs, rooms] = await Promise.all([
     admin.from("reactions").select("from_user, to_user, interest, accept, accept_at").or(`from_user.eq.${me},to_user.eq.${me}`),
     admin.from("blocks").select("blocker, blocked").or(`blocker.eq.${me},blocked.eq.${me}`),
     admin.from("recommendations").select("target_id").eq("user_id", me).eq("day", matchDay()),
@@ -43,8 +43,8 @@ export const loadTabBadges = cache(async (): Promise<TabBadges> => {
   const interest = [...others].filter((o) => pairStage(pairOf(o, false)) === "photos").length;
 
   let chatCount = 0;
-  if (chat.available && chat.rooms.length) {
-    const open = chat.rooms.filter((r) => !r.closed_at);
+  const open = rooms.filter((r) => !r.closed_at);
+  if (open.length) {
     const unread = await unreadCounts(admin, open, me);
     for (const room of open) {
       const s = chatState(room, me);

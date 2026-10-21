@@ -21,9 +21,7 @@ async function roomFor(otherId: unknown, limitKey: string) {
   if ("error" in ctx) return { error: ctx.error! } as const;
   if (ctx.stage !== "connected") return { error: "서로 수락한 사람과만 대화할 수 있어요." } as const;
   const other = otherId as string;
-  const found = await getChatRoom(ctx.admin, ctx.userId, other);
-  if (!found.available) return { error: "대화 기능을 준비하고 있어요." } as const;
-  const room = found.room ?? (await openChatRoom(ctx.admin, ctx.userId, other));
+  const room = (await getChatRoom(ctx.admin, ctx.userId, other)) ?? (await openChatRoom(ctx.admin, ctx.userId, other));
   if (!room) return { error: "대화방을 열지 못했어요. 다시 시도해주세요." } as const;
   return { ...ctx, room } as const;
 }
@@ -66,7 +64,7 @@ export async function setContactShare(otherId: string, on: boolean): Promise<{ o
   if (row.status === "closed") return { ok: false, error: "대화가 닫혀서 연락처를 주고받을 수 없어요." };
   if (row.status !== "ok") return { ok: false, error: "대화방을 찾을 수 없어요." };
   const updated = await getChatRoom(r.admin, r.userId, otherId);
-  const state = chatState(updated.room ?? r.room, r.userId);
+  const state = chatState(updated ?? r.room, r.userId);
   if (on) {
     // 눌렀다 취소하기를 반복해도 요청 알림은 하루 3번까지만
     after(async () => {

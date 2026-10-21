@@ -40,18 +40,12 @@ async function IllustrationGate() {
   if (needsIllustration(setup)) await startAutoIllustration(userId!);
 
   const admin = createAdminClient();
-  const [{ available, rows }, used, consent] = await Promise.all([
-    loadIllustrations(admin, userId!),
-    usedByAccount(admin, userId!),
-    admin.from("consents").select("kind").eq("user_id", userId!).eq("kind", "illustration").maybeSingle(),
-  ]);
+  const [rows, used] = await Promise.all([loadIllustrations(admin, userId!), usedByAccount(admin, userId!)]);
   const urls = await signedPhotoUrls(rows.flatMap((r) => (r.status === "done" && r.path ? [r.path] : [])));
 
   return (
     <IllustrationPanel
-      available={available}
       missing={!setup.photos.face || !setup.photos.body ? "photos" : !setup.matchProfile ? "profile" : null}
-      consented={Boolean(consent.data)}
       remaining={Math.max(0, ILLUSTRATIONS_PER_ACCOUNT - used)}
       limit={ILLUSTRATIONS_PER_ACCOUNT}
       ready={isReady(setup)}

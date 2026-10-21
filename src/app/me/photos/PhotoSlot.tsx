@@ -45,19 +45,16 @@ export function PhotoSlot({
   tip,
   current,
   canUpload,
-  needsConsent,
 }: {
   slot: "face" | "body";
   title: string;
   tip: string;
   current: { url: string | null; feedback: UserView } | null;
   canUpload: boolean;
-  needsConsent: boolean;
 }) {
   const router = useRouter();
   // 얼굴·전신 모두 갤러리에서 고른다 (바로 찍기는 기본 카메라만 써서 뺐다. 갤러리 화면에서도 촬영은 할 수 있다)
   const inputRef = useRef<HTMLInputElement>(null);
-  const [agree, setAgree] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fresh, setFresh] = useState<UserView | null>(null);
@@ -73,7 +70,6 @@ export function PhotoSlot({
       const form = new FormData();
       form.set("slot", slot);
       form.set("photo", new File([blob], `${slot}.jpg`, { type: "image/jpeg" }));
-      if (agree) form.set("agreeOverseas", "on");
       const res = await uploadPhoto(form);
       if (!res.ok) {
         setError(res.error);
@@ -90,7 +86,7 @@ export function PhotoSlot({
   }
 
   const feedback = fresh ?? current?.feedback ?? null;
-  const disabled = busy || locked || (needsConsent && !agree);
+  const disabled = busy || locked;
 
   return (
     <section>
@@ -106,31 +102,6 @@ export function PhotoSlot({
           )}
         </div>
         <div className="flex flex-1 flex-col justify-center gap-3">
-          {needsConsent && (
-            <label className="flex items-start gap-2 text-sm text-ink-soft">
-              <input
-                type="checkbox"
-                checked={agree}
-                onChange={(e) => setAgree(e.target.checked)}
-                className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--color-indigo)]"
-              />
-              <span>
-                사진이 등록 기준에 맞는지 OpenAI(미국)의 AI가 확인하고 피드백을 줘요. API로 보낸 사진은{" "}
-                <a
-                  href="https://openai.com/ko-KR/policies/how-your-data-is-used-to-improve-model-performance/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline underline-offset-4"
-                >
-                  OpenAI의 AI 학습에 이용되지 않아요
-                </a>
-                . 이에 동의해요 (필수).{" "}
-                <a href="/privacy#overseas" target="_blank" className="underline underline-offset-4">
-                  처리방침
-                </a>
-              </span>
-            </label>
-          )}
           <input
             ref={inputRef}
             type="file"

@@ -43,11 +43,11 @@ export type ExportData = {
     updated_at: string;
   }[];
   reports: ReportRow[];
-  /** 대화 (0005 SQL 전이면 빈 배열). 메시지는 내용 없이 메타데이터만 */
+  /** 대화. 메시지는 내용 없이 메타데이터만 */
   chatRooms: ChatRoomMeta[];
   chatMessages: ChatMessageMeta[];
   chatEvents: { id: number; room_id: string; user_id: string | null; kind: string; created_at: string }[];
-  /** 추가 검사 (0004 SQL 전이면 빈 배열) */
+  /** 추가 검사 */
   extras: { user_id: string; test_id: string; version: string; answers: ExtraAnswers; scores: ExtraScores; share: boolean; completed_at: string }[];
 };
 
@@ -149,13 +149,13 @@ export async function buildWorkbook(d: ExportData): Promise<Buffer> {
     "회원",
     [
       "사용자ID", "닉네임", "성별", "출생연도", "가입", "최근 로그인", "단계", "지역", "키",
-      "검사 버전", "검사 완료", "친구 평가 수", "사진 수", "연락처 등록", "매칭 쉬기", "이용 정지", "정지 사유",
+      "검사 버전", "검사 완료", "친구 평가 수", "사진 수", "연락처 등록", "그림 프로필", "매칭 쉬기", "이용 정지", "정지 사유",
       "보낸 관심", "받은 관심", "서로 관심", "연결", "관리자",
     ],
     d.members.map((m) => [
       m.id, m.nickname, m.gender ? GENDER[m.gender] : null, m.birthYear, kst(m.createdAt), kst(m.lastSignInAt), STAGE_LABEL[m.stage],
       m.region ? regionLabel(m.region) : null, m.height, m.testVersion, kst(m.scoredAt), m.friendCount, m.photoCount,
-      yesNo(m.hasContact), yesNo(m.paused), yesNo(m.suspended), m.suspendReason,
+      yesNo(m.hasContact), yesNo(m.hasIllustration), yesNo(m.paused), yesNo(m.suspended), m.suspendReason,
       m.sentInterest, m.receivedInterest, m.mutual, m.connected, yesNo(m.isAdmin),
     ]),
     { 0: 38, 4: 17, 5: 17, 7: 20, 10: 17 },

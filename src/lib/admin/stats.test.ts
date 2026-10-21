@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { ageBand, dailyCounts, funnel, reactionStats, userStage, type ReactionRow, type UserFacts } from "./stats";
 
-const ready: UserFacts = { hasProfile: true, hasScores: true, friendCount: 1, hasMatchProfile: true, photoCount: 2, hasContact: true };
+const ready: UserFacts = {
+  hasProfile: true,
+  hasScores: true,
+  friendCount: 1,
+  hasMatchProfile: true,
+  photoCount: 2,
+  hasContact: true,
+  hasIllustration: true,
+};
 
 describe("userStage", () => {
   it("가입만 → 검사 중 → 검사 완료 → 매칭 준비 완료", () => {
@@ -10,6 +18,7 @@ describe("userStage", () => {
     expect(userStage({ ...ready, friendCount: 0 })).toBe("ready"); // 친구 평가는 매칭 조건이 아니다
     expect(userStage({ ...ready, photoCount: 1 })).toBe("tested");
     expect(userStage({ ...ready, hasContact: false })).toBe("tested");
+    expect(userStage({ ...ready, hasIllustration: false })).toBe("tested"); // 그림 프로필이 있어야 매칭
     expect(userStage(ready)).toBe("ready");
   });
 });

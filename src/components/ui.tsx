@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 
 export const fieldClass =
@@ -20,17 +19,6 @@ export function Notice({ children, tone = "mist" }: { children: ReactNode; tone?
     >
       {children}
     </div>
-  );
-}
-
-export function SecondaryLink({ href, children }: { href: string; children: ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className="block w-full rounded-full border border-primary px-6 py-3.5 text-center font-semibold text-primary transition-colors hover:bg-primary hover:text-white"
-    >
-      {children}
-    </Link>
   );
 }
 

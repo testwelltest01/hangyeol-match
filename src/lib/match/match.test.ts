@@ -15,7 +15,6 @@ import {
   defaultFilters,
   meets,
   sanitizeFilters,
-  withFilterDefaults,
   type Filters,
   type MatchPerson,
 } from "./filters";
@@ -29,7 +28,7 @@ function person(over: Omit<Partial<MatchPerson>, "filters"> & { filters?: Partia
     birthYear: 1996,
     region: "서울|강남구",
     height: 175,
-    religion: null,
+    religion: "none",
     smoking: "none",
     drinking: "rarely",
     marriage: "yes",
@@ -101,32 +100,16 @@ describe("조건 검사", () => {
     expect(meets("drinking", noneOnly, person({ id: "b", drinking: "rarely" }), YEAR)).toBe(false);
   });
 
-  it("음주에 아직 답하지 않은 사람: 조건 없는 사람에게는 보이고, 조건을 건 사람에게는 '꼭'이면 막히고 '되도록'이면 감점", () => {
-    const unknown = person({ id: "b", gender: "female", drinking: null });
-    expect(checkMutual(person(), unknown, YEAR).ok).toBe(true);
-    const strict = person({ filters: { drinking: { mode: "not_often", strict: true } } });
-    expect(checkOneWay(strict, unknown, YEAR).blocked).toBe(true);
-    const soft = person({ filters: { drinking: { mode: "not_often", strict: false } } });
-    expect(checkOneWay(soft, unknown, YEAR)).toMatchObject({ blocked: false, softMisses: 1 });
-  });
-
-  it("예전에 저장한 조건(음주 없음)은 '상관없음'으로 읽는다", () => {
-    const old = { ...defaultFilters({ birthYear: 1996, region: "서울|강남구" }, YEAR) } as Partial<Filters>;
-    delete old.drinking;
-    expect(withFilterDefaults(old as Filters).drinking).toEqual({ mode: "any", strict: true });
-  });
-
   it("결혼·자녀는 원함 vs 원하지 않음만 걸린다", () => {
     const viewer = person({ marriage: "yes" });
     expect(meets("family", viewer, person({ id: "b", marriage: "no" }), YEAR)).toBe(false);
     expect(meets("family", viewer, person({ id: "b", marriage: "unsure" }), YEAR)).toBe(true);
   });
 
-  it("종교 조건: 입력하지 않은 사람은 종교 조건을 건 사람에게 보이지 않는다", () => {
+  it("종교 조건: 같은 종교 또는 고른 종교만", () => {
     const viewer = person({ religion: "catholic", filters: { religion: { mode: "same", list: [], strict: true } } });
     expect(meets("religion", viewer, person({ id: "b", religion: "catholic" }), YEAR)).toBe(true);
     expect(meets("religion", viewer, person({ id: "b", religion: "buddhist" }), YEAR)).toBe(false);
-    expect(meets("religion", viewer, person({ id: "b", religion: null }), YEAR)).toBe(false);
     const specific = person({ religion: "none", filters: { religion: { mode: "specific", list: ["none", "protestant"], strict: true } } });
     expect(meets("religion", specific, person({ id: "b", religion: "protestant" }), YEAR)).toBe(true);
   });
@@ -155,20 +138,17 @@ describe("조건 검사", () => {
 });
 
 describe("입력 검증", () => {
-  it("조건 정리: 잘못된 지역은 빼고, 종교 조건은 내 종교가 있어야 건다", () => {
+  it("조건 정리: 잘못된 지역은 빼고, 잘못된 값은 막는다", () => {
     const f = defaultFilters({ birthYear: 1996, region: "서울|강남구" }, YEAR);
-    const ok = sanitizeFilters({ ...f, regions: { list: ["서울|강남구", "가짜|구"], strict: true } }, { religion: null });
+    const ok = sanitizeFilters({ ...f, regions: { list: ["서울|강남구", "가짜|구"], strict: true } });
     expect("error" in ok).toBe(false);
     if (!("error" in ok)) expect(ok.regions.list).toEqual(["서울|강남구"]);
 
-    const noReligion = sanitizeFilters({ ...f, religion: { mode: "same", list: [], strict: true } }, { religion: null });
-    expect("error" in noReligion).toBe(true);
-    expect("error" in sanitizeFilters({ ...f, age: { min: 40, max: 30, strict: true } }, { religion: null })).toBe(true);
-    expect("error" in sanitizeFilters("hack", { religion: null })).toBe(true);
-    // 음주: 잘못된 값은 막고, 예전 화면처럼 아예 없으면 '상관없음'
-    expect("error" in sanitizeFilters({ ...f, drinking: { mode: "hack", strict: true } }, { religion: null })).toBe(true);
-    const noDrinking = sanitizeFilters({ ...f, drinking: undefined }, { religion: null });
-    expect(!("error" in noDrinking) && noDrinking.drinking).toEqual({ mode: "any", strict: true });
+    expect("error" in sanitizeFilters({ ...f, religion: { mode: "specific", list: [], strict: true } })).toBe(true);
+    expect("error" in sanitizeFilters({ ...f, age: { min: 40, max: 30, strict: true } })).toBe(true);
+    expect("error" in sanitizeFilters("hack")).toBe(true);
+    expect("error" in sanitizeFilters({ ...f, drinking: { mode: "hack", strict: true } })).toBe(true);
+    expect("error" in sanitizeFilters({ ...f, drinking: undefined })).toBe(true);
   });
 
   it("자기소개에 연락처를 적을 수 없다", () => {

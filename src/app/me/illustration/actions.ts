@@ -19,11 +19,10 @@ import { getUserId } from "@/lib/supabase/server";
 
 type Result = { ok: true } | { ok: false; error: string };
 
-/** 그림 그리기 시작. 응답은 바로 보내고, 그리는 일은 after()에서 이어간다 (최대 300초) */
-export async function createIllustration(agree: boolean): Promise<Result> {
+/** 그림 그리기 시작 (다시 그리기·새로 그리기). 응답은 바로 보내고, 그리는 일은 after()에서 이어간다 (최대 300초) */
+export async function createIllustration(): Promise<Result> {
   const userId = await getUserId();
   if (!userId) return { ok: false, error: "로그인이 풀렸어요. 다시 로그인해주세요." };
-  if (typeof agree !== "boolean") return { ok: false, error: "잘못된 요청이에요." };
   if ((await getProgress(userId)) !== "report") return { ok: false, error: "검사를 먼저 마쳐주세요." };
   if (!(await allow(`illust:${userId}`, 10, 3600))) return { ok: false, error: TOO_MANY };
 
@@ -34,16 +33,10 @@ export async function createIllustration(agree: boolean): Promise<Result> {
   if (setup.suspended) return { ok: false, error: "신고가 접수되어 지금은 이용할 수 없어요." };
 
   const admin = createAdminClient();
-  const { available, rows } = await loadIllustrations(admin, userId);
-  if (!available) return { ok: false, error: "그림 프로필을 준비하고 있어요." };
+  const rows = await loadIllustrations(admin, userId);
   if (rows.some((r) => r.status === "pending")) return { ok: false, error: "지금 그리고 있어요. 조금만 기다려주세요." };
-
-  const { data: consent } = await admin.from("consents").select("kind").eq("user_id", userId).eq("kind", "illustration").maybeSingle();
-  if (!consent) {
-    if (!agree) return { ok: false, error: "그림 프로필을 만들려면 사진과 정보 전송에 동의해주세요. 그림 프로필이 있어야 추천을 받을 수 있어요." };
-    const { error } = await admin.from("consents").upsert({ user_id: userId, kind: "illustration" });
-    if (error) return { ok: false, error: "저장하지 못했어요. 다시 시도해주세요." };
-  }
+  // 동의는 처음 정보 입력에서 받는다 (없으면 보내지 않는다)
+  if (!setup.consents.illustration) return { ok: false, error: "그림 프로필 동의 기록이 없어요. 운영자에게 알려주세요." };
   if ((await usedByAccount(admin, userId)) >= ILLUSTRATIONS_PER_ACCOUNT) {
     return { ok: false, error: `그림은 한 계정당 ${ILLUSTRATIONS_PER_ACCOUNT}번까지 그릴 수 있어요. 남아 있는 그림 중에서 골라주세요.` };
   }

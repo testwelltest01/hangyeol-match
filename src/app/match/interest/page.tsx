@@ -15,7 +15,6 @@ async function InterestGate() {
   const data = await loadMatch();
   const { d } = data;
   const empty = d.photos.length === 0 && d.waitingAccept.length === 0 && d.sentInterest.length === 0;
-  const opens = d.chatAvailable ? "대화방이 열려요" : "연락처가 공개돼요";
 
   return (
     <>
@@ -34,14 +33,14 @@ async function InterestGate() {
       ) : (
         <div className="space-y-8">
           {d.photos.length > 0 && (
-            <Section title="서로 관심을 보냈어요" lead={`사진이 공개됐어요. 마음에 들면 수락해주세요. 서로 수락하면 ${opens}.`}>
+            <Section title="서로 관심을 보냈어요" lead="사진이 공개됐어요. 마음에 들면 수락해주세요. 서로 수락하면 대화방이 열려요.">
               {d.photos.map((c) => (
                 <PairRow key={c.id} card={c} note="사진 보기" />
               ))}
             </Section>
           )}
           {d.waitingAccept.length > 0 && (
-            <Section title="내가 수락했어요" lead={`상대도 수락하면 ${opens}.`}>
+            <Section title="내가 수락했어요" lead="상대도 수락하면 대화방이 열려요.">
               {d.waitingAccept.map((c) => (
                 <PairRow key={c.id} card={c} note="기다리는 중" waiting />
               ))}

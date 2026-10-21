@@ -12,10 +12,8 @@ import { SaveImageButton } from "@/components/SaveImageButton";
 type Row = { id: string; status: "pending" | "done" | "failed"; url: string | null; error: string | null; shown: boolean; createdAt: string };
 
 type Props = {
-  available: boolean;
   /** 그리기 전에 채울 것: 사진 2장이 먼저, 그다음 내 정보(자기소개 등) */
   missing: "photos" | "profile" | null;
-  consented: boolean;
   remaining: number;
   /** 한 계정이 그릴 수 있는 횟수 */
   limit: number;
@@ -27,9 +25,8 @@ type Props = {
 const OPENAI_DATA_POLICY = "https://openai.com/ko-KR/policies/how-your-data-is-used-to-improve-model-performance/";
 
 /** 그림 프로필은 매칭에 꼭 필요하다: 숨기기는 없고, 여러 장이면 보여줄 그림을 고른다. 마지막 남은 그림은 지울 수 없다 */
-export function IllustrationPanel({ available, missing, consented, remaining, limit, ready, rows }: Props) {
+export function IllustrationPanel({ missing, remaining, limit, ready, rows }: Props) {
   const router = useRouter();
-  const [agree, setAgree] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const drawing = rows.some((r) => r.status === "pending");
@@ -53,13 +50,6 @@ export function IllustrationPanel({ available, missing, consented, remaining, li
       router.refresh();
     });
 
-  if (!available) {
-    return (
-      <div className="mt-8">
-        <Notice>그림 프로필을 준비하고 있어요. 조금만 기다려주세요.</Notice>
-      </div>
-    );
-  }
   if (missing === "photos") {
     return (
       <div className="mt-8 space-y-4">
@@ -150,22 +140,16 @@ export function IllustrationPanel({ available, missing, consented, remaining, li
             <li>검사 결과 중 성격·생활 성향·꾸밈 정도 요약, 더 알아보기 결과</li>
           </ul>
           <p className="mt-2 text-sm text-muted">닉네임, 사는 곳, 종교, 연락처, 생활 습관 점수, 결혼·자녀·흡연·음주 조건은 보내지 않아요.</p>
-          {!consented && (
-            <label className="mt-4 flex cursor-pointer items-start gap-3">
-              <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-1 h-4 w-4 accent-indigo" />
-              <span className="text-[15px]">
-                [필수] 그림 프로필을 만들기 위해 위 정보를 OpenAI(미국)로 보내는 데 동의해요. 그림 프로필이 있어야 추천을 받을 수 있고, 보낸
-                정보는{" "}
-                <a href={OPENAI_DATA_POLICY} target="_blank" rel="noreferrer" className="underline underline-offset-4">
-                  AI 학습에 이용되지 않아요
-                </a>
-                .{" "}
-                <Link href="/privacy#overseas" className="text-muted underline underline-offset-4">
-                  자세히
-                </Link>
-              </span>
-            </label>
-          )}
+          <p className="mt-2 text-sm text-muted">
+            OpenAI(미국)로 보내고, 보낸 정보는{" "}
+            <a href={OPENAI_DATA_POLICY} target="_blank" rel="noreferrer" className="underline underline-offset-4">
+              AI 학습에 이용되지 않아요
+            </a>
+            .{" "}
+            <Link href="/privacy#overseas" className="underline underline-offset-4">
+              자세히
+            </Link>
+          </p>
           {error && (
             <p role="alert" className="mt-3 text-sm text-alert">
               {error}
@@ -177,13 +161,13 @@ export function IllustrationPanel({ available, missing, consented, remaining, li
               <button
                 type="button"
                 disabled={pending || remaining === 0}
-                onClick={() => run(() => createIllustration(agree))}
+                onClick={() => run(() => createIllustration())}
                 className="block w-full rounded-full border border-primary px-6 py-3.5 text-center font-semibold text-primary transition-colors hover:bg-primary hover:text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:border-line disabled:text-muted disabled:hover:bg-transparent"
               >
                 {remaining === 0 ? `${limit}번 모두 그렸어요` : `새로 그리기 (${remaining}번 남음)`}
               </button>
             ) : (
-              <PrimaryButton disabled={pending || remaining === 0 || (!consented && !agree)} onClick={() => run(() => createIllustration(agree))}>
+              <PrimaryButton disabled={pending || remaining === 0} onClick={() => run(() => createIllustration())}>
                 {remaining === 0 ? `${limit}번 모두 그렸어요` : latest?.status === "failed" ? "다시 그리기" : "그림 그리기"}
               </PrimaryButton>
             )}

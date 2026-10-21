@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { normalizeInstagram, normalizeKakao } from "@/lib/contact";
 import { encryptText } from "@/lib/crypto";
 import { kstYear } from "@/lib/day";
-import { isDrinking, type Answers } from "@/lib/items";
 import {
   checkIntro,
   defaultFilters,
@@ -36,40 +35,6 @@ async function requireUser(): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
-// 음주 (검사 D4). 2026-10-v3 전에 검사를 마친 사람이 한 번만 답한다
-// ---------------------------------------------------------------------------
-
-export async function saveDrinking(value: unknown): Promise<{ ok: true } | { ok: false; error: string }> {
-  const userId = await getUserId();
-  if (!userId) return { ok: false, error: "로그인이 풀렸어요. 다시 로그인해주세요." };
-  if (!isDrinking(value)) return { ok: false, error: "답을 골라주세요." };
-  if (!(await allow(`drinking:${userId}`, 10, 3600))) return { ok: false, error: TOO_MANY };
-
-  const admin = createAdminClient();
-  const [{ data: scoreRow }, { data: answerRow }] = await Promise.all([
-    admin.from("test_scores").select("scores").eq("user_id", userId).maybeSingle(),
-    admin.from("test_answers").select("answers").eq("user_id", userId).maybeSingle(),
-  ]);
-  if (!scoreRow) return { ok: false, error: "검사를 먼저 마쳐주세요." };
-  const scores = scoreRow.scores as Scores;
-  // 이미 답했으면 그대로 둔다 (흡연처럼 검사 답은 나중에 바꾸지 않는다)
-  if (scores.dealbreakers.drinking) return { ok: true };
-
-  const { error } = await admin
-    .from("test_scores")
-    .update({ scores: { ...scores, dealbreakers: { ...scores.dealbreakers, drinking: value } } })
-    .eq("user_id", userId);
-  if (error) return { ok: false, error: "저장하지 못했어요. 다시 시도해주세요." };
-  if (answerRow) {
-    await admin
-      .from("test_answers")
-      .update({ answers: { ...(answerRow.answers as Answers), D4: value }, updated_at: new Date().toISOString() })
-      .eq("user_id", userId);
-  }
-  return { ok: true };
-}
-
-// ---------------------------------------------------------------------------
 // 내 정보 (지역, 키, 자기소개, 종교)
 // ---------------------------------------------------------------------------
 
@@ -82,8 +47,7 @@ export async function saveMatchProfile(_prev: FormState, formData: FormData): Pr
   const region = String(formData.get("region") ?? "");
   const height = Number(formData.get("height"));
   const intro = String(formData.get("intro") ?? "").trim();
-  const religionRaw = String(formData.get("religion") ?? "");
-  const agreeReligion = formData.get("agreeReligion") === "on";
+  const religion = String(formData.get("religion") ?? "");
 
   if (!isRegionKey(region)) return { error: "사는 지역을 골라주세요." };
   if (!Number.isInteger(height) || height < MIN_HEIGHT || height > MAX_HEIGHT) return { error: "키를 확인해주세요." };
@@ -91,16 +55,11 @@ export async function saveMatchProfile(_prev: FormState, formData: FormData): Pr
   const introError = checkIntro(intro);
   if (introError) return { error: introError };
 
-  // 종교는 필수 (가입 때 민감정보 동의를 받는다. 그 전에 가입한 회원은 여기서 동의한다)
-  const religion = religionRaw;
+  // 종교는 필수 (민감정보 동의는 처음 정보 입력에서 받는다)
   if (!isReligion(religion)) return { error: "종교를 골라주세요." };
+  if (!setup.consents.religion) return { error: "종교 정보 동의 기록이 없어요. 운영자에게 알려주세요." };
 
   const admin = createAdminClient();
-  if (!setup.consents.religion) {
-    if (!agreeReligion) return { error: "종교 정보 수집·이용에 동의해주세요." };
-    const { error } = await admin.from("consents").upsert({ user_id: userId, kind: "religion" });
-    if (error) return { error: "저장하지 못했어요. 다시 시도해주세요." };
-  }
 
   const isNew = !setup.matchProfile;
   const filters: Filters = setup.matchProfile?.filters ?? defaultFilters({ birthYear: setup.birthYear, region }, kstYear());
@@ -142,7 +101,7 @@ async function currentMe(userId: string): Promise<{ me: MatchPerson; next: strin
       height: setup.matchProfile.height,
       religion: setup.matchProfile.religion,
       smoking: s.dealbreakers.smoking,
-      drinking: s.dealbreakers.drinking ?? null,
+      drinking: s.dealbreakers.drinking,
       marriage: s.dealbreakers.marriage,
       children: s.dealbreakers.children,
       filters: setup.matchProfile.filters,
@@ -159,7 +118,7 @@ export async function countMatches(draft: unknown): Promise<{ count: number } | 
   if (!(await allow(`count:${userId}`, 40, 60))) return { error: TOO_MANY };
   const current = await currentMe(userId);
   if (!current) return { error: "내 정보를 먼저 입력해주세요." };
-  const filters = sanitizeFilters(draft, { religion: current.me.religion });
+  const filters = sanitizeFilters(draft);
   if ("error" in filters) return { error: filters.error };
   const pool = await loadPool(createAdminClient());
   return { count: countMutualMatches({ ...current.me, filters }, pool) };
@@ -171,7 +130,7 @@ export async function saveFilters(draft: unknown): Promise<{ ok: true; next: str
   if (!(await allow(`filters:${userId}`, 60, 3600))) return { ok: false, error: TOO_MANY };
   const current = await currentMe(userId);
   if (!current) return { ok: false, error: "내 정보를 먼저 입력해주세요." };
-  const filters = sanitizeFilters(draft, { religion: current.me.religion });
+  const filters = sanitizeFilters(draft);
   if ("error" in filters) return { ok: false, error: filters.error };
 
   const { error } = await createAdminClient()
@@ -243,14 +202,8 @@ export async function uploadPhoto(formData: FormData): Promise<UploadResult> {
 
   const admin = createAdminClient();
 
-  // 국외 이전 동의 (OpenAI로 사진 전송)
-  if (!setup.consents.photoOverseas) {
-    if (formData.get("agreeOverseas") !== "on") {
-      return { ok: false, error: "사진 피드백을 받으려면 국외 이전에 동의해주세요. 동의하지 않으면 사진을 등록할 수 없어요." };
-    }
-    const { error } = await admin.from("consents").upsert({ user_id: userId, kind: "photo_overseas" });
-    if (error) return { ok: false, error: "저장하지 못했어요. 다시 시도해주세요." };
-  }
+  // 사진을 OpenAI로 보내는 동의(국외 이전)는 처음 정보 입력에서 받는다
+  if (!setup.consents.photoOverseas) return { ok: false, error: "사진 AI 확인 동의 기록이 없어요. 운영자에게 알려주세요." };
 
   // 계정당 20번 제한 (평생, 얼굴·전신 합산, 거절된 사진 포함)
   const { data: attempts } = await admin
@@ -270,14 +223,9 @@ export async function uploadPhoto(formData: FormData): Promise<UploadResult> {
   const previous: Improvement[] = current?.feedback?.improvements ?? [];
   const result = await analyzePhoto({ image, mimeType, slot, gender: setup.gender, previous });
 
-  // 시도 기록은 계정당 20번 제한에 쓰이므로 꼭 남긴다. 사유 칸(0004)이 없으면 사유 없이 다시 남긴다
+  // 시도 기록은 계정당 20번 제한에 쓰인다. 거절 사유·오류 내용은 관리자 회원 상세에서 본다
   const logAttempt = async (r: string, detail?: string) => {
-    const row = { user_id: userId, slot, result: r };
-    if (detail) {
-      const { error } = await admin.from("photo_attempts").insert({ ...row, detail: detail.slice(0, 500) });
-      if (!error) return;
-    }
-    await admin.from("photo_attempts").insert(row);
+    await admin.from("photo_attempts").insert({ user_id: userId, slot, result: r, detail: detail?.slice(0, 500) ?? null });
   };
 
   if (!result.ok) {

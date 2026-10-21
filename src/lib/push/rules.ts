@@ -55,10 +55,12 @@ export const pushMessages = {
     url: `/people/${id}`,
     tag: `pair-${id}`,
   }),
-  connected: (nickname: string, id: string, chat: boolean): PushMessage =>
-    chat
-      ? { title: "대화방이 열렸어요", body: `${nickname}님도 수락했어요. 먼저 인사를 건네보세요.`, url: `/chat/${id}`, tag: `pair-${id}` }
-      : { title: "연락처가 공개됐어요", body: `${nickname}님도 수락했어요. 연락처를 확인해보세요.`, url: `/people/${id}`, tag: `pair-${id}` },
+  connected: (nickname: string, id: string): PushMessage => ({
+    title: "대화방이 열렸어요",
+    body: `${nickname}님도 수락했어요. 먼저 인사를 건네보세요.`,
+    url: `/chat/${id}`,
+    tag: `pair-${id}`,
+  }),
   chatMessage: (nickname: string, id: string): PushMessage => ({
     title: "새 메시지",
     body: `${nickname}님이 메시지를 보냈어요.`,

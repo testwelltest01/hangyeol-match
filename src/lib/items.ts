@@ -174,9 +174,6 @@ export const DEALBREAKER_ITEMS: SingleItem[] = [
   },
 ];
 
-/** 음주 답 (D4). 2026-10-v3에 추가돼서 그 전에 검사를 마친 사람은 따로 답한다 */
-export const DRINKING_OPTIONS = DEALBREAKER_ITEMS.find((i) => i.id === "D4")!.options;
-export const isDrinking = (v: unknown): v is string => typeof v === "string" && DRINKING_OPTIONS.some((o) => o.value === v);
 
 // ---------------------------------------------------------------------------
 // 성격: Mini-IPIP 20문항 (IPIP, 퍼블릭 도메인) 한국어 번안. 1~5점

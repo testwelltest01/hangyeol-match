@@ -49,14 +49,12 @@ export type Dashboard = {
   /** 내가 관심, 상대 답 기다림 */
   sentInterest: PersonCard[];
   connected: (PersonCard & { needsFeedback: boolean; chat: ChatSummary | null })[];
-  /** 0005 SQL을 실행했는지 (대화방이 있는지) */
-  chatAvailable: boolean;
   contactNotFound: boolean;
 };
 
 type ReactionRow = { from_user: string; to_user: string; interest: boolean; accept: boolean | null; accept_at: string | null };
 
-/** 연락처 공개 후 며칠 뒤에 만남 피드백을 묻는지 */
+/** 연락처를 주고받은 뒤 며칠 뒤에 만남 피드백을 묻는지 */
 const FEEDBACK_AFTER_DAYS = 3;
 /** "아직 못 만났어요"라고 답한 뒤 다시 묻기까지 */
 const FEEDBACK_REASK_DAYS = 7;
@@ -142,15 +140,15 @@ export async function loadDashboard(admin: SupabaseClient, me: string, myScores:
   const today = cards.filter((c) => todayReason.has(c.id));
   const byStage = (s: PairStage) => cards.filter((c) => c.stage === s);
 
-  const { available: chatAvailable, rooms } = await myChatRooms(admin, me);
+  const rooms = await myChatRooms(admin, me);
   const roomByOther = new Map(rooms.map((r) => [r.user_a === me ? r.user_b : r.user_a, r]));
   const unread = await unreadCounts(admin, rooms, me);
 
   const connected = byStage("connected")
     .map((c) => {
       const room = roomByOther.get(c.id) ?? null;
-      // 만남은 연락처를 주고받은 뒤에 묻는다. 대화방이 없던 때(0005 전)는 서로 수락한 시각부터
-      const since = chatAvailable ? (room?.exchanged_at ?? null) : [mine.get(c.id)?.accept_at, theirs.get(c.id)?.accept_at].sort().at(-1);
+      // 만남은 연락처를 주고받은 뒤에 묻는다
+      const since = room?.exchanged_at ?? null;
       const fb = feedbackByUser.get(c.id);
       const needsFeedback = since
         ? fb
@@ -172,7 +170,6 @@ export async function loadDashboard(admin: SupabaseClient, me: string, myScores:
     waitingAccept: byStage("waiting_accept"),
     sentInterest: byStage("waiting_interest"),
     connected,
-    chatAvailable,
     contactNotFound: Boolean(lastNotFound && contact.data && lastNotFound > contact.data.updated_at),
   };
 }

@@ -62,7 +62,7 @@ const EMPTY_SETUP: MySetup = {
   photos: { face: null, body: null },
   contact: null,
   consents: { religion: false, photoOverseas: false, illustration: false },
-  illustration: { available: true, done: false, drawing: false },
+  illustration: { done: false, drawing: false },
   suspended: false,
   friendCount: 0,
 };

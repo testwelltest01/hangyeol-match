@@ -48,7 +48,7 @@ export async function getUserId(): Promise<string | null> {
 
 /**
  * 로그인 정보와 비밀번호 설정 여부. 비밀번호는 가입할 때 이메일 코드로 확인한 뒤 만든다.
- * 메일 링크로 들어왔거나 예전에 코드로만 가입한 계정은 password_set이 없어서 비밀번호 만들기로 보낸다.
+ * 코드 인증만 하고 비밀번호를 만들기 전에 나간 계정은 password_set이 없어서 비밀번호 만들기로 보낸다.
  */
 export async function getAuth(): Promise<{ userId: string; passwordSet: boolean } | null> {
   const supabase = await createClient();

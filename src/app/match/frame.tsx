@@ -21,7 +21,7 @@ import { getUserId } from "@/lib/supabase/server";
 
 export type MatchTab = "today" | "interest" | "connected";
 
-export type MatchData = { setup: MySetup; ready: boolean; d: Dashboard; needsDrinking: boolean; coupons: CouponState };
+export type MatchData = { setup: MySetup; ready: boolean; d: Dashboard; coupons: CouponState };
 
 /**
  * 추천 탭 세 곳이 함께 쓰는 데이터. 탭 숫자와 본문이 같은 요청 안에서 부르므로 cache로 한 번만 읽는다.
@@ -50,7 +50,7 @@ export const loadMatch = cache(async (): Promise<MatchData> => {
   const { data: scoreRow } = await admin.from("test_scores").select("scores").eq("user_id", userId!).single();
   const scores = scoreRow!.scores as Scores;
   const [d, coupons] = await Promise.all([loadDashboard(admin, userId!, scores), loadCoupons(admin, userId!, day)]);
-  return { setup, ready, d, needsDrinking: !scores.dealbreakers.drinking, coupons };
+  return { setup, ready, d, coupons };
 });
 
 /** 추천 화면 공통 틀: 하단 탭(오늘·관심·대화)과 화면 제목. 제목은 정적이고 본문만 나중에 채운다 */

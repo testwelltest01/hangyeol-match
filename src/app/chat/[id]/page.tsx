@@ -45,9 +45,7 @@ async function ChatGate({ params }: { params: PageProps<"/chat/[id]">["params"] 
   const admin = createAdminClient();
   // 서로 수락한 사이에서만 대화방이 있다. 그 밖에는 있는지조차 알려주지 않는다
   if (pairStage(await loadPair(admin, userId!, id)) !== "connected") notFound();
-  const found = await getChatRoom(admin, userId!, id);
-  if (!found.available) redirect(`/people/${id}`);
-  const room = found.room ?? (await openChatRoom(admin, userId!, id));
+  const room = (await getChatRoom(admin, userId!, id)) ?? (await openChatRoom(admin, userId!, id));
   if (!room) redirect(`/people/${id}`);
 
   const [profile, messages, myScores, theirScores, contactRow] = await Promise.all([

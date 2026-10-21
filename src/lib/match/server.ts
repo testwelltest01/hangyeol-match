@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { daysBefore, kstYear } from "@/lib/day";
 import { allocate, gateFactor, type Edge, type FeedbackReceived } from "@/lib/match/allocate";
 import { recommendationReason } from "@/lib/match/explain";
-import { checkMutual, withFilterDefaults, type Filters, type Gender, type MatchPerson, type Religion } from "@/lib/match/filters";
+import { checkMutual, type Filters, type Gender, type MatchPerson, type Religion } from "@/lib/match/filters";
 import { mutualScore, type Scores } from "@/lib/scoring";
 
 type Admin = SupabaseClient;
@@ -30,21 +30,17 @@ export type PoolEntry = {
   gate: number;
 };
 
-/** 다 그린(지우지 않은) 그림 프로필이 있는 회원. 0006 SQL 전이면 null (그때는 조건에서 뺀다) */
-export async function illustratedUsers(admin: Admin): Promise<Set<string> | null> {
-  try {
-    const rows = await fetchAll<{ user_id: string }>((a, b) =>
-      admin.from("illustrations").select("user_id").eq("status", "done").is("deleted_at", null).range(a, b),
-    );
-    return new Set(rows.map((r) => r.user_id));
-  } catch {
-    return null;
-  }
+/** 다 그린(지우지 않은) 그림 프로필이 있는 회원 */
+export async function illustratedUsers(admin: Admin): Promise<Set<string>> {
+  const rows = await fetchAll<{ user_id: string }>((a, b) =>
+    admin.from("illustrations").select("user_id").eq("status", "done").is("deleted_at", null).range(a, b),
+  );
+  return new Set(rows.map((r) => r.user_id));
 }
 
 /**
  * 지금 매칭에 참여할 수 있는 사람 전체.
- * 조건: 검사 완료, 매칭 정보 입력, 사진 2장, 연락처, 그림 프로필(0006 뒤), 매칭 쉬는 중 아님, 이용 정지 아님.
+ * 조건: 검사 완료, 매칭 정보 입력, 사진 2장, 연락처, 그림 프로필, 매칭 쉬는 중 아님, 이용 정지 아님.
  * (친구 평가는 조건이 아니다: 새로고침 쿠폰). 준비 단계 `setupSteps`와 같은 기준
  */
 export async function loadPool(admin: Admin): Promise<Map<string, PoolEntry>> {
@@ -52,7 +48,7 @@ export async function loadPool(admin: Admin): Promise<Map<string, PoolEntry>> {
     fetchAll<{ id: string; gender: Gender; birth_year: number; nickname: string }>((a, b) =>
       admin.from("profiles").select("id, gender, birth_year, nickname").range(a, b),
     ),
-    fetchAll<{ user_id: string; region: string; height: number; religion: Religion | null; filters: Filters }>((a, b) =>
+    fetchAll<{ user_id: string; region: string; height: number; religion: Religion; filters: Filters }>((a, b) =>
       admin.from("match_profiles").select("user_id, region, height, religion, filters").eq("paused", false).range(a, b),
     ),
     fetchAll<{ user_id: string; scores: Scores }>((a, b) => admin.from("test_scores").select("user_id, scores").range(a, b)),
@@ -85,7 +81,7 @@ export async function loadPool(admin: Admin): Promise<Map<string, PoolEntry>> {
     const slots = photoSlots.get(mp.user_id);
     if (!profile || !s || !slots?.has("face") || !slots.has("body")) continue;
     if (!hasContact.has(mp.user_id) || suspended.has(mp.user_id)) continue;
-    if (illustrated && !illustrated.has(mp.user_id)) continue; // 그림 프로필이 있어야 추천을 주고받는다
+    if (!illustrated.has(mp.user_id)) continue; // 그림 프로필이 있어야 추천을 주고받는다
     pool.set(mp.user_id, {
       person: {
         id: mp.user_id,
@@ -95,10 +91,10 @@ export async function loadPool(admin: Admin): Promise<Map<string, PoolEntry>> {
         height: mp.height,
         religion: mp.religion,
         smoking: s.dealbreakers.smoking,
-        drinking: s.dealbreakers.drinking ?? null,
+        drinking: s.dealbreakers.drinking,
         marriage: s.dealbreakers.marriage,
         children: s.dealbreakers.children,
-        filters: withFilterDefaults(mp.filters),
+        filters: mp.filters,
       },
       scores: s,
       nickname: profile.nickname,
@@ -123,11 +119,10 @@ export const REPEAT_AFTER_DAYS = 14;
 
 type Recent = { user_id: string; target_id: string };
 
-/** 최근에 새로고침 쿠폰으로 바꾼(뺀) 추천. 0008 SQL 전이면 빈 목록 */
+/** 최근에 새로고침 쿠폰으로 바꾼(뺀) 추천 */
 async function recentlyReplaced(admin: Admin, since: string): Promise<Recent[]> {
-  const { data, error } = await admin.from("recommendation_refreshes").select("user_id, replaced").gte("day", since);
-  if (error || !data) return [];
-  return data.flatMap((r) => ((r.replaced as string[] | null) ?? []).map((t) => ({ user_id: r.user_id as string, target_id: t })));
+  const { data } = await admin.from("recommendation_refreshes").select("user_id, replaced").gte("day", since);
+  return (data ?? []).flatMap((r) => ((r.replaced as string[] | null) ?? []).map((t) => ({ user_id: r.user_id as string, target_id: t })));
 }
 
 /**
@@ -283,7 +278,7 @@ export type PairStage =
   | "waiting_interest" // 내가 관심, 상대 답 기다림
   | "photos" // 서로 관심: 사진 공개, 내 수락 차례
   | "waiting_accept" // 내가 수락, 상대 기다림
-  | "connected"; // 서로 수락: 연락처 공개
+  | "connected"; // 서로 수락: 대화방 (둘 다 '연락처 전달'을 누르면 연락처 공개)
 
 export function pairStage(p: Pair): PairStage {
   if (p.blocked) return "hidden";

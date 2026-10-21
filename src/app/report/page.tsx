@@ -52,7 +52,7 @@ async function ReportGate() {
       friendCount={friends.count}
       minFriendCount={MIN_FRIEND_RATINGS_TO_SHOW}
       inviteToken={invite?.token ?? null}
-      extras={extra.available ? extraCards(extra.rows) : null}
+      extras={extraCards(extra)}
     />
   );
 }

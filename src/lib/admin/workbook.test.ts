@@ -40,6 +40,7 @@ const member = (id: string, nickname: string, gender: "male" | "female"): Member
   paused: false,
   photoCount: 2,
   hasContact: true,
+  hasIllustration: true,
   suspended: false,
   suspendReason: null,
   friendCount: 1,

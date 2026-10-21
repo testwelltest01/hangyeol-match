@@ -1,4 +1,3 @@
-import { Notice } from "@/components/ui";
 import type { GenderKey } from "@/lib/admin/trends";
 import type { ExtraRow } from "@/lib/extra/server";
 import { cronbachAlpha, meanSd } from "@/lib/extra/stats";
@@ -152,20 +151,16 @@ function TestPanel({ test, all }: { test: ExtraTest; all: Row[] }) {
   );
 }
 
-export function ExtraView({ available, all }: { available: boolean; all: Row[] }) {
+export function ExtraView({ all }: { all: Row[] }) {
   return (
     <AdminShell current="extra">
       <AdminTitle
         title="추가 검사"
         lead="한결이 직접 만든 시범 검사(선택)의 응답 현황이에요. 추천 계산에는 쓰지 않아요. 원자료는 엑셀의 '추가 · …' 시트에 있어요."
       />
-      {!available ? (
-        <div className="mt-6">
-          <Notice>추가 검사 테이블이 아직 없어요. Supabase SQL Editor에서 0004_extra_tests.sql을 실행하면 회원들이 할 수 있어요.</Notice>
-        </div>
-      ) : (
-        EXTRA_TESTS.map((t) => <TestPanel key={t.id} test={t} all={all} />)
-      )}
+      {EXTRA_TESTS.map((t) => (
+        <TestPanel key={t.id} test={t} all={all} />
+      ))}
     </AdminShell>
   );
 }

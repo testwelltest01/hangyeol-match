@@ -21,9 +21,7 @@ export async function GET(request: Request, ctx: RouteContext<"/api/chat/[id]">)
   const admin = createAdminClient();
   const stage = pairStage(await loadPair(admin, userId, other));
   if (stage !== "connected") return json({ error: "대화방을 찾을 수 없어요." }, 404);
-  const found = await getChatRoom(admin, userId, other);
-  if (!found.available) return json({ error: "대화 기능을 준비하고 있어요." }, 503);
-  const room = found.room ?? (await openChatRoom(admin, userId, other));
+  const room = (await getChatRoom(admin, userId, other)) ?? (await openChatRoom(admin, userId, other));
   if (!room) return json({ error: "대화방을 열지 못했어요." }, 500);
 
   const after = Math.max(0, Number.parseInt(new URL(request.url).searchParams.get("after") ?? "0", 10) || 0);
