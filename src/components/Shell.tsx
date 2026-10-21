@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { BackButton } from "@/components/BackButton";
 import { IconBack, IconChat, IconGrain, IconHeart, IconLetter, IconToday, IconUser } from "@/components/icons";
+import { HomeLink } from "@/components/HomeLink";
 import { PendingFill } from "@/components/LinkPending";
 import { ThemeSync } from "@/components/ThemeSync";
 import { loadTabBadges, type TabBadges } from "@/lib/match/badges";
@@ -57,10 +58,13 @@ export function Shell({
                 {back.label ?? "뒤로"}
               </Link>
             )
-          ) : (
-            <Link href={tab ? "/match" : "/"} className="px-2 font-serif text-[1.3rem] font-bold tracking-tight text-ink">
+          ) : tab ? (
+            <Link href="/match" className="px-2 font-serif text-[1.3rem] font-bold tracking-tight text-ink">
               한결
             </Link>
+          ) : (
+            // 탭 없는 화면(검사 중·처음 정보·친구 평가 등)은 로그인했으면 내 화면으로, 아니면 첫 화면으로
+            <HomeLink className="px-2 font-serif text-[1.3rem] font-bold tracking-tight text-ink" />
           )}
           <div className="flex items-center gap-1 text-[15px]">
             {right}
