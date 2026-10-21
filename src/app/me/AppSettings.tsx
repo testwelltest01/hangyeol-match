@@ -5,7 +5,7 @@ import { PrimaryButton } from "@/components/buttons";
 import { OpenInBrowserLink } from "@/components/OpenInBrowserLink";
 import { Notice } from "@/components/ui";
 import { externalBrowserUrl } from "@/lib/inapp";
-import { installGuide, type InstallGuide } from "@/lib/pwa/install";
+import { installGuide, IOS_GUIDES, type InstallGuide } from "@/lib/pwa/install";
 import {
   currentSubscription,
   disablePush,
@@ -42,7 +42,7 @@ export function AppSettings() {
       const ua = navigator.userAgent;
       setEnv({
         standalone: isStandalone(),
-        guide: installGuide(ua, navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1),
+        guide: installGuide(ua, navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1, "__gCrWeb" in window),
         canHandOff: externalBrowserUrl(ua, window.location.href) !== null,
         support: pushSupport(),
         permission: "Notification" in window ? Notification.permission : null,
@@ -171,7 +171,12 @@ const AddGlyph = () => (
  * 버튼으로 설치 창을 띄울 수 없을 때의 방법. 아이폰은 웹사이트가 설치를 띄울 방법이 없어서(애플이 막아둠) 직접 추가해야 한다.
  * 안드로이드·컴퓨터도 브라우저가 아직 설치 이벤트를 주지 않았거나 전에 닫았으면 메뉴에서 추가한다
  */
+const IOS_SHORT: Record<(typeof IOS_GUIDES)[number], string> = { "ios-safari": "Safari", "ios-chrome": "Chrome", "ios-other": "기타" };
+
 function InstallSteps({ env }: { env: Env }) {
+  // 아이폰은 브라우저마다 메뉴 위치가 달라서, 자동으로 고른 안내가 틀렸으면 직접 바꿔 볼 수 있게 한다
+  const [iosGuide, setIosGuide] = useState<InstallGuide>(env.guide);
+  const guide = (IOS_GUIDES as readonly InstallGuide[]).includes(env.guide) ? iosGuide : env.guide;
   const list = (items: ReactNode[]) => (
     <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-[15px] leading-relaxed text-ink-soft">
       {items.map((it, i) => (
@@ -179,7 +184,24 @@ function InstallSteps({ env }: { env: Env }) {
       ))}
     </ol>
   );
-  switch (env.guide) {
+  const openApp = <>홈 화면에 생긴 한결 아이콘으로 열어요. 처음 한 번은 다시 로그인해야 할 수 있어요.</>;
+  const iosPicker = (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5" role="group" aria-label="지금 쓰는 브라우저">
+      <span className="mr-1 text-[13px] text-muted">지금 브라우저</span>
+      {IOS_GUIDES.map((g) => (
+        <button
+          key={g}
+          type="button"
+          aria-pressed={guide === g}
+          onClick={() => setIosGuide(g)}
+          className={`rounded-full px-3 py-1 text-[13px] ${guide === g ? "bg-primary font-semibold text-white" : "bg-mist text-ink-soft"}`}
+        >
+          {IOS_SHORT[g]}
+        </button>
+      ))}
+    </div>
+  );
+  switch (guide) {
     case "in-app":
       return env.canHandOff ? (
         <div className="mt-2 space-y-3">
@@ -195,26 +217,52 @@ function InstallSteps({ env }: { env: Env }) {
         </p>
       );
     case "ios-safari":
-      return list([
+      return (
         <>
-          아래쪽 주소창 옆 <MoreGlyph /> 버튼을 누르고 <ShareGlyph /> &lsquo;공유&rsquo;를 눌러요. 공유 버튼이 바로 보이면 그걸 눌러요.
-        </>,
+          {iosPicker}
+          {list([
+            <>
+              아래쪽 주소창 옆 <MoreGlyph /> 버튼을 누르고 <ShareGlyph /> &lsquo;공유&rsquo;를 눌러요. 공유 버튼이 바로 보이면 그걸 눌러요.
+            </>,
+            <>
+              목록을 위로 올려 <AddGlyph /> &lsquo;홈 화면에 추가&rsquo;를 눌러요.
+            </>,
+            <>&lsquo;웹 앱으로 열기&rsquo;가 켜진 채로 오른쪽 위 &lsquo;추가&rsquo;를 눌러요.</>,
+            openApp,
+          ])}
+        </>
+      );
+    case "ios-chrome":
+      return (
         <>
-          목록을 위로 올려 <AddGlyph /> &lsquo;홈 화면에 추가&rsquo;를 눌러요.
-        </>,
-        <>&lsquo;웹 앱으로 열기&rsquo;가 켜진 채로 오른쪽 위 &lsquo;추가&rsquo;를 눌러요.</>,
-        <>홈 화면에 생긴 한결 아이콘으로 열어요. 처음 한 번은 다시 로그인해야 할 수 있어요.</>,
-      ]);
+          {iosPicker}
+          {list([
+            <>
+              주소창 오른쪽 끝의 <ShareGlyph /> 공유 버튼을 눌러요. 안 보이면 오른쪽 아래 <MoreGlyph /> 메뉴에서 &lsquo;공유&rsquo;를 눌러요.
+            </>,
+            <>
+              목록을 위로 올려 <AddGlyph /> &lsquo;홈 화면에 추가&rsquo;를 눌러요.
+            </>,
+            <>오른쪽 위 &lsquo;추가&rsquo;를 눌러요. &lsquo;웹 앱으로 열기&rsquo;가 보이면 켠 채로 추가해요.</>,
+            openApp,
+          ])}
+        </>
+      );
     case "ios-other":
-      return list([
+      return (
         <>
-          주소창 오른쪽의 <ShareGlyph /> 공유 버튼을 눌러요.
-        </>,
-        <>
-          <AddGlyph /> &lsquo;홈 화면에 추가&rsquo;를 누르고 &lsquo;추가&rsquo;를 눌러요. 목록에 없으면 Safari에서 열어 추가해주세요.
-        </>,
-        <>홈 화면에 생긴 한결 아이콘으로 열어요. 처음 한 번은 다시 로그인해야 할 수 있어요.</>,
-      ]);
+          {iosPicker}
+          {list([
+            <>
+              주소창이나 메뉴에서 <ShareGlyph /> &lsquo;공유&rsquo;를 눌러요.
+            </>,
+            <>
+              <AddGlyph /> &lsquo;홈 화면에 추가&rsquo;를 누르고 &lsquo;추가&rsquo;를 눌러요. 목록에 없으면 Safari나 Chrome으로 열어 추가해주세요.
+            </>,
+            openApp,
+          ])}
+        </>
+      );
     case "samsung":
       return list([
         <>아래쪽 ≡ 메뉴에서 &lsquo;현재 페이지 추가&rsquo;를 누르고 &lsquo;홈 화면&rsquo;을 골라요.</>,

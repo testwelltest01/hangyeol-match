@@ -5,15 +5,23 @@
 // - 카카오톡 같은 앱 안 브라우저: 설치가 안 된다. 기본 브라우저로 넘겨 연 뒤 추가
 import { isInAppBrowser } from "@/lib/inapp";
 
-export type InstallGuide = "in-app" | "ios-safari" | "ios-other" | "samsung" | "android" | "desktop";
+export type InstallGuide = "in-app" | "ios-safari" | "ios-chrome" | "ios-other" | "samsung" | "android" | "desktop";
 
-/** 어떤 방법을 안내할지. touchMac = 데스크톱 모드 UA를 쓰는 아이패드(맥 UA인데 터치가 됨) */
-export function installGuide(userAgent: string, touchMac = false): InstallGuide {
+/** 아이폰·아이패드에서 고를 수 있는 안내 (자동 판별이 틀렸을 때 화면에서 바꿔 볼 수 있게) */
+export const IOS_GUIDES = ["ios-safari", "ios-chrome", "ios-other"] as const satisfies readonly InstallGuide[];
+
+/**
+ * 어떤 방법을 안내할지.
+ * touchMac = 데스크톱 모드 UA를 쓰는 아이패드(맥 UA인데 터치가 됨).
+ * chromeIOS = 페이지에 Chrome(iOS)이 넣는 스크립트(window.__gCrWeb)가 있음. UA에 CriOS가 없을 때를 대비한다
+ */
+export function installGuide(userAgent: string, touchMac = false, chromeIOS = false): InstallGuide {
   const ua = userAgent;
   if (isInAppBrowser(ua)) return "in-app";
-  if (/iPad|iPhone|iPod/.test(ua) || touchMac) {
-    // 아이폰의 Chrome·Edge·Firefox·웨일 등은 주소창 옆 공유 버튼에서 추가한다
-    return /CriOS|FxiOS|EdgiOS|OPiOS|Whale/i.test(ua) ? "ios-other" : "ios-safari";
+  if (/iPad|iPhone|iPod/.test(ua) || touchMac || chromeIOS) {
+    if (chromeIOS || /CriOS/.test(ua)) return "ios-chrome";
+    // Edge·Firefox·웨일 등도 주소창(또는 메뉴)의 공유에서 추가한다
+    return /FxiOS|EdgiOS|OPiOS|Whale/i.test(ua) ? "ios-other" : "ios-safari";
   }
   if (/SamsungBrowser/i.test(ua)) return "samsung";
   if (/Android/i.test(ua)) return "android";
