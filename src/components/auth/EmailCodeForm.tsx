@@ -4,6 +4,7 @@ import { useState } from "react";
 import { PrimaryButton } from "@/components/buttons";
 import { ErrorText, fieldClass } from "@/components/ui";
 import { CodeBoxes, OTP_LENGTH } from "./CodeBoxes";
+import { forgetTheme } from "@/components/ThemeSync";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -52,6 +53,7 @@ export function EmailCodeForm({ mode }: { mode: "signup" | "reset" }) {
       return;
     }
     // 로그인 상태가 바뀌었으니 페이지를 새로 연다 (PasswordLoginForm과 같은 이유)
+    forgetTheme(); // 이 기기에 남은 이전 계정의 성별 색을 지운다
     window.location.replace(`/set-password?mode=${mode}`);
   }
 

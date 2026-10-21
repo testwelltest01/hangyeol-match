@@ -10,7 +10,7 @@ import { TestRunner } from "./TestRunner";
 
 export default function TestPage() {
   return (
-    <Shell>
+    <Shell syncTheme>
       <Suspense fallback={<Loading />}>
         <TestGate />
       </Suspense>

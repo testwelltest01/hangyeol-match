@@ -9,7 +9,7 @@ import { OnboardingForm } from "./OnboardingForm";
 
 export default function OnboardingPage() {
   return (
-    <Shell>
+    <Shell syncTheme>
       <h1 className="font-serif text-[1.65rem] font-bold leading-tight">기본 정보</h1>
       <p className="mt-3 text-ink-soft">검사 전에 세 가지만 알려주세요. 닉네임은 친구 평가 화면에 보여요.</p>
       <div className="mt-6">

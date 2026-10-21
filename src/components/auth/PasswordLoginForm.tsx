@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { PrimaryButton } from "@/components/buttons";
 import { ErrorText, fieldClass } from "@/components/ui";
+import { forgetTheme } from "@/components/ThemeSync";
 import { createClient } from "@/lib/supabase/client";
 
 export function PasswordLoginForm() {
@@ -29,6 +30,7 @@ export function PasswordLoginForm() {
     }
     // 로그인 상태가 바뀌었으니 페이지를 새로 연다. 앱 안 이동(router)으로 넘어가면 로그인 전에 받아둔 화면,
     // /start(넘겨주기만 하는 주소), 홈 화면 앱에 오래 남은 예전 화면 코드가 섞여 '페이지를 불러오지 못함'이 뜰 수 있다
+    forgetTheme(); // 이 기기에 남은 이전 계정의 성별 색을 지운다 (탭 화면·검사 화면에서 내 성별로 다시 맞춘다)
     window.location.replace("/start");
   }
 

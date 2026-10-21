@@ -34,6 +34,7 @@ export function Shell({
   right,
   hideLetter = false,
   hideFooter = false,
+  syncTheme = false,
 }: {
   children: ReactNode;
   tab?: TabId;
@@ -43,6 +44,8 @@ export function Shell({
   hideLetter?: boolean;
   /** 화면 아래에 고정된 입력창이 있는 화면(대화방)은 처리방침 줄을 두지 않는다 */
   hideFooter?: boolean;
+  /** 탭 화면이 아니어도 내 성별 테마를 맞출 화면 (처음 정보·검사: 로그인했지만 아직 탭 화면에 가지 않은 때) */
+  syncTheme?: boolean;
 }) {
   return (
     <div className="flex min-h-full flex-1 flex-col">
@@ -87,13 +90,13 @@ export function Shell({
         {children}
       </main>
 
+      {(tab || syncTheme) && (
+        <Suspense fallback={null}>
+          <ThemeGate />
+        </Suspense>
+      )}
       {tab ? (
-        <>
-          <TabBar current={tab} />
-          <Suspense fallback={null}>
-            <ThemeGate />
-          </Suspense>
-        </>
+        <TabBar current={tab} />
       ) : hideFooter ? null : (
         <footer className="mx-auto w-full max-w-[560px] px-5 pb-8 text-sm text-muted">
           <Link href="/privacy" className="underline underline-offset-4">

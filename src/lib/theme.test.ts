@@ -35,6 +35,15 @@ describe("theme", () => {
     expect(boot("pink", "/admin/users")).toBeUndefined();
   });
 
+  it("로그인 전 화면은 기기에 남은 테마와 상관없이 기본 쪽빛", () => {
+    for (const p of ["/", "/signup", "/login", "/reset"]) {
+      expect(boot("pink", p)).toBeUndefined();
+      expect(isThemedPath(p)).toBe(false);
+    }
+    expect(boot("sky", "/test")).toBe("sky");
+    expect(isThemedPath("/onboarding")).toBe(true);
+  });
+
   it("저장소를 못 써도 스크립트가 멈추지 않는다", () => {
     expect(() =>
       new Function("localStorage", "location", "document", THEME_BOOT_SCRIPT)(
