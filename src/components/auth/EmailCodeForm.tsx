@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PrimaryButton } from "@/components/buttons";
 import { ErrorText, fieldClass } from "@/components/ui";
+import { CodeBoxes, OTP_LENGTH } from "./CodeBoxes";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -38,15 +39,16 @@ export function EmailCodeForm({ mode }: { mode: "signup" | "reset" }) {
     setSentTo(email.trim());
   }
 
-  async function verify(e: React.FormEvent) {
-    e.preventDefault();
-    if (!sentTo) return;
+  /** 6자리를 다 넣으면 바로 확인한다 (버튼으로도 확인할 수 있다) */
+  async function verify(token: string) {
+    if (!sentTo || busy || token.length !== OTP_LENGTH) return;
     setBusy(true);
     setError(null);
-    const { error } = await createClient().auth.verifyOtp({ email: sentTo, token: code.trim(), type: "email" });
+    const { error } = await createClient().auth.verifyOtp({ email: sentTo, token, type: "email" });
     if (error) {
       setBusy(false);
-      setError("코드가 맞지 않거나 만료됐어요. 메일의 최신 코드를 입력해주세요.");
+      setCode(""); // 다시 넣기 쉽게 비운다
+      setError("코드가 맞지 않거나 만료됐어요. 메일의 최신 코드를 다시 넣어주세요.");
       return;
     }
     // 로그인 상태가 바뀌었으니 페이지를 새로 연다 (PasswordLoginForm과 같은 이유)
@@ -78,7 +80,13 @@ export function EmailCodeForm({ mode }: { mode: "signup" | "reset" }) {
   }
 
   return (
-    <form onSubmit={verify} className="mt-8 space-y-6">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        verify(code);
+      }}
+      className="mt-8 space-y-6"
+    >
       <p className="text-ink-soft">
         {mode === "reset" ? (
           <>
@@ -91,21 +99,16 @@ export function EmailCodeForm({ mode }: { mode: "signup" | "reset" }) {
         )}{" "}
         메일이 안 보이면 스팸함도 확인해주세요.
       </p>
-      <label className="block">
-        <span className="text-sm font-semibold">인증 코드</span>
-        <input
-          required
-          autoComplete="one-time-code"
-          inputMode="numeric"
-          pattern="[0-9]{6,10}"
-          value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-          placeholder="메일에 있는 숫자"
-          className={`${fieldClass} tracking-[0.3em]`}
-        />
-      </label>
+      <div>
+        <label htmlFor="email-code" className="text-sm font-semibold">
+          메일에 있는 {OTP_LENGTH}자리 숫자
+        </label>
+        <div className="mt-2">
+          <CodeBoxes value={code} onChange={setCode} onComplete={verify} disabled={busy} />
+        </div>
+      </div>
       <ErrorText>{error}</ErrorText>
-      <PrimaryButton type="submit" disabled={busy || code.length < 6}>
+      <PrimaryButton type="submit" disabled={busy || code.length < OTP_LENGTH}>
         {busy ? "확인하는 중" : "확인"}
       </PrimaryButton>
       <button
