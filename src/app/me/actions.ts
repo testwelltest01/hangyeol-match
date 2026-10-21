@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { normalizeInstagram, normalizeKakao } from "@/lib/contact";
 import { encryptText } from "@/lib/crypto";
 import { kstYear } from "@/lib/day";
@@ -16,6 +17,7 @@ import {
   type Filters,
   type MatchPerson,
 } from "@/lib/match/filters";
+import { prepareAutoIllustration, runIllustration } from "@/lib/illustration/server";
 import { loadMySetup, nextSetupPath } from "@/lib/match/me";
 import { countMutualMatches, loadPool } from "@/lib/match/server";
 import { analyzePhoto, type Improvement, type PhotoSlot, type UserView } from "@/lib/photo/feedback";
@@ -90,20 +92,19 @@ export async function saveMatchProfile(_prev: FormState, formData: FormData): Pr
   const introError = checkIntro(intro);
   if (introError) return { error: introError };
 
-  const religion = religionRaw === "" ? null : religionRaw;
-  if (religion !== null && !isReligion(religion)) return { error: "종교를 다시 골라주세요." };
+  // 종교는 필수 (가입 때 민감정보 동의를 받는다. 그 전에 가입한 회원은 여기서 동의한다)
+  const religion = religionRaw;
+  if (!isReligion(religion)) return { error: "종교를 골라주세요." };
 
   const admin = createAdminClient();
-  if (religion !== null && !setup.consents.religion) {
-    if (!agreeReligion) return { error: "종교를 입력하려면 민감정보 수집·이용에 동의해주세요. 입력하지 않아도 매칭할 수 있어요." };
+  if (!setup.consents.religion) {
+    if (!agreeReligion) return { error: "종교 정보 수집·이용에 동의해주세요." };
     const { error } = await admin.from("consents").upsert({ user_id: userId, kind: "religion" });
     if (error) return { error: "저장하지 못했어요. 다시 시도해주세요." };
   }
 
   const isNew = !setup.matchProfile;
-  let filters: Filters = setup.matchProfile?.filters ?? defaultFilters({ birthYear: setup.birthYear, region }, kstYear());
-  // 내 종교를 지우면 종교 조건도 풀린다 (종교 조건은 내 종교를 입력한 사람만 걸 수 있다)
-  if (religion === null && filters.religion.mode !== "any") filters = { ...filters, religion: { ...filters.religion, mode: "any", list: [] } };
+  const filters: Filters = setup.matchProfile?.filters ?? defaultFilters({ birthYear: setup.birthYear, region }, kstYear());
 
   const { error } = await admin.from("match_profiles").upsert({
     user_id: userId,
@@ -116,11 +117,8 @@ export async function saveMatchProfile(_prev: FormState, formData: FormData): Pr
   });
   if (error) return { error: "저장하지 못했어요. 다시 시도해주세요." };
 
-  // 종교를 지웠으면 동의 기록도 지운다 (최소 수집)
-  if (religion === null && setup.consents.religion) {
-    await admin.from("consents").delete().eq("user_id", userId).eq("kind", "religion");
-  }
-
+  // 사진을 먼저 올렸다면 이때 조건이 갖춰진다: 그림 프로필 자동 만들기
+  await autoIllustrate(admin, userId);
   if (isNew) redirect("/me/filters?first=1");
   return { error: null, saved: true };
 }
@@ -224,6 +222,15 @@ export async function saveContact(_prev: FormState, formData: FormData): Promise
 const MAX_BYTES = 3 * 1024 * 1024;
 const MIME_EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
+/**
+ * 그림 프로필 자동 만들기: 조건이 갖춰졌으면 '그리는 중'을 바로 만들고(사진 화면이 새로고침될 때 보이게)
+ * 실제로 그리기는 응답 뒤에 한다. 이 액션을 부르는 화면(사진·내 정보)은 maxDuration 300
+ */
+async function autoIllustrate(admin: ReturnType<typeof createAdminClient>, userId: string) {
+  const job = await prepareAutoIllustration(admin, userId).catch(() => null);
+  if (job) after(() => runIllustration(createAdminClient(), userId, job.id, job.features));
+}
+
 export type UploadResult =
   | { ok: true; feedback: UserView }
   | { ok: false; error: string; rejected?: boolean };
@@ -312,6 +319,8 @@ export async function uploadPhoto(formData: FormData): Promise<UploadResult> {
     return { ok: false, error: "사진을 저장하지 못했어요. 다시 시도해주세요." };
   }
   await logAttempt("registered");
+  // 사진 2장이 갖춰지면(그림 자동 만들기에 동의한 경우) 그림 프로필을 한 번 자동으로 그린다
+  if (setup.photos[slot === "face" ? "body" : "face"]) await autoIllustrate(admin, userId);
   return { ok: true, feedback: result.userView };
 }
 

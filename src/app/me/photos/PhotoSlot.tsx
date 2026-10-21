@@ -31,7 +31,9 @@ function FeedbackCard({ feedback, fresh }: { feedback: UserView; fresh: boolean 
         </ol>
       )}
       {feedback.suggest_retake && (
-        <p className="mt-3 rounded-lg bg-mist px-3 py-2 text-[15px]">위 팁을 반영해서 한 번 더 찍어보시겠어요? 사진이 바뀌면 첫인상이 크게 달라져요.</p>
+        <p className="mt-3 rounded-lg bg-mist px-3 py-2 text-[15px]">
+          위 팁에 맞는 다른 사진을 골라보거나 한 번 더 찍어서 올려보시겠어요? 사진이 바뀌면 첫인상이 크게 달라져요.
+        </p>
       )}
     </div>
   );
@@ -53,9 +55,8 @@ export function PhotoSlot({
   needsConsent: boolean;
 }) {
   const router = useRouter();
-  // 얼굴: 카메라로 바로 찍기(inputRef) + 갤러리에서 고르기(galleryRef). 전신: 갤러리만(inputRef)
+  // 얼굴·전신 모두 갤러리에서 고른다 (바로 찍기는 기본 카메라만 써서 뺐다. 갤러리 화면에서도 촬영은 할 수 있다)
   const inputRef = useRef<HTMLInputElement>(null);
-  const galleryRef = useRef<HTMLInputElement>(null);
   const [agree, setAgree] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +86,6 @@ export function PhotoSlot({
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";
-      if (galleryRef.current) galleryRef.current.value = "";
     }
   }
 
@@ -115,9 +115,18 @@ export function PhotoSlot({
                 className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--color-indigo)]"
               />
               <span>
-                사진 피드백을 위해 OpenAI로 전송된 사진은 학습에 이용되지 않아요 (확인).{" "}
+                사진이 등록 기준에 맞는지 OpenAI(미국)의 AI가 확인하고 피드백을 줘요. API로 보낸 사진은{" "}
+                <a
+                  href="https://openai.com/ko-KR/policies/how-your-data-is-used-to-improve-model-performance/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-4"
+                >
+                  OpenAI의 AI 학습에 이용되지 않아요
+                </a>
+                . 이에 동의해요 (필수).{" "}
                 <a href="/privacy#overseas" target="_blank" className="underline underline-offset-4">
-                  자세히
+                  처리방침
                 </a>
               </span>
             </label>
@@ -126,23 +135,11 @@ export function PhotoSlot({
             ref={inputRef}
             type="file"
             accept="image/*"
-            {...(slot === "face" ? { capture: "user" as const } : {})}
             className="sr-only"
             tabIndex={-1}
             aria-hidden
             onChange={(e) => onFile(e.target.files?.[0])}
           />
-          {slot === "face" && (
-            <input
-              ref={galleryRef}
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              tabIndex={-1}
-              aria-hidden
-              onChange={(e) => onFile(e.target.files?.[0])}
-            />
-          )}
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
@@ -154,23 +151,11 @@ export function PhotoSlot({
               : locked
                 ? "올릴 수 있는 횟수를 다 썼어요"
                 : current
-                  ? slot === "face"
-                    ? "다시 찍기"
-                    : "다른 사진 고르기"
+                  ? "다른 사진 고르기"
                   : slot === "face"
-                    ? "얼굴 사진 찍기"
+                    ? "얼굴 사진 고르기"
                     : "전신 사진 고르기"}
           </button>
-          {slot === "face" && !busy && !locked && (
-            <button
-              type="button"
-              onClick={() => galleryRef.current?.click()}
-              disabled={disabled}
-              className="w-full rounded-full border border-primary px-5 py-3 font-semibold text-primary transition-colors hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:border-line disabled:text-muted disabled:hover:bg-transparent"
-            >
-              갤러리에서 고르기
-            </button>
-          )}
           {busy && <p className="text-sm text-muted">10~30초쯤 걸려요. 화면을 닫지 말아주세요.</p>}
         </div>
       </div>

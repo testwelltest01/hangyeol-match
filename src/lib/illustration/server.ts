@@ -169,3 +169,28 @@ export async function shownIllustrationUrls(admin: Admin, userIds: string[]): Pr
   }
   return out;
 }
+
+/**
+ * 그림 프로필 자동 만들기 준비. 회원가입 때 '그림 프로필 자동으로 만들기'에 동의했고(consents 'illustration'),
+ * 내 정보·사진 2장·검사가 갖춰졌고, 정지되지 않았고, 이 계정이 그림을 한 번도 만든 적 없으면(지운 것·실패 포함 — 한 번만 자동)
+ * '그리는 중' 기록을 만들어 돌려준다. 실제로 그리기는 부르는 쪽이 응답 뒤 after()에서 runIllustration으로 한다.
+ * 사진 등록·내 정보 저장 직후에 부른다(어느 쪽이 마지막 조건이든). 0006 SQL 전이면 아무것도 하지 않는다
+ */
+export async function prepareAutoIllustration(admin: Admin, userId: string): Promise<{ id: string; features: IllustrationFeatures } | null> {
+  const [ever, consent, mp, photos, flag] = await Promise.all([
+    admin.from("illustrations").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    admin.from("consents").select("kind").eq("user_id", userId).eq("kind", "illustration").maybeSingle(),
+    admin.from("match_profiles").select("user_id").eq("user_id", userId).maybeSingle(),
+    admin.from("photos").select("slot").eq("user_id", userId).is("replaced_at", null),
+    admin.from("user_flags").select("suspended_at").eq("user_id", userId).maybeSingle(),
+  ]);
+  if (ever.error || (ever.count ?? 0) > 0) return null;
+  if (!consent.data || !mp.data || flag.data?.suspended_at) return null;
+  const slots = new Set((photos.data ?? []).map((p) => p.slot));
+  if (!slots.has("face") || !slots.has("body")) return null;
+  if (await overDailyCap(admin)) return null;
+  const features = await collectFeatures(admin, userId);
+  if (!features) return null;
+  const id = await createPending(admin, userId, features);
+  return id ? { id, features } : null;
+}

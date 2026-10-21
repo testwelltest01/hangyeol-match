@@ -64,13 +64,14 @@ export function ProfileForm({
       </label>
 
       <fieldset>
-        <legend className="text-sm font-semibold">종교 (선택)</legend>
+        <legend className="text-sm font-semibold">종교</legend>
         <div className="mt-2 grid grid-cols-3 gap-2">
-          {[{ id: "", label: "입력 안 함" }, ...RELIGIONS].map((r) => (
-            <label key={r.id || "skip"} className="cursor-pointer">
+          {RELIGIONS.map((r) => (
+            <label key={r.id} className="cursor-pointer">
               <input
                 type="radio"
                 name="religion"
+                required
                 value={r.id}
                 checked={religion === r.id}
                 onChange={() => setReligion(r.id)}
@@ -82,17 +83,14 @@ export function ProfileForm({
             </label>
           ))}
         </div>
-        <p className="mt-2 text-sm text-muted">
-          입력하지 않아도 매칭돼요. 다만 종교 조건을 건 사람에게는 추천되지 않고, 나도 종교 조건을 걸 수 없어요.
-        </p>
+        <p className="mt-2 text-sm text-muted">종교 조건에 맞는 상대를 추천하는 데만 쓰고, 상대에게 그대로 보여주지 않아요.</p>
         {needsConsent && (
           <div className="mt-4 rounded-xl bg-mist px-4 py-4 text-sm text-ink-soft">
-            <p className="font-semibold text-ink">민감정보 수집·이용 동의 (선택)</p>
+            <p className="font-semibold text-ink">민감정보 수집·이용 동의 (필수)</p>
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>항목: 종교</li>
               <li>목적: 종교 조건에 맞는 상대 추천</li>
-              <li>보유기간: 종교를 지우거나 탈퇴할 때까지</li>
-              <li>동의하지 않아도 매칭을 이용할 수 있어요. 이 경우 종교는 저장하지 않아요.</li>
+              <li>보유기간: 탈퇴할 때까지</li>
             </ul>
             <label className="mt-3 flex items-start gap-3 text-ink">
               <input type="checkbox" name="agreeReligion" required className="mt-1 h-5 w-5 accent-[var(--color-indigo)]" />

@@ -13,15 +13,15 @@ import { getProgress, PROGRESS_PATH } from "@/lib/progress";
 import { getUserId } from "@/lib/supabase/server";
 import { PhotoSlot } from "./PhotoSlot";
 
-// 사진 분석(AI)이 10~30초 걸릴 수 있어서 서버 액션 제한 시간을 늘린다
-export const maxDuration = 60;
+// 사진 분석(AI)이 10~30초 걸리고, 사진 2장이 갖춰지면 응답 뒤에 그림 프로필을 자동으로 그려서(1~2분) 제한 시간을 늘린다
+export const maxDuration = 300;
 
 export default function PhotosPage({ searchParams }: PageProps<"/me/photos">) {
   return (
     <Shell back={{ href: "/me", label: "내 정보" }}>
       <PageTitle
         title="사진 2장"
-        lead="사진은 서로 관심을 보낸 사람에게만 보여요. 올리면 AI가 분위기를 중심으로 더 좋은 사진을 찍는 방법을 알려줘요."
+        lead="사진은 서로 관심을 보낸 사람에게만 보여요. 올리면 AI가 등록 기준에 맞는지 확인하고, 분위기를 중심으로 더 좋은 사진을 고르거나 찍는 방법을 알려줘요."
       />
       <Suspense fallback={<Loading />}>
         <PhotosGate searchParams={searchParams} />
@@ -51,14 +51,15 @@ async function PhotosGate({ searchParams }: { searchParams: PageProps<"/me/photo
   const remaining = remainingUploads((attempts ?? []).map((a) => a.result));
   const done = Boolean(face && body);
   const nextStep = nextSetupStep(setup, "photos");
-  const offerIllustration = done && !fromIllustration && Boolean(setup.matchProfile) && (await canStartIllustration(userId!));
+  const illustration = done && !fromIllustration && setup.matchProfile ? await illustrationState(userId!) : null;
+  const offerIllustration = illustration === "offer";
 
   return (
     <div className="mt-8 space-y-10">
       <PhotoSlot
         slot="face"
         title="얼굴 사진"
-        tip="지금 바로 찍거나 갤러리에서 골라주세요. 직접 찍을 때는 거울 앞에서 2배 줌으로 찍으면 얼굴이 덜 왜곡되고, 창문을 마주 보면 얼굴이 밝게 나와요."
+        tip="얼굴이 잘 보이는 최근 사진을 갤러리에서 골라주세요. 혼자 나오고, 밝은 곳에서 찍은 사진이 좋아요. 새로 찍는다면 창문을 마주 보고, 거울 앞에서 2배 줌으로 찍으면 얼굴이 덜 왜곡돼요."
         current={face ? { url: urls.get(face.path) ?? null, feedback: face.feedback } : null}
         canUpload={remaining > 0}
         needsConsent={!setup.consents.photoOverseas}
@@ -76,6 +77,17 @@ async function PhotosGate({ searchParams }: { searchParams: PageProps<"/me/photo
         남았어요. 바꾼 이전 사진은 1년 뒤 지워져요. AI 점수는 사진 개선 안내에만 쓰고 추천
         순위에는 쓰지 않아요.
       </p>
+      {illustration === "drawing" && (
+        <section className="rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
+          <h2 className="text-[1.05rem] font-semibold">그림 프로필을 그리고 있어요</h2>
+          <p className="mt-1 text-sm text-ink-soft">
+            사진 2장과 자기소개로 AI가 그림을 그려요. 1~2분 걸리고, 다 되면 그림 프로필에서 보고 저장하거나 추천 카드에 보여줄지 정할 수 있어요.
+          </p>
+          <div className="mt-4">
+            <SecondaryLink href="/me/illustration">그림 프로필 보기</SecondaryLink>
+          </div>
+        </section>
+      )}
       {offerIllustration && (
         <section className="rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
           <h2 className="text-[1.05rem] font-semibold">사진 2장이 준비됐어요</h2>
@@ -102,9 +114,15 @@ async function PhotosGate({ searchParams }: { searchParams: PageProps<"/me/photo
   );
 }
 
-/** 그림 프로필을 아직 안 만들었고(그린 것·그리는 중 없음) 만들 횟수가 남았으면 true. 0006 SQL 전이면 false */
-async function canStartIllustration(userId: string): Promise<boolean> {
+/**
+ * 사진 2장을 다 올린 뒤 그림 프로필 안내: drawing = 자동으로(또는 직접) 그리는 중, offer = 아직 안 만들었고 만들 횟수가 남음.
+ * 0006 SQL 전이면 null
+ */
+async function illustrationState(userId: string): Promise<"drawing" | "offer" | null> {
   const admin = createAdminClient();
   const [{ available, rows }, used] = await Promise.all([loadIllustrations(admin, userId), usedByAccount(admin, userId)]);
-  return available && !rows.some((r) => r.status === "done" || r.status === "pending") && used < ILLUSTRATIONS_PER_ACCOUNT;
+  if (!available) return null;
+  if (rows.some((r) => r.status === "pending")) return "drawing";
+  if (!rows.some((r) => r.status === "done") && used < ILLUSTRATIONS_PER_ACCOUNT) return "offer";
+  return null;
 }

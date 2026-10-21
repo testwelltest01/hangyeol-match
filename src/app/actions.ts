@@ -25,12 +25,17 @@ export async function saveProfile(_prev: FormState, formData: FormData): Promise
   const gender = String(formData.get("gender") ?? "");
   const birthYear = Number(formData.get("birthYear"));
   const agreed = formData.get("agreePrivacy") === "on";
+  const agreePhotoAi = formData.get("agreePhotoAi") === "on";
+  const agreeReligion = formData.get("agreeReligion") === "on";
+  const agreeIllustration = formData.get("agreeIllustration") === "on";
 
   if (nickname.length < 1 || nickname.length > 12) return { error: "닉네임은 1~12자로 정해주세요." };
   if (gender !== "male" && gender !== "female") return { error: "성별을 골라주세요." };
   if (!Number.isInteger(birthYear) || birthYear < 1900) return { error: "출생연도를 확인해주세요." };
   if (!isAdultByBirthYear(birthYear)) return { error: "한결은 만 19세 이상만 이용할 수 있어요." };
   if (!agreed) return { error: "개인정보 수집·이용에 동의해야 검사를 시작할 수 있어요." };
+  if (!agreePhotoAi) return { error: "프로필 사진을 AI가 확인하는 데 동의해야 시작할 수 있어요." };
+  if (!agreeReligion) return { error: "종교 정보 수집·이용에 동의해야 시작할 수 있어요." };
 
   // 브라우저에서 직접 쓰지 못하게 막아두었으므로(0002 보안 강화) 검증을 마친 서버가 쓴다
   const { error } = await createAdminClient().from("profiles").upsert({
@@ -42,6 +47,16 @@ export async function saveProfile(_prev: FormState, formData: FormData): Promise
     updated_at: new Date().toISOString(),
   });
   if (error) return { error: "저장하지 못했어요. 잠시 후 다시 시도해주세요." };
+
+  // 동의 기록: 사진 AI 확인(국외 이전)·종교(민감정보)는 필수
+  const admin = createAdminClient();
+  const { error: consentError } = await admin.from("consents").upsert([
+    { user_id: userId, kind: "photo_overseas" },
+    { user_id: userId, kind: "religion" },
+  ]);
+  if (consentError) return { error: "동의를 저장하지 못했어요. 잠시 후 다시 시도해주세요." };
+  // 그림 프로필 자동 만들기는 선택. 0006 SQL 전에는 이 동의 종류를 저장할 수 없어서 실패해도 넘어간다
+  if (agreeIllustration) await admin.from("consents").upsert({ user_id: userId, kind: "illustration" });
 
   redirect("/test");
 }

@@ -7,6 +7,7 @@ import { PrimaryButton, PrimaryLink } from "@/components/buttons";
 import { Notice } from "@/components/ui";
 import { createIllustration, deleteIllustration, setIllustrationShown } from "./actions";
 import { ZoomImage } from "@/components/ZoomImage";
+import { SaveImageButton } from "@/components/SaveImageButton";
 
 type Row = { id: string; status: "pending" | "done" | "failed"; url: string | null; error: string | null; shown: boolean; createdAt: string };
 
@@ -103,7 +104,10 @@ export function IllustrationPanel({ available, missing, consented, remaining, li
                     추천 카드에 보여주기
                   </button>
                 )}
-                <span className="flex gap-4 text-sm">
+                <span className="flex flex-wrap items-center gap-4 text-sm">
+                  {r.url && (
+                    <SaveImageButton url={r.url} filename="hangyeol-profile.webp" className="font-semibold text-indigo underline underline-offset-4 disabled:opacity-60" />
+                  )}
                   {r.shown && (
                     <button type="button" disabled={pending} onClick={() => run(() => setIllustrationShown(r.id, false))} className="text-muted underline underline-offset-4">
                       숨기기
