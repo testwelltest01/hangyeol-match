@@ -59,6 +59,7 @@
    - Email 로그인 켜짐 확인
    - Minimum password length: `8`, Password requirements: `Letters and digits`
    - Email OTP Expiration: `600`초(10분)
+   - Email OTP Length: `6` (화면의 입력 칸 수 `OTP_LENGTH`(`src/components/auth/CodeBoxes.tsx`)와 같아야 한다. 다르면 메일 코드가 입력 칸보다 길거나 짧게 온다)
 6. **Project Settings > API Keys**에서 URL, publishable key, secret key를 복사해둡니다.
 
 ## 2. 환경 변수
