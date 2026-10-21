@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PrimaryButton } from "@/components/buttons";
 import { ErrorText, fieldClass } from "@/components/ui";
@@ -9,7 +8,6 @@ import { checkPassword, PASSWORD_MIN } from "@/lib/password";
 import { createClient } from "@/lib/supabase/client";
 
 export function SetPasswordForm({ mode }: { mode: "signup" | "reset" | "change" | "first" }) {
-  const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
@@ -38,8 +36,8 @@ export function SetPasswordForm({ mode }: { mode: "signup" | "reset" | "change" 
     }
     // 바뀐 정보(비밀번호 설정 여부)가 로그인 토큰에 반영되도록 새로 받는다
     await supabase.auth.refreshSession();
-    router.replace(mode === "change" ? "/me" : "/start");
-    router.refresh();
+    // 계정 정보(비밀번호 만듦)가 바뀌었으니 페이지를 새로 연다 (PasswordLoginForm과 같은 이유)
+    window.location.replace(mode === "change" ? "/me" : "/start");
   }
 
   return (

@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PrimaryButton } from "@/components/buttons";
 import { ErrorText, fieldClass } from "@/components/ui";
@@ -12,7 +11,6 @@ import { createClient } from "@/lib/supabase/client";
  * - reset: 비밀번호 찾기 (가입된 이메일만)
  */
 export function EmailCodeForm({ mode }: { mode: "signup" | "reset" }) {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -51,8 +49,8 @@ export function EmailCodeForm({ mode }: { mode: "signup" | "reset" }) {
       setError("코드가 맞지 않거나 만료됐어요. 메일의 최신 코드를 입력해주세요.");
       return;
     }
-    router.replace(`/set-password?mode=${mode}`);
-    router.refresh();
+    // 로그인 상태가 바뀌었으니 페이지를 새로 연다 (PasswordLoginForm과 같은 이유)
+    window.location.replace(`/set-password?mode=${mode}`);
   }
 
   if (!sentTo) {
