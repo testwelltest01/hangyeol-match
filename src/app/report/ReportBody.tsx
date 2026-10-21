@@ -6,6 +6,7 @@ import type { ExtraCard } from "@/lib/extra/cards";
 import type { Trait } from "@/lib/items";
 import type { Report } from "@/lib/report";
 import { InviteBox } from "./InviteBox";
+import { LoveEntry, type LoveEntryState } from "./LoveEntry";
 import { ReportTabs } from "./ReportTabs";
 import { ShareService } from "./ShareService";
 
@@ -85,6 +86,7 @@ export function ReportParts({
   inviteToken,
   viewer = "owner",
   extras,
+  love,
 }: {
   nickname: string;
   report: Report;
@@ -96,6 +98,8 @@ export function ReportParts({
   viewer?: "owner" | "admin";
   /** 추가 검사 카드 ('더 알아보기' 탭) */
   extras: ExtraCard[];
+  /** 연애 상황 보고서 입구 (회원 화면에만, 관리자 화면에는 없음) */
+  love?: LoveEntryState;
 }) {
   const admin = viewer === "admin";
   return (
@@ -106,7 +110,7 @@ export function ReportParts({
         <h1 className="font-serif text-[2rem] font-bold leading-tight">{nickname}님의 연애 결</h1>
       )}
       <p className="mt-2 text-[15px] text-ink-soft">검사 답을 바탕으로 정리했어요. 이 결과로 결이 맞는 사람을 추천해요.</p>
-
+      {love && <LoveEntry state={love} />}
 
       {/* 가치관·오해 포인트·성격·친구가 보는 나·더 알아보기를 화면 안 탭으로: 한 번에 한 묶음만 보여서 페이지가 길어지지 않는다.
           고른 탭은 주소 #에 남아 /report#friends, /report#extra 같은 링크가 그대로 동작한다 (관리자 화면은 화면 안에서만 기억) */}

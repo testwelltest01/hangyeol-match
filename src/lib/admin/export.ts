@@ -5,6 +5,7 @@ import type { ExportData } from "@/lib/admin/workbook";
 import { daysBefore, kstDay } from "@/lib/day";
 import type { Answers } from "@/lib/items";
 import { fetchAll } from "@/lib/match/server";
+import { loadAllLove } from "@/lib/love/server";
 import type { Scores } from "@/lib/scoring";
 
 /** 추천 기록은 많아지기 쉬워서 최근 기간만 담는다 */
@@ -12,7 +13,7 @@ const RECOMMENDATION_DAYS = 60;
 
 export async function loadExportData(admin: SupabaseClient): Promise<ExportData> {
   const since = daysBefore(kstDay(), RECOMMENDATION_DAYS - 1);
-  const [{ members, reactions }, reports, scores, answers, friendRatings, recommendations, feedback, extras, chatRooms, chatMessages, chatEvents] =
+  const [{ members, reactions }, reports, scores, answers, friendRatings, recommendations, feedback, extras, chatRooms, chatMessages, chatEvents, love] =
     await Promise.all([
     loadMembers(admin),
     loadReports(admin),
@@ -62,6 +63,8 @@ export async function loadExportData(admin: SupabaseClient): Promise<ExportData>
     fetchAll<ExportData["chatEvents"][number]>((a, b) =>
       admin.from("chat_events").select("id, room_id, user_id, kind, created_at").order("id").range(a, b),
     ),
+    // 연애 상황 보고서는 응답·점수·상태만 (보고서 글은 읽지 않는다)
+    loadAllLove(admin),
   ]);
 
   return {
@@ -79,5 +82,6 @@ export async function loadExportData(admin: SupabaseClient): Promise<ExportData>
     chatMessages,
     chatEvents,
     extras,
+    love,
   };
 }

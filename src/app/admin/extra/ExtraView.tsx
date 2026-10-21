@@ -2,9 +2,12 @@ import type { GenderKey } from "@/lib/admin/trends";
 import type { ExtraRow } from "@/lib/extra/server";
 import { cronbachAlpha, meanSd } from "@/lib/extra/stats";
 import { EXTRA_TESTS, topScales, type ExtraTest } from "@/lib/extra/tests";
+import { LOVE_GROUPS, LOVE_ITEMS, LOVE_SCALES, LOVE_VERSION } from "@/lib/love/items";
+import type { LoveAnswers, LoveScores } from "@/lib/love/score";
 import { AdminShell, AdminTitle, Empty, Panel, TableWrap, td, th } from "../ui";
 
 export type Row = ExtraRow & { user_id: string; gender: GenderKey };
+export type LoveRowG = { user_id: string; version: string; answers: LoveAnswers; scores: LoveScores; status: string; gender: GenderKey };
 
 const fmt = (v: number, d = 2) => (Number.isFinite(v) ? v.toFixed(d) : "–");
 const ms = (vals: number[]) => {
@@ -151,13 +154,69 @@ function TestPanel({ test, all }: { test: ExtraTest; all: Row[] }) {
   );
 }
 
-export function ExtraView({ all }: { all: Row[] }) {
+/** 연애 상황 검사(IPIP 12척도 × 4문항): 척도별 평균(표준편차)·α와 보고서 상태 */
+function LovePanel({ all }: { all: LoveRowG[] }) {
+  const rows = all.filter((r) => r.version === LOVE_VERSION);
+  const male = rows.filter((r) => r.gender === "male");
+  const female = rows.filter((r) => r.gender === "female");
+  const count = (st: string) => rows.filter((r) => r.status === st).length;
+  return (
+    <Panel
+      className="mt-4"
+      title={`연애 상황 보고서 · ${rows.length}명`}
+      lead={`남 ${male.length} · 여 ${female.length} · 문항 버전 ${LOVE_VERSION} · 보고서 완료 ${count("done")} · 쓰는 중 ${count("pending")} · 실패 ${count("failed")}. IPIP 척도마다 4문항, 평균(표준편차)은 1~5점.`}
+    >
+      {rows.length === 0 ? (
+        <Empty>아직 응답이 없어요.</Empty>
+      ) : (
+        <>
+          <TableWrap>
+            <thead>
+              <tr>
+                <th className={th}>척도</th>
+                <th className={th}>출처</th>
+                <th className={`${th} text-right`}>전체</th>
+                <th className={`${th} text-right`}>남</th>
+                <th className={`${th} text-right`}>여</th>
+                <th className={`${th} text-right`}>α</th>
+              </tr>
+            </thead>
+            <tbody className="tabular-nums [&_td]:whitespace-nowrap">
+              {LOVE_SCALES.map((s) => {
+                const items = LOVE_ITEMS.filter((i) => i.scale === s.id);
+                const alpha = cronbachAlpha(rows.map((r) => items.map((i) => (i.reverse ? 6 - r.answers[i.id] : r.answers[i.id]))));
+                const v = (rs: LoveRowG[]) => rs.map((r) => r.scores[s.id]);
+                return (
+                  <tr key={s.id}>
+                    <td className={td}>
+                      <span className="text-muted">{LOVE_GROUPS.find((g) => g.id === s.group)?.label} · </span>
+                      {s.label}
+                    </td>
+                    <td className={`${td} text-muted`}>{s.source}</td>
+                    <td className={`${td} text-right`}>{ms(v(rows))}</td>
+                    <td className={`${td} text-right`}>{ms(v(male))}</td>
+                    <td className={`${td} text-right`}>{ms(v(female))}</td>
+                    <td className={`${td} text-right ${Number.isFinite(alpha) && alpha < 0.6 ? "text-alert" : ""}`}>{fmt(alpha)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </TableWrap>
+          <p className="mt-3 text-sm text-muted">α가 .60보다 낮으면 빨간색이에요. 역문항은 뒤집어서 계산해요.</p>
+        </>
+      )}
+    </Panel>
+  );
+}
+
+export function ExtraView({ all, love }: { all: Row[]; love: LoveRowG[] }) {
   return (
     <AdminShell current="extra">
       <AdminTitle
         title="추가 검사"
-        lead="한결이 직접 만든 시범 검사(선택)의 응답 현황이에요. 추천 계산에는 쓰지 않아요. 원자료는 엑셀의 '추가 · …' 시트에 있어요."
+        lead="연애 상황 보고서(IPIP)와 한결이 직접 만든 시범 검사(선택)의 응답 현황이에요. 추천 계산에는 쓰지 않아요. 원자료는 엑셀의 '추가 · …' 시트에 있어요."
       />
+      <LovePanel all={love} />
       {EXTRA_TESTS.map((t) => (
         <TestPanel key={t.id} test={t} all={all} />
       ))}

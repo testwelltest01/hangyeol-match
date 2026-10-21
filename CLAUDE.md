@@ -10,14 +10,14 @@
 - `npm run dev` / `npm test` (vitest, `src/**/*.test.ts`) / `npx tsc --noEmit` / `npx eslint .` / `npx next build`
 - 라우트 타입(`PageProps<"/경로">`)이 없다는 오류가 나면 `npx next typegen`
 - 배포: GitHub `main`에 push하면 Vercel이 자동 배포 (https://hangyeol-match.vercel.app, 함수 리전 `icn1`)
-- DB: `supabase/migrations/0001_init.sql` 한 파일이 전체 스키마다(2026-10-21에 DB를 비우고 처음부터 다시 만들었다. 그래서 코드에는 'SQL 실행 전'이나 '예전 회원'을 위한 분기가 없다. 새로 만들지 말 것). 바꿀 때는 `0002_*.sql`부터 새 파일을 만들고 사용자가 Supabase SQL Editor에서 직접 실행한다. 새 필수 항목을 더하면 기존 회원 데이터를 채우는 SQL을 같은 파일에 넣는다(코드에 임시 분기를 두지 않는다)
+- DB: `supabase/migrations/0001_init.sql`이 기본 스키마다(2026-10-21에 DB를 비우고 처음부터 다시 만들었다. 그래서 코드에는 'SQL 실행 전'이나 '예전 회원'을 위한 분기가 없다. 새로 만들지 말 것). 그 뒤 변경: `0002_love_report.sql`(연애 상황 보고서). 바꿀 때는 다음 번호로 새 파일을 만들고 사용자가 Supabase SQL Editor에서 직접 실행한다. 새 필수 항목을 더하면 기존 회원 데이터를 채우는 SQL을 같은 파일에 넣는다(코드에 임시 분기를 두지 않는다)
 
 ## Next.js 16 주의 (cacheComponents + partialPrefetching 켜짐)
 
 - 세션·DB를 읽는 코드는 페이지 본문이 아니라 `<Suspense>` 안의 async Gate 컴포넌트에서 한다. 페이지 껍데기는 정적으로 남긴다.
 - `src/lib/supabase/server.ts`의 `createClient()`는 `await connection()`으로 시작한다 (미리 렌더링 중 Date.now 오류 방지). 지우지 말 것.
 - middleware 대신 `src/proxy.ts`. `params`, `searchParams`, `cookies()`는 모두 await.
-- 서버 액션 본문 크기 4MB (`next.config.ts`). 그림 프로필을 응답 뒤 `after()`로 그리는 화면(사진·내 정보 입력·그림 프로필·오늘 `/match`·내 정보 `/me`)은 `maxDuration = 300`.
+- 서버 액션 본문 크기 4MB (`next.config.ts`). 그림 프로필을 응답 뒤 `after()`로 그리는 화면(사진·내 정보 입력·그림 프로필·오늘 `/match`·내 정보 `/me`)과 연애 상황 보고서를 쓰는 화면(`/report/love`, `/report/love/test`)은 `maxDuration = 300`.
 
 ## 보안 원칙 (바꾸지 말 것)
 
@@ -36,6 +36,7 @@
 - 매칭: `src/lib/match/` — `filters.ts`(1층 하드 필터, 꼭/되도록), `explain.ts`(추천 이유), `allocate.ts`(하루 3명 라운드 로빈 배분, 노출 상한 6, 3층 게이트), `server.ts`(후보 풀, 추천 생성, 관계 단계), `dashboard.ts`, `me.ts`
 - 추천 화면은 탭 3개: `/match`(오늘), `/match/interest`(관심), `/match/connected`(연결). 공통 틀·탭·데이터(`loadMatch`, React `cache`)는 `src/app/match/frame.tsx`. 탭 숫자는 내가 답할 사람 수(관심: 사진 공개 후 수락 차례, 연결: 만남 피드백)
 - 지역: `src/lib/regions.ts` (2026-07 광주·전남 통합, 인천 제물포·영종·검단구 반영)
+- 연애 상황 보고서(선택, 서비스의 기둥): `/report/love`(소개 → 보고서·쓰는 중·실패 시 '다시 쓰기'), `/report/love/test`(48문항 4쪽, 답은 기기에 임시 저장 `hg-love-draft:<id>`, 마지막 쪽에서 국외 이전 동의 consents 'love_report'), 입구는 내 결 맨 위 `LoveEntry`. 문항 `src/lib/love/items.ts`(IPIP 퍼블릭 도메인 12척도 × 4문항, 원문 주석, 바꾸면 `LOVE_VERSION`), 채점 `score.ts`, AI 지시문·입력·응답 형식·검사 `prompt.ts`(장면 10가지 `SITUATIONS`, 장면마다 나는·상대에게는 이렇게 보일 수 있어요·해 보면 좋아요·이렇게 말해 보세요, 바꾸면 `PROMPT_VERSION`), OpenAI 호출 `generate.ts`(Chat Completions + JSON schema, `OPENAI_REPORT_MODEL` 없으면 `OPENAI_VISION_MODEL`), 저장·after `server.ts`(`love_reports` 한 사람 한 줄). 계정당 한 번(다 쓴 보고서는 다시 쓰지 않고 답도 바꾸지 않음, 실패는 세지 않음), 서비스 하루 상한 `LOVE_REPORT_DAILY_CAP`(기본 300), 8분 넘게 '쓰는 중'이면 실패로 정리. 보내는 것: 성별·이 검사 점수·성격 5요인·관계 가치관·추가 검사 요약. 보내지 않는 것: 닉네임·나이·지역·종교·연락처·사진·자기소개·위생·꾸밈·조건. 본인만 보고 추천 계산에는 쓰지 않는다. 관리자는 회원 상세(상태·척도 점수·한 줄), 추가 검사 화면(척도별 평균·α), 엑셀 '추가 · 연애 상황 보고서'(응답·점수·상태, 보고서 글은 넣지 않음)
 - 사진 AI 피드백: `src/lib/photo/feedback.ts` (OpenAI Chat Completions + JSON schema). 내부 점수는 추천에 쓰지 않는다
 - 인증: `/signup`(이메일 코드 → 비밀번호), `/login`(비밀번호), `/reset`(코드 → 새 비밀번호), `/set-password`. `user_metadata.password_set`이 없으면 `/start`가 비밀번호 만들기로 보낸다. 탈퇴는 계정을 완전히 지워서(`auth.admin.deleteUser`) 같은 이메일·같은 비밀번호로 새로 가입할 수 있다. 계정이 남아 있는 이메일로 회원가입·비밀번호 찾기를 하면 코드 확인으로 그 계정에 로그인되므로, 쓰던 비밀번호를 그대로 넣어도 받아준다(Supabase `same_password`이면 비밀번호는 두고 `password_set`만 저장, 회원가입이면 '이미 가입된 이메일이에요' 안내). 로그인한 채 '비밀번호 바꾸기'에서만 다른 비밀번호를 요구한다. 로그인·코드 인증·비밀번호 만들기가 끝나면 `window.location.replace`로 페이지를 새로 연다(router.replace/refresh 금지: 로그인 전 화면 기억, 넘겨주기만 하는 `/start` route handler, 홈 화면 앱에 남은 예전 코드가 섞여 '페이지를 불러오지 못함'이 떴다)
 - 이메일 인증 코드는 6자리(Supabase 이메일 OTP 길이는 6~10자리만 가능해서 4자리는 안 된다). 입력은 `src/components/auth/CodeBoxes.tsx`(6칸 상자, 실제 입력칸 하나를 투명하게 덮어 붙여넣기·자동 채우기 유지, 띄어 쓴 코드도 숫자만 골라 받음, 다 넣으면 바로 확인, 틀리면 비우고 다시 포커스). Supabase 설정을 바꾸면 `OTP_LENGTH`도 같이
@@ -63,7 +64,7 @@
 - 음주(검사 D4): 마시지 않음 / 가끔(한 달 1~2번 이하) / 주 1~2번 / 주 3번 이상. 원하는 상대 조건은 상관없음 / 주 3번 이상만 아니면 / 가끔 이하 / 안 마시는 사람만 + 꼭/되도록
 - 꾸밈 문항은 모두 필수. 남자에게만 면도·수염(S1), 여자에게만 메이크업(S3)을 묻고, 이 문항은 꾸밈 수준 점수에 들어간다
 - ECR 애착 척도 넣지 않음, 파일럿 없음, 오프라인 이벤트 없음
-- 추가 검사(선택)는 상표·저작권 문제가 없는 한결 자체 문항만 쓴다 (MBTI, 에니어그램, 5가지 사랑의 언어, BFI-2, HEXACO-PI-R은 쓰지 않음. 공개 도메인 IPIP는 가능). `src/lib/extra/tests.ts`(문항 바꾸면 그 검사 version 올림), 결과는 리포트 '더 알아보기'와, 보여주기를 켠 경우 상대 자세히 보기에 요약·공통점으로. 추천 계산에는 쓰지 않는다
+- 추가 검사(선택)는 상표·저작권 문제가 없는 한결 자체 문항만 쓴다 (MBTI, 에니어그램, 5가지 사랑의 언어, BFI-2, HEXACO-PI-R, TCI는 쓰지 않음. 공개 도메인 IPIP는 가능: 연애 상황 보고서가 IPIP 척도를 쓴다. TCI 같은 상업 검사 이름을 화면에 내세우지 않는다). `src/lib/extra/tests.ts`(문항 바꾸면 그 검사 version 올림), 결과는 리포트 '더 알아보기'와, 보여주기를 켠 경우 상대 자세히 보기에 요약·공통점으로. 추천 계산에는 쓰지 않는다
 - 그림 프로필(필수, `/me/illustration`): 추천 카드에는 실제 사진 대신 이 그림이 보이고, 다 그린 그림이 있어야 추천을 주고받는다(준비 단계 `setupSteps`의 마지막 '그림 프로필', 후보 풀 `loadPool`의 `illustratedUsers`, 관리자 `userStage` 모두 같은 기준). 사진 2장 + 성별·나이대·키·자기소개·성향·생활·꾸밈·추가 검사 요약으로 OpenAI Images Edits(`OPENAI_IMAGE_MODEL`, 기본 gpt-image-2.5-sunburst, medium, 1024x1536 webp). 이름·지역·종교·연락처·위생·조건은 넣지 않는다(`src/lib/illustration/prompt.ts`, 바꾸면 PROMPT_VERSION). 특정 스튜디오·작가 이름은 프롬프트에 쓰지 않고 화풍을 묘사한다. 동의(consents 'illustration')는 처음 정보 입력의 필수 동의. 자동으로 그린다(`startAutoIllustration`, 조건 판단은 순수 함수 `src/lib/illustration/rules.ts`의 `autoDrawDue`): 동의·내 정보·사진 2장이 있고 다 그린 그림도 그리는 중인 그림도 없을 때, 사진 등록·내 정보 저장 직후와 그림 프로필·오늘·내 정보 화면을 열 때. 실패하면 30분 간격으로 다시, 24시간에 실패 3번이면 자동은 멈추고 '다시 그리기' 버튼. 동시에 불려도 `allow(illust-auto)`로 하나만. 그리는 동안은 준비 목록·사진 화면에 '그리는 중'. 처음 다 그린 그림은 자동으로 추천 카드에 보이고(shown), 여러 장이면 '이 그림으로 바꾸기'로 고른다. 숨기기는 없고, 마지막 남은 그림은 지울 수 없다(`canDelete`), 보여주던 그림을 지우면 남은 것 중 최근 그림. 보여줄 그림은 고른 그림, 없으면 가장 최근 그림(`pickShown`, `shownIllustrationUrls`). 다 그린 그림은 '저장'(공유 시트로 사진 앱, 컴퓨터는 내려받기, `SaveImageButton`). 한 계정당 3번(평생, 실패 제외, 지운 그림 포함 `ILLUSTRATIONS_PER_ACCOUNT`), 서비스 전체 하루 상한, 응답 뒤 after()로 생성. OpenAI 이미지 생성이 막히면(조직 인증·장애) 새 회원이 매칭에 들어오지 못하니 관리자 회원 상세의 그림 기록·실패 사유를 볼 것
 - 사진 시도 기록(`photo_attempts.detail`)에 거절 사유를 남긴다. 거절된 사진 파일은 저장하지 않는다. 관리자 회원 상세에 사진별 피드백·내부 점수 기록
 - 개인정보 보호책임자: 최현석, testwelltest01@gmail.com. 교체 사진 1년 보관 (크론 `KEEP_REPLACED_DAYS`)

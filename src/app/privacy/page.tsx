@@ -12,6 +12,11 @@ const ROWS = [
     items: "추가 검사 응답과 결과",
     period: "탈퇴 시 파기",
   },
+  {
+    purpose: "연애 상황 보고서(선택): 검사 결과를 바탕으로 연애 장면별 보고서를 써서 본인에게만 보여줌",
+    items: "연애 상황 검사 응답과 점수, AI가 쓴 보고서",
+    period: "탈퇴 시 파기",
+  },
   { purpose: "리포트의 '친구가 보는 나'", items: "친구가 입력한 평가 응답 (평가한 친구의 개인정보는 받지 않음)", period: "탈퇴 시 파기" },
   {
     purpose: "매칭 추천",
@@ -93,7 +98,7 @@ export default function PrivacyPage() {
       </div>
       <P>
         검사 응답은 서비스 안에서 리포트와 추천에만 쓰며, 외부 AI 모델의 학습에는 제공하지 않습니다. 건강·질병 정보와 우울·불안
-        같은 정신건강 검사 결과는 수집하지 않습니다.
+        같은 정신건강 진단 검사 결과는 수집하지 않습니다. 성격 문항 중 걱정·화 같은 문항은 평소 성향을 묻는 것이고 진단에 쓰지 않습니다.
       </P>
 
       <H>2. 민감정보 (종교)</H>
@@ -139,7 +144,7 @@ export default function PrivacyPage() {
         <li>Vercel Inc.: 웹 호스팅과 서버 기능 실행 (서울 리전)</li>
       </ul>
 
-      <H id="overseas">7. 국외 이전 (사진 AI 피드백, 그림 프로필)</H>
+      <H id="overseas">7. 국외 이전 (사진 AI 피드백, 그림 프로필, 연애 상황 보고서)</H>
       <p className="mt-3 font-semibold text-ink">사진 AI 피드백</p>
       <ul className="mt-3 list-disc space-y-1 pl-5 text-ink-soft">
         <li>이전받는 자: OpenAI, L.L.C. (미국)</li>
@@ -178,6 +183,18 @@ export default function PrivacyPage() {
           동의 시점과 거부 시 불이익: 가입 후 처음 정보를 입력할 때 동의를 받습니다. 그림
           프로필이 있어야 추천을 주고받을 수 있어 동의하지 않으면 매칭을 이용할 수 없습니다.
         </li>
+      </ul>
+      <p className="mt-5 font-semibold text-ink">연애 상황 보고서 (선택)</p>
+      <ul className="mt-2 list-disc space-y-1 pl-5 text-ink-soft">
+        <li>이전받는 자: OpenAI, L.L.C. (미국)</li>
+        <li>
+          이전 항목: 성별, 연애 상황 검사 점수, 기본 검사 결과 중 성격 5요인과 관계 가치관 응답, 더 알아보기 결과 요약 (닉네임, 이메일, 나이, 사는 곳,
+          종교, 연락처, 사진, 자기소개는 보내지 않음)
+        </li>
+        <li>목적: 연애의 여러 장면에서 나는 어떤지 정리한 보고서 쓰기 (본인에게만 보이며 추천 계산에는 쓰지 않음)</li>
+        <li>일시와 방법: 연애 상황 검사를 마쳤을 때 한 번(실패하면 이용자가 &quot;다시 쓰기&quot;를 누를 때) 암호화된 통신(HTTPS)으로 전송</li>
+        <li>보유기간: OpenAI 정책에 따라 남용 감시 목적으로 최대 30일 보관 후 삭제되며, AI 학습에 쓰이지 않음</li>
+        <li>동의 시점과 거부 시 불이익: 연애 상황 검사 마지막 화면에서 따로 동의를 받습니다. 동의하지 않으면 보고서만 받을 수 없고 다른 서비스는 그대로 이용할 수 있습니다.</li>
       </ul>
       <p className="mt-5 font-semibold text-ink">알림 (선택)</p>
       <P>
@@ -228,7 +245,7 @@ export default function PrivacyPage() {
       </ul>
 
       <H>14. 시행일</H>
-      <P>이 처리방침은 2026년 10월 21일부터 적용합니다. 내용이 바뀌면 시행 7일 전에 알립니다.</P>
+      <P>이 처리방침은 2026년 10월 22일부터 적용합니다. 내용이 바뀌면 시행 7일 전에 알립니다.</P>
     </Shell>
   );
 }

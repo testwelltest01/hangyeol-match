@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import type { MemberRow } from "@/lib/admin/data";
 import { ALL_ITEMS, isRequired, OBSERVER_ITEMS, type Answers } from "@/lib/items";
 import { findExtraTest, scoreExtra } from "@/lib/extra/tests";
+import { LOVE_ITEMS, LOVE_SCALES } from "@/lib/love/items";
+import type { LoveScores } from "@/lib/love/score";
 import { computeScores } from "@/lib/scoring";
 import { buildWorkbook, type ExportData } from "./workbook";
 
@@ -84,6 +86,16 @@ function sample(): ExportData {
       { id: 3, reporter: B, target: A, reason: "rude", detail: "=HYPERLINK(\"x\")", created_at: "2026-10-17T03:00:00Z", resolved_at: null },
     ],
     extras: [talkRow],
+    love: [
+      {
+        user_id: A,
+        version: "2026-10-v1",
+        answers: Object.fromEntries(LOVE_ITEMS.map((i) => [i.id, 4])),
+        scores: Object.fromEntries(LOVE_SCALES.map((s) => [s.id, 3.5])) as LoveScores,
+        status: "done",
+        created_at: "2026-10-17T03:00:00Z",
+      },
+    ],
     chatRooms: [
       {
         id: "room-1",
@@ -122,7 +134,7 @@ describe("buildWorkbook", () => {
     const wb = await read(buf);
     expect(wb.worksheets.map((w) => w.name)).toEqual([
       "안내", "회원", "검사 점수", "문항 응답", "문항 목록", "친구 평가", "관심·수락", "추천", "만남 피드백", "신고",
-      "추가 · 마음이 전해지는 순간", "추가 · 위로가 필요할 때", "추가 · 대화 코드",
+      "추가 · 마음이 전해지는 순간", "추가 · 위로가 필요할 때", "추가 · 대화 코드", "추가 · 연애 상황 보고서",
       "대화방", "대화 메시지", "대화 이벤트",
     ]);
     const rooms = wb.getWorksheet("대화방")!;
@@ -152,7 +164,12 @@ describe("buildWorkbook", () => {
     expect(answers.getRow(1).cellCount).toBe(4 + ALL_ITEMS.length);
 
     const items = wb.getWorksheet("문항 목록")!;
-    expect(items.rowCount).toBe(1 + ALL_ITEMS.length + 29);
+    expect(items.rowCount).toBe(1 + ALL_ITEMS.length + 29 + LOVE_ITEMS.length);
+    const love = wb.getWorksheet("추가 · 연애 상황 보고서")!;
+    const loveHeader = (love.getRow(1).values as unknown[]).map(String);
+    expect(love.rowCount).toBe(2);
+    expect(love.getRow(2).getCell(loveHeader.indexOf("보고서 상태")).value).toBe("완료");
+    expect(love.getRow(2).getCell(loveHeader.indexOf("점수_믿음")).value).toBe(3.5);
 
     const friends = wb.getWorksheet("친구 평가")!;
     expect(friends.getRow(2).getCell(1).value).toBe(7);

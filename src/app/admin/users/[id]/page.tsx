@@ -19,6 +19,10 @@ import { myChatRooms } from "@/lib/chat/server";
 import { extraCards } from "@/lib/extra/cards";
 import { loadExtraResults } from "@/lib/extra/server";
 import { EXTRA_TESTS } from "@/lib/extra/tests";
+import { LOVE_SCALES } from "@/lib/love/items";
+import { loadLoveReport, type LoveStatus } from "@/lib/love/server";
+
+const LOVE_STATUS_LABEL: Record<LoveStatus, string> = { pending: "쓰는 중", done: "완료", failed: "실패" };
 import { ResolveButton, SuspendButton } from "../../AdminButtons";
 import { PhotoHistory, type AttemptEntry, type PhotoEntry } from "./PhotoHistory";
 import { Avatar } from "@/components/app-ui";
@@ -81,7 +85,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
   const user = authData?.user;
   if (!user) notFound();
 
-  const [setup, scoreRow, flag, ratings, reactions, reports, feedback, recsReceived, recsShown, allPhotos, attempts, extra, chats, illus] = await Promise.all([
+  const [setup, scoreRow, flag, ratings, reactions, reports, feedback, recsReceived, recsShown, allPhotos, attempts, extra, chats, illus, love] = await Promise.all([
     loadMySetup(id),
     admin.from("test_scores").select("scores, version, computed_at").eq("user_id", id).maybeSingle(),
     admin.from("user_flags").select("suspended_at, reason").eq("user_id", id).maybeSingle(),
@@ -112,6 +116,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
       .eq("user_id", id)
       .order("created_at", { ascending: false })
       .limit(20),
+    loadLoveReport(admin, id),
   ]);
 
   // 관계·신고에 나오는 다른 사람의 닉네임
@@ -538,6 +543,45 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
             );
           })}
         </div>
+      </Panel>
+
+      <Panel
+        className="mt-4"
+        title="연애 상황 보고서"
+        lead="IPIP 48문항 척도 평균 (1~5)과 AI 보고서 상태. 보고서 글은 회원만 봐요. 추천에는 쓰지 않아요."
+      >
+        {love ? (
+          <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
+            <ul className="space-y-1 text-sm tabular-nums">
+              {[
+                ["상태", LOVE_STATUS_LABEL[love.status]],
+                ["검사", `${kstTime(love.created_at)} (${love.version})`],
+                ["쓰기 시도", `${love.tries}번 · 마지막 ${kstTime(love.started_at)}`],
+                ["완료", love.completed_at ? kstTime(love.completed_at) : "–"],
+                ["모델", love.model ? `${love.model} · ${love.prompt_version}` : "–"],
+                ["실패 사유", love.status === "failed" ? love.error : null],
+                ["한 줄", love.report?.headline ?? null],
+              ]
+                .filter(([, v]) => v)
+                .map(([k, v]) => (
+                  <li key={k} className="flex justify-between gap-3 border-b border-line/70 py-1.5">
+                    <span className="shrink-0 text-muted">{k}</span>
+                    <span className="text-right">{v}</span>
+                  </li>
+                ))}
+            </ul>
+            <ul className="grid gap-x-6 text-sm tabular-nums sm:grid-cols-2">
+              {LOVE_SCALES.map((s) => (
+                <li key={s.id} className="flex justify-between gap-3 border-b border-line/70 py-1.5">
+                  <span>{s.label}</span>
+                  <span>{love.scores[s.id]?.toFixed(2)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <p className="text-sm text-muted">아직 안 했어요.</p>
+        )}
       </Panel>
 
       <section id="report" className="mt-10 scroll-mt-4">
