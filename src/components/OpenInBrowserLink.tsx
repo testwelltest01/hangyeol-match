@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, type MouseEvent, type ReactNode } from "react";
 import { PendingSpinner } from "@/components/LinkPending";
-import { externalBrowserUrl, isInAppBrowser, isIOSDevice, safariUrl } from "@/lib/inapp";
+import { openOutside } from "@/lib/openOutside";
 
 const STYLE = {
   primary:
@@ -36,25 +36,10 @@ export function OpenInBrowserLink({
   const [handedOff, setHandedOff] = useState(false);
 
   function onClick(e: MouseEvent<HTMLAnchorElement>) {
-    const ua = navigator.userAgent;
-    const url = new URL(href, window.location.origin).toString();
-    const external = externalBrowserUrl(ua, url);
-    const ios = isIOSDevice(ua, navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    if (ios && (safari || isInAppBrowser(ua))) {
-      e.preventDefault();
-      setHandedOff(true);
-      window.location.href = safariUrl(url);
-      if (external) {
-        window.setTimeout(() => {
-          if (document.visibilityState === "visible") window.location.href = external;
-        }, 2500);
-      }
-      return;
-    }
-    if (!external) return; // 보통 브라우저는 그대로 이동
+    // 보통 브라우저는 그대로 이동, 앱 안 브라우저(·safari면 아이폰의 다른 브라우저)는 밖으로 넘긴다
+    if (!openOutside(new URL(href, window.location.origin).toString(), { safari })) return;
     e.preventDefault();
     setHandedOff(true);
-    window.location.href = external;
   }
 
   return (

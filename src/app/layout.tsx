@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { InAppEscape } from "@/components/InAppEscape";
 import { PwaRegister } from "@/components/PwaRegister";
 import { splashImages } from "@/lib/pwa/splash";
 import { INSTALL_BOOT_SCRIPT } from "@/lib/pwa/install";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme";
+import { Suspense } from "react";
 import "./globals.css";
 
 const TITLE = "한결 | 결이 맞는 사람";
@@ -74,6 +76,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         {children}
         <PwaRegister />
+        {/* 카카오톡 등 앱 안 브라우저로 열리면 바로 Safari(아이폰)·기본 브라우저(안드로이드)로 넘긴다 */}
+        <Suspense fallback={null}>
+          <InAppEscape />
+        </Suspense>
       </body>
     </html>
   );
