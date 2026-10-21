@@ -23,10 +23,15 @@ export function SetPasswordForm({ mode }: { mode: "signup" | "reset" | "change" 
 
     setBusy(true);
     const supabase = createClient();
-    const { error } = await supabase.auth.updateUser({ password, data: { password_set: true } });
+    let { error } = await supabase.auth.updateUser({ password, data: { password_set: true } });
+    // 이미 있는 계정에서 쓰던 비밀번호를 그대로 넣은 경우(같은 이메일로 다시 가입하기·비밀번호 찾기): 이메일 코드로 본인 확인을
+    // 마쳤으니 그 비밀번호를 그대로 쓰게 한다. 로그인한 채 '비밀번호 바꾸기'에서만 다른 비밀번호를 요구한다
+    if (error?.code === "same_password" && mode !== "change") {
+      ({ error } = await supabase.auth.updateUser({ data: { password_set: true } }));
+    }
     if (error) {
       setBusy(false);
-      if (error.code === "same_password") return setError("이전과 다른 비밀번호로 정해주세요.");
+      if (error.code === "same_password") return setError("지금 쓰는 비밀번호와 같아요. 다른 비밀번호로 정해주세요.");
       if (error.code === "weak_password") return setError("더 어려운 비밀번호로 정해주세요. 영문과 숫자를 섞어 8자 이상이어야 해요.");
       if (error.code === "reauthentication_needed") {
         setNeedsReauth(true);

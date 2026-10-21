@@ -12,6 +12,11 @@ const TEXT = {
   change: { title: "비밀번호 바꾸기", lead: "새로 쓸 비밀번호를 정해주세요." },
 } as const;
 
+const AGAIN = {
+  title: "이미 가입된 이메일이에요",
+  lead: "이메일 확인이 끝났어요. 쓰던 비밀번호를 그대로 넣어도 되고, 새 비밀번호로 바꿔도 돼요.",
+};
+
 export default function SetPasswordPage({ searchParams }: PageProps<"/set-password">) {
   return (
     <Shell>
@@ -27,7 +32,8 @@ async function SetPasswordGate({ searchParams }: { searchParams: PageProps<"/set
   if (!auth) redirect("/login");
   const { mode: raw } = await searchParams;
   const mode = raw === "signup" || raw === "reset" || raw === "change" ? raw : auth.passwordSet ? "change" : "first";
-  const t = TEXT[mode];
+  // 이미 가입된 이메일로 '회원가입'을 다시 한 경우: 코드 확인으로 그 계정에 로그인됐다. 쓰던 비밀번호를 그대로 넣어도 된다
+  const t = mode === "signup" && auth.passwordSet ? AGAIN : TEXT[mode];
   return (
     <>
       <h1 className="font-serif text-[1.65rem] font-bold leading-tight">{t.title}</h1>
