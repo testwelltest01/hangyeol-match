@@ -16,6 +16,5 @@ export async function GET(request: NextRequest) {
   if (!auth.passwordSet) return NextResponse.redirect(new URL("/set-password", request.url));
   if (await getAdmin()) return NextResponse.redirect(new URL("/admin", request.url));
   const progress = await getProgress(auth.userId);
-  const path = progress === "report" ? "/match" : PROGRESS_PATH[progress];
-  return NextResponse.redirect(new URL(path, request.url));
+  return NextResponse.redirect(new URL(PROGRESS_PATH[progress], request.url));
 }
