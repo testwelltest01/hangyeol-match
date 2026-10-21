@@ -8,6 +8,9 @@ export function PwaRegister() {
   useEffect(() => {
     const onPrompt = (e: Event) => setInstallPrompt(e as InstallPromptEvent);
     const onInstalled = () => setInstallPrompt(null);
+    // <head>의 INSTALL_BOOT_SCRIPT가 React보다 먼저 받아 둔 설치 이벤트
+    const early = (window as { __hgInstall?: InstallPromptEvent | null }).__hgInstall;
+    if (early) setInstallPrompt(early);
     window.addEventListener("beforeinstallprompt", onPrompt);
     window.addEventListener("appinstalled", onInstalled);
     // iOS Safari는 터치 리스너가 하나라도 있어야 :active(누른 티)를 그린다

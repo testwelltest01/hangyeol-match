@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { PwaRegister } from "@/components/PwaRegister";
 import { splashImages } from "@/lib/pwa/splash";
+import { INSTALL_BOOT_SCRIPT } from "@/lib/pwa/install";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -54,6 +55,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         {/* 성별 테마(남자 하늘·여자 분홍)를 첫 그림 전에 붙인다. <html>에 속성이 더해지므로 위에서 hydration 경고를 끈다 */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+        {/* 설치 이벤트는 페이지를 연 직후 한 번만 와서 React보다 먼저 받아 둔다 (PwaRegister가 이어받는다) */}
+        <script dangerouslySetInnerHTML={{ __html: INSTALL_BOOT_SCRIPT }} />
         {/* 한글 웹폰트: 본문은 프리텐다드, 문장과 제목은 고운바탕 */}
         <link
           rel="stylesheet"
