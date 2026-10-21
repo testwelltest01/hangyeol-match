@@ -47,6 +47,10 @@ export function InviteBox({ initialToken, count, minCount }: { initialToken: str
         친구가 링크에서 10문항에 답하면, 친구들이 보는 나를 성격 막대에 함께 표시해요. 누가 어떻게 답했는지는 보이지 않고,{" "}
         {minCount}명 이상 모였을 때 평균만 보여줘요.
       </p>
+      <p className="mt-3 rounded-2xl bg-indigo/5 px-4 py-3 text-[14px] leading-relaxed text-ink-soft ring-1 ring-indigo/15">
+        친구 1명이 평가할 때마다 <strong className="font-semibold text-ink">오늘의 추천 새로고침 쿠폰</strong> 1장을 받아요. 오늘 탭에서 아직 답하지 않은 추천을 새
+        사람으로 바꿀 수 있어요(하루 한 번).
+      </p>
       <p className="mt-3 font-semibold">
         {count === 0
           ? "아직 평가가 없어요."

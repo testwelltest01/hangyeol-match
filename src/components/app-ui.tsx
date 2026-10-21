@@ -132,7 +132,6 @@ export function Avatar({ name, size = 44, src }: { name: string; size?: number; 
 export type JourneyStep = { id: string; label: string; href: string; done: boolean };
 
 const NEXT: Record<string, { cta: string; hint: string }> = {
-  friends: { cta: "친구에게 평가 부탁하기", hint: "나를 아는 친구 1명이 '친구가 보는 나'를 남기면 추천이 시작돼요." },
   profile: { cta: "내 정보 채우기", hint: "지역, 키, 자기소개를 적어요. 추천 카드에 이 정보가 보여요." },
   filters: { cta: "원하는 조건 정하기", hint: "나이·지역처럼 꼭 맞았으면 하는 조건을 골라요." },
   photos: { cta: "사진 올리기", hint: "얼굴·전신 2장. 서로 관심을 보낸 사람에게만 보여요." },

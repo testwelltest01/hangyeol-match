@@ -1,10 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { TraitBar, ValueTrack } from "@/components/ReportParts";
-import { Callout } from "@/components/app-ui";
-import { IconFriends, IconLink, IconSliders, IconToday } from "@/components/icons";
+import { IconLink, IconSliders } from "@/components/icons";
 import type { ExtraCard } from "@/lib/extra/cards";
-import { MIN_FRIENDS_FOR_MATCHING } from "@/lib/match/rules";
 import type { Trait } from "@/lib/items";
 import type { Report } from "@/lib/report";
 import { InviteBox } from "./InviteBox";
@@ -78,8 +76,6 @@ function Section({
   );
 }
 
-const pill = "inline-block rounded-full bg-primary transition active:scale-[0.98] active:opacity-80 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-soft";
-
 export function ReportParts({
   nickname,
   report,
@@ -111,34 +107,6 @@ export function ReportParts({
       )}
       <p className="mt-2 text-[15px] text-ink-soft">검사 답을 바탕으로 정리했어요. 이 결과로 결이 맞는 사람을 추천해요.</p>
 
-      {!admin && (
-        <div className="mt-5">
-          {friendCount >= MIN_FRIENDS_FOR_MATCHING ? (
-            <Callout
-              icon={<IconToday size={22} />}
-              action={
-                <Link href="/match" className={pill}>
-                  오늘의 추천 보기
-                </Link>
-              }
-            >
-              이 결과로 매일 저녁 8시에 결이 맞는 3명을 추천해요.
-            </Callout>
-          ) : (
-            <Callout
-              icon={<IconFriends size={22} />}
-              action={
-                <a href="#friends" className={pill}>
-                  친구에게 평가 부탁하기
-                </a>
-              }
-            >
-              친구 {MIN_FRIENDS_FOR_MATCHING}명이 &lsquo;친구가 보는 나&rsquo;를 남기면 매칭을 시작할 수 있어요. 나를 아는 사람의 시선이 있어야 더 믿을 수 있는
-              추천이 돼요.
-            </Callout>
-          )}
-        </div>
-      )}
 
       {/* 가치관·오해 포인트·성격·친구가 보는 나·더 알아보기를 화면 안 탭으로: 한 번에 한 묶음만 보여서 페이지가 길어지지 않는다.
           고른 탭은 주소 #에 남아 /report#friends, /report#extra 같은 링크가 그대로 동작한다 (관리자 화면은 화면 안에서만 기억) */}

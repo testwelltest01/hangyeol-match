@@ -15,15 +15,15 @@ const REASONS = [
   },
   {
     Icon: IconFriends,
-    title: "친구가 보증하는 사람들",
-    body: "모든 회원이 방금 같은 친구 평가를 1명 이상 받아야 소개를 받을 수 있어요.",
+    title: "친구가 보는 나도 함께",
+    body: "방금 같은 친구 평가가 모이면 내가 본 나와 친구가 본 나를 나란히 보여드려요.",
   },
 ];
 
 const STEPS = [
   { title: "이메일로 가입", note: "1분", body: "메일로 받은 코드를 넣고 비밀번호를 만들어요." },
   { title: "가치관 검사", note: "11분", body: "끝나면 나의 연애 결 리포트를 바로 받아요." },
-  { title: "매일 저녁 8시, 3명 소개", note: "무료", body: "사진과 친구 평가까지 마치면 소개가 시작돼요." },
+  { title: "매일 저녁 8시, 3명 소개", note: "무료", body: "내 정보·사진·연락처를 채우면 소개가 시작돼요." },
 ];
 
 export function FriendDone({ name }: { name: string }) {

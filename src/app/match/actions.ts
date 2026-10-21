@@ -2,11 +2,17 @@
 
 import { after as afterResponse } from "next/server";
 import { closeChatRoom, getChatRoom, openChatRoom } from "@/lib/chat/server";
+import { matchDay } from "@/lib/day";
+import { loadCoupons } from "@/lib/match/coupons";
+import { isReady, loadMySetup } from "@/lib/match/me";
+import { refreshTargets } from "@/lib/match/rules";
 import { pairContext } from "@/lib/match/context";
-import { loadPair, pairStage, type PairStage } from "@/lib/match/server";
+import { loadPair, pairStage, pickRefresh, type PairStage } from "@/lib/match/server";
 import { REPORT_REASONS, type ReportReason } from "@/lib/match/safety";
 import { notifyPair } from "@/lib/push/server";
 import { allow, TOO_MANY } from "@/lib/security";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserId } from "@/lib/supabase/server";
 
 type Result = { ok: true; stage?: PairStage } | { ok: false; error: string };
 
@@ -139,4 +145,59 @@ export async function saveMeetingFeedback(targetId: string, input: MeetingInput)
   }
   const { error } = await ctx.admin.from("meeting_feedback").upsert(row);
   return error ? { ok: false, error: "저장하지 못했어요. 다시 시도해주세요." } : { ok: true };
+}
+
+type RefreshResult = { ok: true; added: number } | { ok: false; error: string };
+
+/**
+ * 새로고침 쿠폰 쓰기: 오늘 추천 중 아직 답하지 않은 사람을 새 사람으로 바꾼다 (하루 한 번, 쿠폰 1장).
+ * 새 사람을 못 찾으면 쿠폰을 쓰지 않는다. 바꾼 사람은 14일 동안 다시 추천하지 않는다
+ */
+export async function refreshToday(): Promise<RefreshResult> {
+  const userId = await getUserId();
+  if (!userId) return { ok: false, error: "로그인이 필요해요." };
+  if (!(await allow(`refresh:${userId}`, 10, 3600))) return { ok: false, error: TOO_MANY };
+
+  const setup = await loadMySetup(userId);
+  if (!setup || !isReady(setup)) return { ok: false, error: "매칭 준비를 마치면 쓸 수 있어요." };
+  if (setup.suspended || setup.matchProfile?.paused) return { ok: false, error: "추천이 멈춰 있어서 지금은 쓸 수 없어요." };
+
+  const admin = createAdminClient();
+  const day = matchDay();
+  const coupons = await loadCoupons(admin, userId, day);
+  if (!coupons.available) return { ok: false, error: "아직 준비 중인 기능이에요." };
+  if (coupons.usedToday) return { ok: false, error: "오늘은 이미 새로고침을 썼어요. 저녁 8시 새 추천 뒤에 다시 쓸 수 있어요." };
+  if (coupons.balance <= 0) return { ok: false, error: "쿠폰이 없어요. 친구가 평가를 남기면 1장씩 받아요." };
+
+  const [recs, mine, liked] = await Promise.all([
+    admin.from("recommendations").select("target_id, score").eq("user_id", userId).eq("day", day),
+    admin.from("reactions").select("to_user").eq("from_user", userId),
+    admin.from("reactions").select("from_user").eq("to_user", userId).eq("interest", true),
+  ]);
+  if (recs.error || mine.error || liked.error) return { ok: false, error: "불러오지 못했어요. 다시 시도해주세요." };
+  const candidates = refreshTargets(
+    (recs.data ?? []).map((r) => ({ target: r.target_id as string, score: Number(r.score) })),
+    new Set((mine.data ?? []).map((r) => r.to_user as string)),
+    new Set((liked.data ?? []).map((r) => r.from_user as string)),
+  );
+  if (candidates.length === 0) return { ok: false, error: "바꿀 사람이 없어요. 모두 답했거나 나에게 먼저 관심을 보낸 사람이에요." };
+
+  const rows = await pickRefresh(admin, day, userId, candidates);
+  if (rows.length === 0) return { ok: false, error: "지금은 새로 소개할 사람이 없어요. 쿠폰은 그대로 있어요." };
+  const replaced = candidates.slice(0, rows.length); // 새 사람 수만큼만, 점수 낮은 사람부터
+
+  // 새 추천을 먼저 넣고, 쿠폰 기록(하루 한 번 unique)으로 동시에 두 번 누른 경우를 막은 뒤, 바꾼 사람을 뺀다
+  const inserted = await admin.from("recommendations").insert(rows);
+  if (inserted.error) return { ok: false, error: "새 추천을 저장하지 못했어요. 다시 시도해주세요." };
+  const added = rows.map((r) => r.target_id);
+  const used = await admin.from("recommendation_refreshes").insert({ user_id: userId, day, replaced, added });
+  if (used.error) {
+    await admin.from("recommendations").delete().eq("user_id", userId).eq("day", day).in("target_id", added);
+    return {
+      ok: false,
+      error: used.error.code === "23505" ? "오늘은 이미 새로고침을 썼어요." : "쿠폰을 쓰지 못했어요. 다시 시도해주세요.",
+    };
+  }
+  await admin.from("recommendations").delete().eq("user_id", userId).eq("day", day).in("target_id", replaced);
+  return { ok: true, added: added.length };
 }

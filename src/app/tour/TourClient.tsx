@@ -623,7 +623,6 @@ function Finish({
 }) {
   const left = journey.filter((s) => !s.done);
   const minutes = left.reduce((sum, s) => sum + (s.minutes ?? 0), 0);
-  const waitsFriend = left.some((s) => s.minutes === null);
   return (
     <div className={`mt-8 ${rise}`}>
       <section className="rounded-2xl border border-line bg-surface px-5 py-6 text-center">
@@ -643,7 +642,7 @@ function Finish({
         <h2 className="font-serif text-2xl font-bold">{left.length ? `진짜 소개까지 ${left.length}단계 남았어요` : "진짜 소개를 받을 준비가 끝났어요"}</h2>
         <p className="mt-2 text-ink-soft">
           {left.length
-            ? `남은 시간은 약 ${minutes}분이에요.${waitsFriend ? " 친구 평가는 친구가 답해주면 끝나요." : ""} 모두 채우면 바로 오늘의 추천이 열리고, 그다음부터 매일 결이 맞는 3명이 찾아와요.`
+            ? `남은 시간은 약 ${minutes}분이에요. 모두 채우면 바로 오늘의 추천이 열리고, 그다음부터 매일 결이 맞는 3명이 찾아와요.`
             : "오늘의 추천에서 결이 맞는 진짜 회원을 만나보세요."}
         </p>
         <ol className="mt-6 space-y-2.5">

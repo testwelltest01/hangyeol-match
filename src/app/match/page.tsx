@@ -1,10 +1,11 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { EmptyState, NextStepCard } from "@/components/app-ui";
+import { Callout, EmptyState, NextStepCard } from "@/components/app-ui";
 import { DrinkingQuestion } from "@/components/DrinkingQuestion";
-import { IconMoon, IconPause } from "@/components/icons";
+import { IconGrain, IconMoon, IconPause } from "@/components/icons";
 import { PersonCardView } from "@/components/PersonCard";
 import { ReactButtons } from "@/components/ReactButtons";
+import { RefreshCoupon } from "@/components/RefreshCoupon";
 import { TourInvite } from "@/components/TourInvite";
 import type { PersonCard } from "@/lib/match/dashboard";
 import { setupSteps } from "@/lib/match/me";
@@ -54,6 +55,17 @@ async function TodayGate() {
       <div className="space-y-5">
         <MatchNotices data={data} />
         {data.needsDrinking && <DrinkingQuestion />}
+        {/* 검사를 마치면 이 화면으로 온다. 결과는 '내 결' 탭에 있다고 알려준다 */}
+        <Callout
+          icon={<IconGrain size={22} />}
+          action={
+            <Link href="/report" className="text-[14px] font-semibold text-indigo underline underline-offset-4">
+              내 결 보기
+            </Link>
+          }
+        >
+          검사 결과가 나왔어요. &lsquo;내 결&rsquo; 탭에서 나의 연애 결을 볼 수 있어요.
+        </Callout>
         <NextStepCard steps={setupSteps(setup)} />
         <TourInvite title="준비를 마치면 이렇게 소개받아요" body="가상 인물과 추천부터 연락처 교환까지 미리 해보세요." />
       </div>
@@ -61,6 +73,15 @@ async function TodayGate() {
   }
 
   const stopped = setup.suspended || setup.matchProfile!.paused;
+  // 새로고침 쿠폰: 0008 SQL 뒤에, 추천이 멈추지 않았고 오늘 추천이 있을 때. 바꿀 수 있는 사람은 아직 답하지 않았고 나에게 먼저 관심을 보내지 않은 사람
+  const coupon =
+    data.coupons.available && !stopped && d.today.length > 0 ? (
+      <RefreshCoupon
+        balance={data.coupons.balance}
+        usedToday={data.coupons.usedToday}
+        canUse={d.today.some((c) => c.stage === "new" && !c.likedMe)}
+      />
+    ) : null;
   return (
     <>
       <MatchNotices data={data} showPaused />
@@ -97,6 +118,7 @@ async function TodayGate() {
           })}
         </div>
       )}
+      {coupon && <div className="mt-6">{coupon}</div>}
     </>
   );
 }

@@ -242,3 +242,11 @@ export const IconFlag = (p: IconProps) => (
     <path d="M5.5 20.5v-16M5.5 4.5h11l-2 4 2 4h-11" />
   </Svg>
 );
+
+/** 새로고침 쿠폰: 가운데가 접힌 티켓 */
+export const IconTicket = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 7.5a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 20 7.5v2a2.5 2.5 0 0 0 0 5v2a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 16.5v-2a2.5 2.5 0 0 0 0-5z" />
+    <path d="M14.5 6.5v2M14.5 11v2M14.5 15.5v2" />
+  </Svg>
+);

@@ -10,7 +10,7 @@
 - `npm run dev` / `npm test` (vitest, `src/**/*.test.ts`) / `npx tsc --noEmit` / `npx eslint .` / `npx next build`
 - 라우트 타입(`PageProps<"/경로">`)이 없다는 오류가 나면 `npx next typegen`
 - 배포: GitHub `main`에 push하면 Vercel이 자동 배포 (https://hangyeol-match.vercel.app, 함수 리전 `icn1`)
-- DB 변경은 `supabase/migrations/000N_*.sql`을 새로 만들고, 사용자가 Supabase SQL Editor에서 직접 실행한다 (0001, 0002 실행 완료 기준. 0003 방문 기록, 0004 추가 검사·사진 거절 사유, 0005 대화방, 0006 그림 프로필, 0007 알림 구독은 작성만 됨)
+- DB 변경은 `supabase/migrations/000N_*.sql`을 새로 만들고, 사용자가 Supabase SQL Editor에서 직접 실행한다 (0001, 0002 실행 완료 기준. 0003 방문 기록, 0004 추가 검사·사진 거절 사유, 0005 대화방, 0006 그림 프로필, 0007 알림 구독, 0008 새로고침 쿠폰은 작성만 됨)
 
 ## Next.js 16 주의 (cacheComponents + partialPrefetching 켜짐)
 
@@ -53,8 +53,9 @@
 - 하루 3명 추천 → 서로 관심이면 사진 공개 → 서로 수락이면 대화방(`/chat/[id]`, 한 사람당 49개 = '서로 50회 미만', 500자, `src/lib/chat/rules.ts`) → 둘 다 '연락처 전달'을 누르면 인스타그램/카카오톡 ID 공개 (2026-10-17 변경, 이전엔 수락 즉시 공개)
 - 대화: 테이블 서버 전용(0005), 보내기·연락처 전달은 서버 액션 + DB 함수(방 잠금으로 한도·순번 보장), 새 메시지는 `GET /api/chat/[id]?after=` 폴링(서버 액션은 순차 실행이라 받기와 분리, 대화 중 2.5초→조용하면 15초, 화면 가리면 멈춤). 대화창에 연락처·아이디 모양은 막는다. 내용은 마지막 대화 후 90일 뒤 크론이 지우고 메타데이터(순번, 말차례, 글자 수, 응답 초)는 남긴다. 관리자는 신고가 있는 대화만 내용 열람, 엑셀은 메타데이터만. 0005 전에는 예전처럼 수락 즉시 연락처 공개(`getChatRoom().available`)
 - 공유 버튼(친구 평가 링크 `InviteBox`, 한결 알려주기 `ShareService`)은 링크만 넘긴다. 문구를 붙이면 카카오톡에 그대로 같이 보내진다(미리보기는 각 페이지 메타데이터가 맡는다)
-- 친구 평가를 마친 화면(`src/app/f/[token]/FriendDone.tsx`)은 짧은 고마움 + 한결을 써볼 이유 3가지 + 실제 단계(이메일 가입 1분 → 검사 11분 → 사진·친구 평가 뒤 매일 저녁 8시 소개)를 숨김없이 보여준다. 수락 뒤 흐름(대화방/연락처)은 0005 실행 여부에 따라 달라서 쓰지 않는다. '무료로 시작하기'(/start)와 '가입 없이 둘러보기'(/tour)는 앱 안 브라우저면 기본 브라우저로 넘겨 연다(`OpenInBrowserLink`, `src/lib/inapp.ts`: 카카오톡 `kakaotalk://web/openExternal`, 라인 `openExternalBrowser=1`, 안드로이드 다른 앱은 intent, 아이폰 다른 앱은 그대로)
-- 친구 평가가 1명 이상 있어야 매칭에 참여 (리포트의 매칭 시작 버튼, /match 준비 목록, 후보 풀 모두 같은 기준 `src/lib/match/rules.ts`)
+- 친구 평가를 마친 화면(`src/app/f/[token]/FriendDone.tsx`)은 짧은 고마움 + 한결을 써볼 이유 3가지 + 실제 단계(이메일 가입 1분 → 검사 11분 → 내 정보·사진·연락처 뒤 매일 저녁 8시 소개)를 숨김없이 보여준다. 수락 뒤 흐름(대화방/연락처)은 0005 실행 여부에 따라 달라서 쓰지 않는다. '무료로 시작하기'(/start)와 '가입 없이 둘러보기'(/tour)는 앱 안 브라우저면 기본 브라우저로 넘겨 연다(`OpenInBrowserLink`, `src/lib/inapp.ts`: 카카오톡 `kakaotalk://web/openExternal`, 라인 `openExternalBrowser=1`, 안드로이드 다른 앱은 intent, 아이폰 다른 앱은 그대로)
+- 친구 평가는 매칭 조건이 아니다(2026-10-21 변경, 매칭 준비는 내 정보·조건·사진·연락처). 대신 친구 평가 1명당 오늘의 추천 새로고침 쿠폰 1장(개수 제한 없음, `couponBalance` = friend_ratings 수 − 쓴 수). 쿠폰은 추천 하루(`matchDay`)에 한 번(0008 `recommendation_refreshes` unique(user_id, day)), 아직 답하지 않았고 나에게 먼저 관심을 보내지 않은 오늘 추천만 새 사람으로 바꾼다(`refreshTargets`, 새 사람이 모자라면 점수 낮은 사람부터 그 수만큼, 못 찾으면 쿠폰을 쓰지 않음). 바꾼 사람은 14일 동안 다시 추천하지 않는다(`candidateEdges`가 매일 추천과 같은 규칙). 서버 액션 `refreshToday`(src/app/match/actions.ts), 화면 `RefreshCoupon`(오늘 탭, 오늘 추천이 있을 때), 내 결 친구 탭에 안내. 0008 전에는 쿠폰만 숨긴다
+- 검사를 마치면 오늘 탭(`/match`)으로 간다. 준비 중이면 '검사 결과가 나왔어요 → 내 결 보기' 안내와 남은 단계
 - 사진 2장: 얼굴은 바로 찍기(`capture="user"`) 또는 갤러리에서 고르기, 전신은 갤러리. 사진 올리기는 계정당 20번까지(평생, 얼굴·전신 합산, 거절 포함, AI 장애 실패 제외, `PHOTO_UPLOADS_PER_ACCOUNT` in `src/lib/photo/rules.ts`). AI 피드백 없이는 등록 불가, 미리보기 피드백 없음
 - 지역은 시·군·구 직접 선택(양방향), 종교는 선택 입력 + 민감정보 별도 동의
 - 키 조건: 상관없음 / 나보다 큼 / 나보다 작음 / 직접 범위, ±2cm 여유

@@ -41,8 +41,8 @@ export function TestRunner({
         return;
       }
       if (res.done) {
-        router.push("/report");
-        router.refresh();
+        // 검사를 마치면 오늘 탭으로 (결과는 '내 결' 탭에. 뒤로 가기로 마지막 문항에 돌아오지 않게 replace)
+        router.replace("/match");
         return;
       }
       setStepIndex((i) => Math.min(i + 1, STEPS.length - 1));

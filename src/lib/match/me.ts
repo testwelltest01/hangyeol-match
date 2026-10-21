@@ -2,7 +2,6 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Improvement, UserView } from "@/lib/photo/feedback";
 import { withFilterDefaults, type Filters, type Gender, type Religion } from "@/lib/match/filters";
-import { MIN_FRIENDS_FOR_MATCHING } from "@/lib/match/rules";
 
 export type PhotoRow = { id: string; slot: "face" | "body"; path: string; feedback: UserView; created_at: string };
 
@@ -61,16 +60,11 @@ export async function loadMySetup(userId: string): Promise<MySetup | null> {
   };
 }
 
-export type SetupStep = { id: "friends" | "profile" | "filters" | "photos" | "contact"; label: string; href: string; done: boolean };
+export type SetupStep = { id: "profile" | "filters" | "photos" | "contact"; label: string; href: string; done: boolean };
 
+/** 매칭 준비 단계. 친구 평가는 조건이 아니다(평가를 받으면 새로고침 쿠폰) */
 export function setupSteps(s: MySetup): SetupStep[] {
   return [
-    {
-      id: "friends",
-      label: `친구 평가 ${MIN_FRIENDS_FOR_MATCHING}명 이상 받기`,
-      href: "/report#friends",
-      done: s.friendCount >= MIN_FRIENDS_FOR_MATCHING,
-    },
     { id: "profile", label: "내 정보와 자기소개", href: "/me/profile", done: Boolean(s.matchProfile) },
     { id: "filters", label: "원하는 상대 조건", href: "/me/filters", done: Boolean(s.matchProfile) },
     { id: "photos", label: "사진 2장", href: "/me/photos", done: Boolean(s.photos.face && s.photos.body) },

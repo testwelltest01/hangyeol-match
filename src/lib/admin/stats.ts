@@ -1,6 +1,5 @@
 // 관리자 대시보드 계산. DB 없이 테스트할 수 있게 순수 함수만 둔다.
 import { daysBefore, kstDay } from "@/lib/day";
-import { MIN_FRIENDS_FOR_MATCHING } from "@/lib/match/rules";
 
 export type UserStage = "account" | "testing" | "tested" | "ready";
 
@@ -25,7 +24,8 @@ export type UserFacts = {
 export function userStage(f: UserFacts): UserStage {
   if (!f.hasProfile) return "account";
   if (!f.hasScores) return "testing";
-  const ready = f.friendCount >= MIN_FRIENDS_FOR_MATCHING && f.hasMatchProfile && f.photoCount >= 2 && f.hasContact;
+  // 친구 평가는 매칭 조건이 아니다 (새로고침 쿠폰)
+  const ready = f.hasMatchProfile && f.photoCount >= 2 && f.hasContact;
   return ready ? "ready" : "tested";
 }
 
@@ -87,7 +87,6 @@ export function funnel(users: (UserFacts & { sentInterest: number; connected: nu
     ["가입", () => true],
     ["프로필 작성", (u) => u.hasProfile],
     ["검사 완료", (u) => u.hasScores],
-    [`친구 평가 ${MIN_FRIENDS_FOR_MATCHING}명 이상`, (u) => u.friendCount >= MIN_FRIENDS_FOR_MATCHING],
     ["매칭 준비 완료", (u) => userStage(u) === "ready"],
     ["관심 보낸 적 있음", (u) => u.sentInterest > 0],
     ["연결된 적 있음", (u) => u.connected > 0],

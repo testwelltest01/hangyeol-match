@@ -41,11 +41,10 @@ export default function TourPage() {
   );
 }
 
-/** 각 단계 설명과 걸리는 시간(분). 친구 평가는 친구가 답해야 끝나서 시간을 적지 않는다 */
+/** 각 단계 설명과 걸리는 시간(분) */
 const STEP_INFO: Record<string, { detail: string; minutes: number | null }> = {
   basic: { detail: "닉네임·성별·출생연도", minutes: 1 },
   test: { detail: "연락·갈등·돈·주말 같은 가치관 검사. 끝나면 연애 리포트가 나와요", minutes: 11 },
-  friends: { detail: "친구에게 링크를 보내 '친구가 보는 나'를 받아요", minutes: null },
   profile: { detail: "지역·키·자기소개", minutes: 3 },
   filters: { detail: "나이·지역·키처럼 꼭 맞았으면 하는 조건", minutes: 2 },
   photos: { detail: "얼굴·전신 2장. AI가 더 잘 나오는 방법을 알려줘요", minutes: 3 },

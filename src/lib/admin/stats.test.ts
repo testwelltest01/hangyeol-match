@@ -7,7 +7,7 @@ describe("userStage", () => {
   it("가입만 → 검사 중 → 검사 완료 → 매칭 준비 완료", () => {
     expect(userStage({ ...ready, hasProfile: false })).toBe("account");
     expect(userStage({ ...ready, hasScores: false })).toBe("testing");
-    expect(userStage({ ...ready, friendCount: 0 })).toBe("tested");
+    expect(userStage({ ...ready, friendCount: 0 })).toBe("ready"); // 친구 평가는 매칭 조건이 아니다
     expect(userStage({ ...ready, photoCount: 1 })).toBe("tested");
     expect(userStage({ ...ready, hasContact: false })).toBe("tested");
     expect(userStage(ready)).toBe("ready");
@@ -45,17 +45,17 @@ describe("funnel", () => {
     const steps = funnel([
       { ...ready, sentInterest: 1, connected: 1 },
       { ...ready, sentInterest: 0, connected: 0 },
-      { ...ready, friendCount: 0, sentInterest: 0, connected: 0 },
+      { ...ready, photoCount: 1, sentInterest: 0, connected: 0 },
       { ...ready, hasScores: false, sentInterest: 0, connected: 0 },
     ]);
-    expect(steps.map((s) => s.count)).toEqual([4, 4, 3, 2, 2, 1, 1]);
+    expect(steps.map((s) => s.count)).toEqual([4, 4, 3, 2, 1, 1]);
     expect(steps[0].rate).toBeNull();
     expect(steps[2].rate).toBe(75);
-    expect(steps[5].rate).toBe(50);
+    expect(steps[4].rate).toBe(50);
   });
 
   it("앞 단계가 0명이면 비율도 0", () => {
-    expect(funnel([]).map((s) => s.rate)).toEqual([null, 0, 0, 0, 0, 0, 0]);
+    expect(funnel([]).map((s) => s.rate)).toEqual([null, 0, 0, 0, 0, 0]);
   });
 });
 

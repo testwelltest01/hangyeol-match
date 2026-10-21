@@ -6,7 +6,6 @@ import {
   IconBrush,
   IconCamera,
   IconDoc,
-  IconFriends,
   IconGrain,
   IconIdCard,
   IconLink,
@@ -21,7 +20,6 @@ import { PauseToggle } from "./PauseToggle";
 import { SignOutButton } from "./SignOutButton";
 
 const STEP_ICON: Record<SetupStep["id"], ReactNode> = {
-  friends: <IconFriends size={20} />,
   profile: <IconIdCard size={20} />,
   filters: <IconSliders size={20} />,
   photos: <IconCamera size={20} />,
@@ -31,11 +29,9 @@ const STEP_ICON: Record<SetupStep["id"], ReactNode> = {
 /** 완료한 단계의 둘째 줄: 지금 채워진 내용을 짧게 */
 function stepSub(s: SetupStep, setup: MySetup): string {
   if (!s.done) {
-    return { friends: "친구 1명 이상이 평가해야 매칭이 시작돼요", profile: "지역·키·자기소개", filters: "나이·지역·키 같은 조건", photos: "얼굴·전신 2장", contact: "인스타그램 또는 카카오톡 ID" }[s.id];
+    return { profile: "지역·키·자기소개", filters: "나이·지역·키 같은 조건", photos: "얼굴·전신 2장", contact: "인스타그램 또는 카카오톡 ID" }[s.id];
   }
   switch (s.id) {
-    case "friends":
-      return `친구 ${setup.friendCount}명이 평가했어요`;
     case "profile":
       return setup.matchProfile ? personLine({ birthYear: setup.birthYear, region: setup.matchProfile.region, height: setup.matchProfile.height }) : "";
     case "filters":
