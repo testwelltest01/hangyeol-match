@@ -32,6 +32,7 @@
 ## 구조
 
 - 검사: `src/lib/items.ts`(문항, 바꾸면 `TEST_VERSION` 올림), `scoring.ts`(채점·상호 점수), `report.ts`
+- 내 결(`/report`, `src/app/report/ReportBody.tsx`): 화면 안 탭 `ReportTabs`(가치관(꾸밈과 조건 포함)·오해 포인트·성격·친구가 보는 나·더 알아보기). 한 번에 한 묶음만 보인다. 고른 탭은 주소 #(`values`, `tips`, `traits`, `friends`, `extra`)에 replaceState로 둬서 `/report#friends`·`/report#extra` 링크가 그대로 동작하고 방문 기록은 쌓이지 않는다. 탭 줄은 위쪽 바 밑에 붙는다. 관리자 회원 상세에서는 #를 쓰지 않고 붙이지 않는다(`syncHash`·`sticky` false). '친구에게 한결 알리기'는 탭 밖 맨 아래
 - 매칭: `src/lib/match/` — `filters.ts`(1층 하드 필터, 꼭/되도록), `explain.ts`(추천 이유), `allocate.ts`(하루 3명 라운드 로빈 배분, 노출 상한 6, 3층 게이트), `server.ts`(후보 풀, 추천 생성, 관계 단계), `dashboard.ts`, `me.ts`
 - 추천 화면은 탭 3개: `/match`(오늘), `/match/interest`(관심), `/match/connected`(연결). 공통 틀·탭·데이터(`loadMatch`, React `cache`)는 `src/app/match/frame.tsx`. 탭 숫자는 내가 답할 사람 수(관심: 사진 공개 후 수락 차례, 연결: 만남 피드백)
 - 지역: `src/lib/regions.ts` (2026-07 광주·전남 통합, 인천 제물포·영종·검단구 반영)
