@@ -24,11 +24,15 @@ const STEP_ICON: Record<SetupStep["id"], ReactNode> = {
   filters: <IconSliders size={20} />,
   photos: <IconCamera size={20} />,
   contact: <IconLink size={20} />,
+  illustration: <IconBrush size={20} />,
 };
 
 /** 완료한 단계의 둘째 줄: 지금 채워진 내용을 짧게 */
 function stepSub(s: SetupStep, setup: MySetup): string {
   if (!s.done) {
+    if (s.id === "illustration") {
+      return setup.illustration.drawing ? "AI가 그리고 있어요 (1~2분)" : "사진 2장과 자기소개로 AI가 그려요. 추천 카드에 보여요";
+    }
     return { profile: "지역·키·자기소개", filters: "나이·지역·키 같은 조건", photos: "얼굴·전신 2장", contact: "인스타그램 또는 카카오톡 ID" }[s.id];
   }
   switch (s.id) {
@@ -40,6 +44,8 @@ function stepSub(s: SetupStep, setup: MySetup): string {
       return "얼굴·전신 2장을 올렸어요";
     case "contact":
       return [setup.contact?.instagram && "인스타그램", setup.contact?.kakao && "카카오톡"].filter(Boolean).join(", ") + " 등록";
+    case "illustration":
+      return "추천 카드에 실제 사진 대신 보여요";
   }
 }
 
@@ -81,15 +87,24 @@ export function MeView({ setup, needsDrinking, faceUrl }: { setup: MySetup; need
             key={s.id}
             href={s.href}
             icon={STEP_ICON[s.id]}
-            label={s.label}
+            label={s.id === "illustration" ? "그림 프로필" : s.label}
             sub={stepSub(s, setup)}
-            right={s.done ? undefined : <StatusChip tone="turn">채우기</StatusChip>}
+            right={
+              s.done ? undefined : s.id === "illustration" && setup.illustration.drawing ? (
+                <StatusChip tone="wait">그리는 중</StatusChip>
+              ) : (
+                <StatusChip tone="turn">채우기</StatusChip>
+              )
+            }
           />
         ))}
       </ListGroup>
 
       <ListGroup title="나를 더 보여주기">
-        <ListRow href="/me/illustration" icon={<IconBrush size={20} />} label="그림 프로필" sub="사진과 자기소개로 그린 그림을 추천 카드에 보여줘요 (선택)" />
+        {/* 0006 SQL 전에는 그림 프로필이 준비 단계에 없어서 여기서 들어간다(화면은 '준비 중' 안내) */}
+        {!setup.illustration.available && (
+          <ListRow href="/me/illustration" icon={<IconBrush size={20} />} label="그림 프로필" sub="사진과 자기소개로 그린 그림을 추천 카드에 보여줘요" />
+        )}
         <ListRow href="/report#extra" icon={<IconGrain size={20} />} label="더 알아보기" sub="짧은 시범 검사로 나를 더 알려요 (선택)" />
       </ListGroup>
 

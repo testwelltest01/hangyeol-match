@@ -3,7 +3,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { isAdminEmail } from "@/lib/admin/auth";
 import { reactionStats, userStage, type ReactionRow, type UserStage } from "@/lib/admin/stats";
 import type { Gender } from "@/lib/match/filters";
-import { fetchAll } from "@/lib/match/server";
+import { fetchAll, illustratedUsers } from "@/lib/match/server";
 
 type Admin = SupabaseClient;
 
@@ -51,7 +51,7 @@ export async function listAuthUsers(admin: Admin): Promise<User[]> {
 }
 
 export async function loadMembers(admin: Admin): Promise<{ members: MemberRow[]; reactions: ReactionRow[] }> {
-  const [users, profiles, scores, matchProfiles, photos, contacts, flags, friends, reactions] = await Promise.all([
+  const [users, profiles, scores, matchProfiles, photos, contacts, flags, friends, reactions, illustrated] = await Promise.all([
     listAuthUsers(admin),
     fetchAll<{ id: string; nickname: string; gender: Gender; birth_year: number }>((a, b) =>
       admin.from("profiles").select("id, nickname, gender, birth_year").range(a, b),
@@ -71,6 +71,7 @@ export async function loadMembers(admin: Admin): Promise<{ members: MemberRow[];
     fetchAll<ReactionRow>((a, b) =>
       admin.from("reactions").select("from_user, to_user, interest, accept, interest_at, accept_at").range(a, b),
     ),
+    illustratedUsers(admin),
   ]);
 
   const profileById = new Map(profiles.map((p) => [p.id, p]));
@@ -100,6 +101,7 @@ export async function loadMembers(admin: Admin): Promise<{ members: MemberRow[];
       hasMatchProfile: Boolean(mp),
       photoCount: photoCount.get(u.id) ?? 0,
       hasContact: contactIds.has(u.id),
+      hasIllustration: illustrated ? illustrated.has(u.id) : undefined,
     };
     return {
       id: u.id,

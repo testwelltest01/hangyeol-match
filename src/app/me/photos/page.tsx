@@ -3,9 +3,7 @@ import { Suspense } from "react";
 import { Loading } from "@/components/Loading";
 import { PrimaryLink } from "@/components/buttons";
 import { Shell } from "@/components/Shell";
-import { PageTitle, SecondaryLink } from "@/components/ui";
-import { ILLUSTRATIONS_PER_ACCOUNT } from "@/lib/illustration/prompt";
-import { loadIllustrations, usedByAccount } from "@/lib/illustration/server";
+import { PageTitle } from "@/components/ui";
 import { loadMySetup, nextSetupStep, signedPhotoUrls } from "@/lib/match/me";
 import { COUNTED_RESULTS, PHOTO_UPLOADS_PER_ACCOUNT, remainingUploads } from "@/lib/photo/rules";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -51,8 +49,6 @@ async function PhotosGate({ searchParams }: { searchParams: PageProps<"/me/photo
   const remaining = remainingUploads((attempts ?? []).map((a) => a.result));
   const done = Boolean(face && body);
   const nextStep = nextSetupStep(setup, "photos");
-  const illustration = done && !fromIllustration && setup.matchProfile ? await illustrationState(userId!) : null;
-  const offerIllustration = illustration === "offer";
 
   return (
     <div className="mt-8 space-y-10">
@@ -77,26 +73,16 @@ async function PhotosGate({ searchParams }: { searchParams: PageProps<"/me/photo
         남았어요. 바꾼 이전 사진은 1년 뒤 지워져요. AI 점수는 사진 개선 안내에만 쓰고 추천
         순위에는 쓰지 않아요.
       </p>
-      {illustration === "drawing" && (
-        <section className="rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
-          <h2 className="text-[1.05rem] font-semibold">그림 프로필을 그리고 있어요</h2>
-          <p className="mt-1 text-sm text-ink-soft">
-            사진 2장과 자기소개로 AI가 그림을 그려요. 1~2분 걸리고, 다 되면 그림 프로필에서 보고 저장하거나 추천 카드에 보여줄지 정할 수 있어요.
-          </p>
-          <div className="mt-4">
-            <SecondaryLink href="/me/illustration">그림 프로필 보기</SecondaryLink>
-          </div>
-        </section>
-      )}
-      {offerIllustration && (
-        <section className="rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
-          <h2 className="text-[1.05rem] font-semibold">사진 2장이 준비됐어요</h2>
-          <p className="mt-1 text-sm text-ink-soft">
-            이 사진과 자기소개로 AI가 그림 프로필을 그려줘요. 추천 카드에 보여주면 사진이 공개되기 전에도 내 분위기를 전할 수 있어요.
-            (선택, 계정당 {ILLUSTRATIONS_PER_ACCOUNT}번)
-          </p>
-          <div className="mt-4">
-            <PrimaryLink href="/me/illustration">그림 프로필 만들기</PrimaryLink>
+      {/* 사진 2장이 갖춰지면 그림 프로필을 자동으로 그린다. 그리는 동안 다음 단계를 채우면 된다 (버튼은 아래 '다음' 하나) */}
+      {done && setup.illustration.drawing && (
+        <section className="flex items-center gap-4 rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80" aria-live="polite">
+          <span className="h-7 w-7 shrink-0 animate-spin rounded-full border-2 border-line border-t-indigo" aria-hidden />
+          <div>
+            <h2 className="text-[1.05rem] font-semibold">그림 프로필을 그리고 있어요</h2>
+            <p className="mt-1 text-sm text-ink-soft">
+              추천 카드에는 실제 사진 대신 이 그림이 보여요. 1~2분 걸리니 그동안 다음 단계를 채워주세요. 다 되면 내 정보 &gt; 그림 프로필에서
+              보고 저장할 수 있어요.
+            </p>
           </div>
         </section>
       )}
@@ -104,25 +90,8 @@ async function PhotosGate({ searchParams }: { searchParams: PageProps<"/me/photo
         (fromIllustration ? (
           <PrimaryLink href="/me/illustration">그림 프로필로 돌아가기</PrimaryLink>
         ) : (
-          offerIllustration ? (
-            <SecondaryLink href={nextStep?.href ?? "/match"}>그림 없이 {nextStep ? `다음: ${nextStep.label}` : "오늘의 추천 보기"}</SecondaryLink>
-          ) : (
-            <PrimaryLink href={nextStep?.href ?? "/match"}>{nextStep ? `다음: ${nextStep.label}` : "오늘의 추천 보기"}</PrimaryLink>
-          )
+          <PrimaryLink href={nextStep?.href ?? "/match"}>{nextStep ? `다음: ${nextStep.label}` : "오늘의 추천 보기"}</PrimaryLink>
         ))}
     </div>
   );
-}
-
-/**
- * 사진 2장을 다 올린 뒤 그림 프로필 안내: drawing = 자동으로(또는 직접) 그리는 중, offer = 아직 안 만들었고 만들 횟수가 남음.
- * 0006 SQL 전이면 null
- */
-async function illustrationState(userId: string): Promise<"drawing" | "offer" | null> {
-  const admin = createAdminClient();
-  const [{ available, rows }, used] = await Promise.all([loadIllustrations(admin, userId), usedByAccount(admin, userId)]);
-  if (!available) return null;
-  if (rows.some((r) => r.status === "pending")) return "drawing";
-  if (!rows.some((r) => r.status === "done") && used < ILLUSTRATIONS_PER_ACCOUNT) return "offer";
-  return null;
 }

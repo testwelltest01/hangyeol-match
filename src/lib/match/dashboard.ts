@@ -21,7 +21,7 @@ export type PersonCard = {
   stage: PairStage;
   /** 상대가 먼저 관심을 보냄 */
   likedMe: boolean;
-  /** 상대가 추천 카드에 보여주기로 한 그림 프로필 (10분 서명 주소) */
+  /** 상대의 그림 프로필: 고른 그림, 없으면 가장 최근 그림 (10분 서명 주소) */
   illustrationUrl: string | null;
   /** 얼굴 사진 (10분 서명 주소). 사진이 공개된 단계(서로 관심 이후)에서만 채운다 */
   faceUrl: string | null;
@@ -103,7 +103,7 @@ export async function loadDashboard(admin: SupabaseClient, me: string, myScores:
       ])
     : [{ data: [] }, { data: [] }, { data: [] }];
 
-  // 그림은 회원이 추천 카드에 보여주기로 한 것만, 얼굴은 사진이 공개된 단계(서로 관심 이후)인 사람만
+  // 그림 프로필은 모두(고른 그림, 없으면 최근 그림), 얼굴은 사진이 공개된 단계(서로 관심 이후)인 사람만
   const [illustrations, faces] = await Promise.all([
     shownIllustrationUrls(admin, visible),
     revealedFaceUrls(admin, visible.filter((id) => photosVisible(stages.get(id)!))),

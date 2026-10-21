@@ -30,12 +30,25 @@ export type PoolEntry = {
   gate: number;
 };
 
+/** 다 그린(지우지 않은) 그림 프로필이 있는 회원. 0006 SQL 전이면 null (그때는 조건에서 뺀다) */
+export async function illustratedUsers(admin: Admin): Promise<Set<string> | null> {
+  try {
+    const rows = await fetchAll<{ user_id: string }>((a, b) =>
+      admin.from("illustrations").select("user_id").eq("status", "done").is("deleted_at", null).range(a, b),
+    );
+    return new Set(rows.map((r) => r.user_id));
+  } catch {
+    return null;
+  }
+}
+
 /**
  * 지금 매칭에 참여할 수 있는 사람 전체.
- * 조건: 검사 완료, 매칭 정보 입력, 사진 2장, 연락처, 매칭 쉬는 중 아님, 이용 정지 아님. (친구 평가는 조건이 아니다: 새로고침 쿠폰)
+ * 조건: 검사 완료, 매칭 정보 입력, 사진 2장, 연락처, 그림 프로필(0006 뒤), 매칭 쉬는 중 아님, 이용 정지 아님.
+ * (친구 평가는 조건이 아니다: 새로고침 쿠폰). 준비 단계 `setupSteps`와 같은 기준
  */
 export async function loadPool(admin: Admin): Promise<Map<string, PoolEntry>> {
-  const [profiles, matchProfiles, scores, photos, contacts, flags, feedback] = await Promise.all([
+  const [profiles, matchProfiles, scores, photos, contacts, flags, feedback, illustrated] = await Promise.all([
     fetchAll<{ id: string; gender: Gender; birth_year: number; nickname: string }>((a, b) =>
       admin.from("profiles").select("id, gender, birth_year, nickname").range(a, b),
     ),
@@ -53,6 +66,7 @@ export async function loadPool(admin: Admin): Promise<Map<string, PoolEntry>> {
     fetchAll<FeedbackReceived & { to_user: string }>((a, b) =>
       admin.from("meeting_feedback").select("to_user, outcome, photo_match, cleanliness, manners").range(a, b),
     ),
+    illustratedUsers(admin),
   ]);
 
   const profileById = new Map(profiles.map((p) => [p.id, p]));
@@ -71,6 +85,7 @@ export async function loadPool(admin: Admin): Promise<Map<string, PoolEntry>> {
     const slots = photoSlots.get(mp.user_id);
     if (!profile || !s || !slots?.has("face") || !slots.has("body")) continue;
     if (!hasContact.has(mp.user_id) || suspended.has(mp.user_id)) continue;
+    if (illustrated && !illustrated.has(mp.user_id)) continue; // 그림 프로필이 있어야 추천을 주고받는다
     pool.set(mp.user_id, {
       person: {
         id: mp.user_id,

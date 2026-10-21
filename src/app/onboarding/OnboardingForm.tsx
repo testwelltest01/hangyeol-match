@@ -86,9 +86,9 @@ export function OnboardingForm({ years }: { years: number[] }) {
         <Consent name="agreeReligion" required title="종교 정보 수집·이용에 동의해요 (민감정보)">
           종교 조건에 맞는 상대를 추천하는 데만 쓰고, 상대에게 그대로 보여주지 않아요. 탈퇴하면 바로 지워요.
         </Consent>
-        <Consent name="agreeIllustration" title="그림 프로필을 자동으로 만들어도 좋아요">
-          사진 2장과 자기소개·검사 결과 요약(이름·지역·종교·연락처 제외)을 OpenAI로 보내 따뜻한 손그림 풍 그림을 그려요. 준비가 끝나면 한
-          번 자동으로 그리고, 추천 카드에 보여줄지는 직접 정해요. 동의하지 않아도 매칭에는 불이익이 없어요.
+        <Consent name="agreeIllustration" required title="그림 프로필을 OpenAI의 AI로 만드는 데 동의해요">
+          추천 카드에는 실제 사진 대신 AI가 그린 그림 프로필이 보여요. 사진 2장과 자기소개·검사 결과 요약(이름·지역·종교·연락처 제외)을
+          OpenAI(미국)로 보내 사진이 갖춰지면 알아서 그리고, 이 정보도 AI 학습에 이용되지 않아요.
         </Consent>
       </div>
 

@@ -8,8 +8,12 @@ import { ReactButtons } from "@/components/ReactButtons";
 import { RefreshCoupon } from "@/components/RefreshCoupon";
 import { TourInvite } from "@/components/TourInvite";
 import type { PersonCard } from "@/lib/match/dashboard";
-import { setupSteps } from "@/lib/match/me";
+import { startAutoIllustration } from "@/lib/illustration/server";
+import { needsIllustration, setupSteps } from "@/lib/match/me";
 import { loadMatch, MatchFrame, MatchNotices } from "./frame";
+
+// 매칭 준비 중인데 그림 프로필이 없으면 이 화면을 열 때 응답 뒤 after()에서 그린다(1~2분)
+export const maxDuration = 300;
 
 export default function MatchPage() {
   return (
@@ -51,6 +55,8 @@ async function TodayGate() {
   const { setup, ready, d } = data;
 
   if (!ready) {
+    // 그림 프로필이 아직 없으면(실패했거나 아직 안 그렸으면) 알아서 그린다
+    if (needsIllustration(setup) && (await startAutoIllustration(setup.userId))) setup.illustration.drawing = true;
     return (
       <div className="space-y-5">
         <MatchNotices data={data} />

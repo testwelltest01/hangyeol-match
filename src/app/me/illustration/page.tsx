@@ -5,8 +5,8 @@ import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
 import { PageTitle } from "@/components/ui";
 import { ILLUSTRATIONS_PER_ACCOUNT } from "@/lib/illustration/prompt";
-import { loadIllustrations, usedByAccount } from "@/lib/illustration/server";
-import { loadMySetup, signedPhotoUrls } from "@/lib/match/me";
+import { loadIllustrations, startAutoIllustration, usedByAccount } from "@/lib/illustration/server";
+import { isReady, loadMySetup, needsIllustration, signedPhotoUrls } from "@/lib/match/me";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserId } from "@/lib/supabase/server";
@@ -21,7 +21,7 @@ export default function IllustrationPage() {
     <Shell back={{ href: "/me", label: "내 정보" }}>
       <PageTitle
         title="그림 프로필"
-        lead="실제 사진 2장과 자기소개·검사 결과를 바탕으로 AI가 따뜻한 손그림 애니메이션 풍 그림을 그려요. 마음에 들면 추천 카드에 보여줄 수 있어요."
+        lead="추천 카드에는 실제 사진 대신 이 그림이 보여요. 사진 2장과 자기소개·검사 결과를 바탕으로 AI가 따뜻한 손그림 풍으로 그리고, 그림 프로필이 있어야 추천을 주고받을 수 있어요."
       />
       <Suspense fallback={<Loading />}>
         <IllustrationGate />
@@ -36,6 +36,8 @@ async function IllustrationGate() {
   if (progress !== "report") redirect(PROGRESS_PATH[progress]);
   const setup = await loadMySetup(userId!);
   if (!setup) redirect("/start");
+  // 그림이 없으면(아직 안 그렸거나 실패했으면) 이 화면을 열 때 알아서 그린다 (30분 간격, 하루 실패 3번까지)
+  if (needsIllustration(setup)) await startAutoIllustration(userId!);
 
   const admin = createAdminClient();
   const [{ available, rows }, used, consent] = await Promise.all([
@@ -52,6 +54,7 @@ async function IllustrationGate() {
       consented={Boolean(consent.data)}
       remaining={Math.max(0, ILLUSTRATIONS_PER_ACCOUNT - used)}
       limit={ILLUSTRATIONS_PER_ACCOUNT}
+      ready={isReady(setup)}
       rows={rows.map((r) => ({
         id: r.id,
         status: r.status,

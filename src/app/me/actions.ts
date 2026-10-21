@@ -2,7 +2,6 @@
 
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
-import { after } from "next/server";
 import { normalizeInstagram, normalizeKakao } from "@/lib/contact";
 import { encryptText } from "@/lib/crypto";
 import { kstYear } from "@/lib/day";
@@ -17,7 +16,7 @@ import {
   type Filters,
   type MatchPerson,
 } from "@/lib/match/filters";
-import { prepareAutoIllustration, runIllustration } from "@/lib/illustration/server";
+import { startAutoIllustration } from "@/lib/illustration/server";
 import { loadMySetup, nextSetupPath } from "@/lib/match/me";
 import { countMutualMatches, loadPool } from "@/lib/match/server";
 import { analyzePhoto, type Improvement, type PhotoSlot, type UserView } from "@/lib/photo/feedback";
@@ -118,7 +117,7 @@ export async function saveMatchProfile(_prev: FormState, formData: FormData): Pr
   if (error) return { error: "저장하지 못했어요. 다시 시도해주세요." };
 
   // 사진을 먼저 올렸다면 이때 조건이 갖춰진다: 그림 프로필 자동 만들기
-  await autoIllustrate(admin, userId);
+  await startAutoIllustration(userId);
   if (isNew) redirect("/me/filters?first=1");
   return { error: null, saved: true };
 }
@@ -222,15 +221,6 @@ export async function saveContact(_prev: FormState, formData: FormData): Promise
 const MAX_BYTES = 3 * 1024 * 1024;
 const MIME_EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
-/**
- * 그림 프로필 자동 만들기: 조건이 갖춰졌으면 '그리는 중'을 바로 만들고(사진 화면이 새로고침될 때 보이게)
- * 실제로 그리기는 응답 뒤에 한다. 이 액션을 부르는 화면(사진·내 정보)은 maxDuration 300
- */
-async function autoIllustrate(admin: ReturnType<typeof createAdminClient>, userId: string) {
-  const job = await prepareAutoIllustration(admin, userId).catch(() => null);
-  if (job) after(() => runIllustration(createAdminClient(), userId, job.id, job.features));
-}
-
 export type UploadResult =
   | { ok: true; feedback: UserView }
   | { ok: false; error: string; rejected?: boolean };
@@ -319,8 +309,8 @@ export async function uploadPhoto(formData: FormData): Promise<UploadResult> {
     return { ok: false, error: "사진을 저장하지 못했어요. 다시 시도해주세요." };
   }
   await logAttempt("registered");
-  // 사진 2장이 갖춰지면(그림 자동 만들기에 동의한 경우) 그림 프로필을 한 번 자동으로 그린다
-  if (setup.photos[slot === "face" ? "body" : "face"]) await autoIllustrate(admin, userId);
+  // 사진 2장이 갖춰지면 그림 프로필을 자동으로 그린다 (아직 다 그린 그림이 없을 때. 사진을 바꿔도 이미 있는 그림은 그대로)
+  if (setup.photos[slot === "face" ? "body" : "face"]) await startAutoIllustration(userId);
   return { ok: true, feedback: result.userView };
 }
 

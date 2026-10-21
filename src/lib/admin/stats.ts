@@ -18,6 +18,8 @@ export type UserFacts = {
   /** 지금 등록된 사진 수 (얼굴·전신) */
   photoCount: number;
   hasContact: boolean;
+  /** 다 그린 그림 프로필이 있음. 0006 SQL 전이면 undefined (조건에서 뺀다) */
+  hasIllustration?: boolean;
 };
 
 /** 회원이 어디까지 왔는지. 매칭 준비 완료는 /match 준비 목록과 같은 기준이다 */
@@ -25,7 +27,7 @@ export function userStage(f: UserFacts): UserStage {
   if (!f.hasProfile) return "account";
   if (!f.hasScores) return "testing";
   // 친구 평가는 매칭 조건이 아니다 (새로고침 쿠폰)
-  const ready = f.hasMatchProfile && f.photoCount >= 2 && f.hasContact;
+  const ready = f.hasMatchProfile && f.photoCount >= 2 && f.hasContact && f.hasIllustration !== false;
   return ready ? "ready" : "tested";
 }
 

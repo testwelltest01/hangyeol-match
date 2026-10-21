@@ -136,6 +136,7 @@ const NEXT: Record<string, { cta: string; hint: string }> = {
   filters: { cta: "원하는 조건 정하기", hint: "나이·지역처럼 꼭 맞았으면 하는 조건을 골라요." },
   photos: { cta: "사진 올리기", hint: "얼굴·전신 2장. 서로 관심을 보낸 사람에게만 보여요." },
   contact: { cta: "연락처 등록하기", hint: "둘 다 '연락처 전달'을 누르기 전에는 상대에게 보이지 않아요." },
+  illustration: { cta: "그림 프로필 보기", hint: "사진 2장이 갖춰지면 AI가 알아서 그려요(1~2분). 추천 카드에는 실제 사진 대신 이 그림이 보여요." },
 };
 
 /** showList=false: 같은 화면에 단계 목록이 따로 있을 때(내 정보) 카드에서는 다음 할 일만 보여준다 */

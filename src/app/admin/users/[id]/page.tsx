@@ -7,6 +7,7 @@ import { requireAdmin } from "@/lib/admin/auth";
 import { kstTime, memberName, OUTCOME_LABEL, REPORT_REASON_LABEL, type ReportRow } from "@/lib/admin/data";
 import { STAGE_LABEL, userStage } from "@/lib/admin/stats";
 import { DOMAINS, TRAITS, type Answers } from "@/lib/items";
+import { pickShown } from "@/lib/illustration/rules";
 import { loadMySetup, setupSteps, signedPhotoUrls } from "@/lib/match/me";
 import { MIN_FRIEND_RATINGS_TO_SHOW } from "@/lib/match/rules";
 import { regionLabel } from "@/lib/regions";
@@ -161,6 +162,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
     deleted_at: string | null;
   }[];
   const illusUrls = await signedPhotoUrls(illusRows.flatMap((r) => (r.path && !r.deleted_at ? [r.path] : [])));
+  const shownIllusId = pickShown(illusRows.filter((r) => r.status === "done" && !r.deleted_at))?.id;
 
   const pairs = otherIds
     .filter((o) => rx.some((r) => r.from_user === o || r.to_user === o))
@@ -274,7 +276,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
       />
 
       {!illus.error && (
-        <Panel className="mt-4" title={`그림 프로필 ${illusRows.length}건`} lead="회원이 만든 AI 그림과 그림에 쓴 정보예요. 추천 카드에는 회원이 '보여주기'를 켠 그림만 보여요.">
+        <Panel className="mt-4" title={`그림 프로필 ${illusRows.length}건`} lead="회원이 만든 AI 그림과 그림에 쓴 정보예요. 그림 프로필이 있어야 매칭에 참여하고, 추천 카드에는 회원이 고른 그림(없으면 가장 최근 그림)이 보여요.">
           {illusRows.length === 0 ? (
             <Empty>아직 그림을 만들지 않았어요.</Empty>
           ) : (
@@ -291,7 +293,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
                       )}
                     </div>
                     <p className="mt-2 flex flex-wrap gap-1.5">
-                      {r.shown && !r.deleted_at && <Chip tone="moss">추천 카드에 보이는 중</Chip>}
+                      {r.id === shownIllusId && <Chip tone="moss">추천 카드에 보이는 중</Chip>}
                       {r.deleted_at && <Chip>지움</Chip>}
                       {r.status === "failed" && <Chip tone="alert">실패</Chip>}
                     </p>

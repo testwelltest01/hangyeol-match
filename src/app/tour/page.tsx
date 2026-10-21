@@ -49,6 +49,7 @@ const STEP_INFO: Record<string, { detail: string; minutes: number | null }> = {
   filters: { detail: "나이·지역·키처럼 꼭 맞았으면 하는 조건", minutes: 2 },
   photos: { detail: "얼굴·전신 2장. AI가 더 잘 나오는 방법을 알려줘요", minutes: 3 },
   contact: { detail: "둘 다 '연락처 전달'을 누르기 전에는 상대에게 보이지 않아요", minutes: 1 },
+  illustration: { detail: "사진 2장이 갖춰지면 AI가 알아서 그려요. 추천 카드에는 실제 사진 대신 이 그림이 보여요", minutes: null },
 };
 
 /** 아직 아무것도 채우지 않은 상태 (단계 이름·주소를 매칭 준비 목록과 똑같이 쓰려고) */
@@ -60,7 +61,8 @@ const EMPTY_SETUP: MySetup = {
   matchProfile: null,
   photos: { face: null, body: null },
   contact: null,
-  consents: { religion: false, photoOverseas: false },
+  consents: { religion: false, photoOverseas: false, illustration: false },
+  illustration: { available: true, done: false, drawing: false },
   suspended: false,
   friendCount: 0,
 };
