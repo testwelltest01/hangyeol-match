@@ -8,6 +8,8 @@ import { openOutside } from "@/lib/openOutside";
 const STYLE = {
   primary:
     "relative block w-full rounded-full bg-primary px-6 py-4 text-center text-base font-semibold text-white transition hover:bg-primary-soft active:scale-[0.98] active:opacity-80",
+  secondary:
+    "block w-full rounded-full border border-primary px-6 py-3.5 text-center font-semibold text-primary transition-colors hover:bg-primary hover:text-white active:scale-[0.98] active:opacity-80",
   text: "inline-block text-[15px] text-ink underline underline-offset-4",
 };
 

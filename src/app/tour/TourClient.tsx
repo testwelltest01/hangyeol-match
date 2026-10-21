@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { LikedBadge } from "@/components/LikedBadge";
-import { personLine } from "@/components/PersonCard";
+import { personLine, TalkingPoint } from "@/components/PersonCard";
 import { PrimaryButton, PrimaryLink } from "@/components/buttons";
 import { Notice } from "@/components/ui";
 import { ZoomImage } from "@/components/ZoomImage";
@@ -223,11 +223,12 @@ export function TourClient({ initialGender, nickname, journey, cta }: Props) {
               </div>
               <p className="mt-1 text-sm text-muted">{personLine(p)}</p>
               <p className="mt-4 border-l-2 border-indigo pl-3 font-serif leading-relaxed">{p.reason}</p>
+              {/* 실제 추천 카드처럼 '다를 수 있는 부분'도 처음부터 보여준다 */}
+              <TalkingPoint text={p.talkingPoint} />
               <Chips items={p.chips} />
               <p className={`mt-4 whitespace-pre-line text-[15px] text-ink-soft ${cardOpen ? "" : "line-clamp-4"}`}>{p.intro}</p>
               {cardOpen && (
                 <div className={rise}>
-                  <p className="mt-4 text-[15px] text-ink-soft">{p.talkingPoint}</p>
                   <Domains persona={p} />
                 </div>
               )}
