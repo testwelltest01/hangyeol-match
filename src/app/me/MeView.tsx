@@ -15,6 +15,7 @@ import { personLine } from "@/components/PersonCard";
 import { Notice } from "@/components/ui";
 import { isReady, setupSteps, type MySetup, type SetupStep } from "@/lib/match/me";
 import { AppSettings } from "./AppSettings";
+import { ScrollToHash } from "@/components/ScrollToHash";
 import { PauseToggle } from "./PauseToggle";
 import { SignOutButton } from "./SignOutButton";
 
@@ -103,6 +104,7 @@ export function MeView({ setup, faceUrl }: { setup: MySetup; faceUrl: string | n
       </ListGroup>
 
       <section id="app" className="scroll-mt-4">
+        <ScrollToHash id="app" />
         <h2 className="mb-2 px-1 text-[14px] font-semibold text-ink-soft">앱처럼 쓰기</h2>
         <div className="rounded-2xl bg-surface px-4 py-4 ring-1 ring-line/80">
           <p className="text-[14px] text-muted">홈 화면에 한결을 추가하면 앱처럼 바로 열리고, 알림도 받을 수 있어요.</p>
