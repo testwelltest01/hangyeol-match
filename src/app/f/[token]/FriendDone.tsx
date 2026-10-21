@@ -92,11 +92,11 @@ export function FriendDone({ name }: { name: string }) {
       <div className="mt-8">
         {/* 카카오톡 안에서 열렸으면 기본 브라우저로 넘겨서 연다 (가입·로그인이 카카오톡 창에 묶이지 않게) */}
         <OpenInBrowserLink href="/start">무료로 시작하기</OpenInBrowserLink>
-        <p className="mt-4 text-center">
+        <div className="mt-4 text-center">
           <OpenInBrowserLink href="/tour" variant="text">
             가입 없이 가상 매칭 먼저 둘러보기
           </OpenInBrowserLink>
-        </p>
+        </div>
       </div>
     </div>
   );

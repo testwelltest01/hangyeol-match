@@ -13,9 +13,20 @@ const STYLE = {
 
 /**
  * 카카오톡 같은 앱 안 브라우저에서 누르면 휴대폰 기본 브라우저(Safari·Chrome)로 넘겨 여는 링크.
- * 가입·로그인·홈 화면 추가가 카카오톡 창에 묶이지 않게 (친구 평가를 마친 친구의 '시작하기')
+ * 가입·로그인·홈 화면 추가가 카카오톡 창에 묶이지 않게 한다. 가입·로그인으로 들어가는 모든 입구에 쓴다
+ * (첫 화면 '검사 시작하기'·둘러보기·로그인, 친구 평가를 마친 화면의 '시작하기'). className을 주면 그 모양을 쓰고 안내 문장은 숨긴다(위쪽 바 등)
  */
-export function OpenInBrowserLink({ href, children, variant = "primary" }: { href: string; children: ReactNode; variant?: keyof typeof STYLE }) {
+export function OpenInBrowserLink({
+  href,
+  children,
+  variant = "primary",
+  className,
+}: {
+  href: string;
+  children: ReactNode;
+  variant?: keyof typeof STYLE;
+  className?: string;
+}) {
   const [handedOff, setHandedOff] = useState(false);
 
   function onClick(e: MouseEvent<HTMLAnchorElement>) {
@@ -28,11 +39,11 @@ export function OpenInBrowserLink({ href, children, variant = "primary" }: { hre
 
   return (
     <>
-      <Link href={href} onClick={onClick} className={STYLE[variant]}>
+      <Link href={href} onClick={onClick} className={className ?? STYLE[variant]}>
         {children}
-        {variant === "primary" && <PendingSpinner />}
+        {!className && variant === "primary" && <PendingSpinner />}
       </Link>
-      {handedOff && (
+      {handedOff && !className && (
         <p className="mt-3 text-center text-[14px] leading-relaxed text-muted">
           기본 브라우저에서 열었어요. 열리지 않으면 화면의 ⋯ 메뉴에서 &apos;다른 브라우저로 열기&apos;를 눌러주세요.
         </p>

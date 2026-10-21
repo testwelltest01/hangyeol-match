@@ -6,6 +6,7 @@
 // 넘겨주기만 해서 앱 안 이동(next/link)으로 가면 꼬일 수 있다
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
+import { OpenInBrowserLink } from "@/components/OpenInBrowserLink";
 import { hasAuthCookie } from "@/lib/authHint";
 
 const noop = () => () => {};
@@ -39,8 +40,9 @@ export function LoginOrContinue({ className }: { className: string }) {
       계속하기
     </a>
   ) : (
-    <Link href="/login" className={className}>
+    // 앱 안 브라우저(카카오톡 등)면 기본 브라우저로 넘겨 연다
+    <OpenInBrowserLink href="/login" className={className}>
       로그인
-    </Link>
+    </OpenInBrowserLink>
   );
 }

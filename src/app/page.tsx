@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { GrainMark } from "@/components/GrainMark";
 import { LoginOrContinue } from "@/components/HomeLink";
-import { PrimaryLink } from "@/components/buttons";
+import { OpenInBrowserLink } from "@/components/OpenInBrowserLink";
 import { Shell } from "@/components/Shell";
 
 const STEPS = [
@@ -41,13 +40,14 @@ export default function Home() {
       </div>
 
       <div>
-        <PrimaryLink href="/start">검사 시작하기</PrimaryLink>
+        {/* 카카오톡 등 앱 안 브라우저에서 누르면 기본 브라우저로 넘겨 연다 (가입·로그인이 앱 창에 묶이지 않게) */}
+        <OpenInBrowserLink href="/start">검사 시작하기</OpenInBrowserLink>
         <p className="mt-3 text-center text-sm text-muted">약 11분이면 끝나고, 무료예요.</p>
-        <p className="mt-4 text-center">
-          <Link href="/tour" className="text-[15px] text-ink underline underline-offset-4">
+        <div className="mt-4 text-center">
+          <OpenInBrowserLink href="/tour" variant="text">
             가입 전에 가상 매칭 둘러보기
-          </Link>
-        </p>
+          </OpenInBrowserLink>
+        </div>
       </div>
 
       <section className="mt-16 border-t border-line pt-10">
