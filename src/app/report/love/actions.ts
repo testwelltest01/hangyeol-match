@@ -3,7 +3,7 @@
 import { getAdmin } from "@/lib/admin/auth";
 import { LOVE_VERSION } from "@/lib/love/items";
 import { scoreLove, validateLove } from "@/lib/love/score";
-import { overLoveCap, startLoveReport } from "@/lib/love/server";
+import { overLoveCap, rewriteLove, startLoveReport } from "@/lib/love/server";
 import { getProgress } from "@/lib/progress";
 import { allow } from "@/lib/security";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -125,5 +125,24 @@ export async function retryLoveReport(): Promise<Result> {
     return { ok: false, error: await failText("retry", error, "다시 쓰지 못했어요. 잠시 후 다시 시도해주세요.") };
   }
   if (claimed?.length) startLoveReport(row.id as string);
+  return { ok: true };
+}
+
+/** '새 보고서 받기': 가장 최근 보고서가 예전 형식이면 같은 답으로 새로 쓴다 (검사 횟수에 세지 않는다, server.ts rewriteLove) */
+export async function rewriteLoveReport(): Promise<Result> {
+  const userId = await getUserId();
+  if (!userId) return { ok: false, error: "로그인이 풀렸어요. 다시 로그인해주세요." };
+  if (!(await allow(`love-rewrite:${userId}`, 3, 3600))) return { ok: false, error: "요청이 너무 많아요. 잠시 후 다시 시도해주세요." };
+
+  const admin = createAdminClient();
+  const { data: row } = await admin.from("love_reports").select("id").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (!row) return { ok: false, error: "검사를 먼저 마쳐주세요." };
+  if (await overLoveCap(admin)) return { ok: false, error: "오늘은 보고서 요청이 많아요. 내일 다시 시도해주세요." };
+
+  const res = await rewriteLove(admin, row.id as string);
+  if (!res.ok) {
+    if (res.error.code === "23505") return { ok: false, error: BUSY_ERROR };
+    return { ok: false, error: await failText("rewrite", res.error, "새로 쓰지 못했어요. 잠시 후 다시 시도해주세요.") };
+  }
   return { ok: true };
 }

@@ -3,7 +3,7 @@
 import { hashGuestToken, isGuestToken, newGuestToken } from "@/lib/love/guest";
 import { LOVE_VERSION } from "@/lib/love/items";
 import { scoreLove, validateLove } from "@/lib/love/score";
-import { overGuestCap, overLoveCap, startLoveReport } from "@/lib/love/server";
+import { overGuestCap, overLoveCap, rewriteLove, startLoveReport } from "@/lib/love/server";
 import { allow, clientIp, TOO_MANY } from "@/lib/security";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserId } from "@/lib/supabase/server";
@@ -78,5 +78,25 @@ export async function retryGuestLoveReport(token: unknown): Promise<Result> {
     .eq("status", "failed")
     .select("id");
   if (claimed?.length) startLoveReport(row.id as string);
+  return { ok: true };
+}
+
+/** 비회원 보고서의 '새 보고서 받기': 예전 형식이면 같은 답으로 새로 쓴다 (열쇠가 있어야 한다, server.ts rewriteLove) */
+export async function rewriteGuestLoveReport(token: unknown): Promise<Result> {
+  if (!isGuestToken(token)) return { ok: false, error: "잘못된 요청이에요." };
+  const ip = await clientIp();
+  if (!(await allow(`love-guest-rewrite:${ip}`, 3, 3600))) return { ok: false, error: TOO_MANY };
+
+  const admin = createAdminClient();
+  const { data: row } = await admin.from("love_reports").select("id, user_id").eq("guest_hash", hashGuestToken(token)).maybeSingle();
+  if (!row) return { ok: false, error: "보고서를 찾지 못했어요." };
+  if ((await overLoveCap(admin)) || (!row.user_id && (await overGuestCap(admin)))) {
+    return { ok: false, error: "오늘은 보고서 요청이 많아요. 내일 다시 시도해주세요." };
+  }
+  const res = await rewriteLove(admin, row.id as string);
+  if (!res.ok) {
+    console.error("love guest rewrite failed", res.error.code, res.error.message);
+    return { ok: false, error: res.error.code === "23505" ? "지금 다른 보고서를 쓰고 있어요. 다 쓴 뒤에 다시 시도해주세요." : "새로 쓰지 못했어요. 잠시 후 다시 시도해주세요." };
+  }
   return { ok: true };
 }

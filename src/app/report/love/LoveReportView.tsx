@@ -1,11 +1,12 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { IconCheck } from "@/components/icons";
+import { IconCheck, IconCross } from "@/components/icons";
 import { ShareLink } from "@/components/ShareLink";
 import { ReportTabs } from "@/app/report/ReportTabs";
+import { RewriteOffer } from "./RewriteOffer";
 import { SceneCarousel } from "./SceneCarousel";
 import { LOVE_GROUPS, LOVE_SCALES } from "@/lib/love/items";
-import { SITUATIONS, type LoveReport, type Scene, type SituationId } from "@/lib/love/prompt";
+import { PROMPT_NEWS, SITUATIONS, type LoveReport, type Scene, type SituationId, type TalkLine } from "@/lib/love/prompt";
 import { lovePercent, type LoveScores } from "@/lib/love/score";
 
 /** 척도 하나: 낮은 쪽 말 ↔ 높은 쪽 말 사이 결 위에 점. 가까운 쪽 말을 진하게 */
@@ -41,6 +42,57 @@ function Part({ title, lead, children }: { title: string; lead?: string; childre
   );
 }
 
+/** 대화 한 줄: 상대는 왼쪽(아래에 점선 말풍선으로 속마음), 나는 오른쪽. 각자 처음 말할 때만 '상대'·'나' 이름표 */
+function TalkBubble({ line, good, label }: { line: TalkLine; good: boolean; label: boolean }) {
+  if (line.who === "me") {
+    return (
+      <div className="flex flex-col items-end">
+        {label && <span className="mb-1 mr-1 text-[12px] text-muted">나</span>}
+        <p
+          className={`max-w-[85%] rounded-[18px] rounded-br-md px-3.5 py-2 text-[14.5px] leading-relaxed text-white ${good ? "bg-primary" : "bg-muted"}`}
+        >
+          <span className="sr-only">나: </span>
+          {line.text}
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col items-start">
+      {label && <span className="mb-1 ml-1 text-[12px] text-muted">상대</span>}
+      <p className="max-w-[85%] rounded-[18px] rounded-bl-md bg-surface px-3.5 py-2 text-[14.5px] leading-relaxed text-ink ring-1 ring-line/80">
+        <span className="sr-only">상대: </span>
+        {line.text}
+      </p>
+      {line.thought && (
+        <p className="ml-3 mt-1.5 max-w-[85%] rounded-[16px] border border-dashed border-indigo/45 bg-surface/70 px-3 py-1.5 text-[13.5px] leading-snug text-ink-soft">
+          <span className="mr-1.5 text-[12px] font-semibold text-indigo">속마음</span>
+          {line.thought}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Dialogue({ kind, lines }: { kind: "bad" | "good"; lines: TalkLine[] }) {
+  const good = kind === "good";
+  return (
+    <div className={`rounded-[18px] px-3.5 pb-4 pt-3.5 ${good ? "bg-moss/[0.1] ring-1 ring-moss/30" : "bg-mist/80"}`}>
+      <p className={`flex items-center gap-1.5 text-[13.5px] font-semibold ${good ? "text-moss" : "text-muted"}`}>
+        <span aria-hidden className={`flex h-[18px] w-[18px] items-center justify-center rounded-full text-white ${good ? "bg-moss" : "bg-muted/80"}`}>
+          {good ? <IconCheck size={11} strong /> : <IconCross size={11} strong />}
+        </span>
+        {good ? "좋은 대화" : "아쉬운 대화"}
+      </p>
+      <div className="mt-3 space-y-2.5">
+        {lines.map((line, i) => (
+          <TalkBubble key={i} line={line} good={good} label={lines.findIndex((l) => l.who === line.who) === i} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function SceneCard({ n, id, title, scene, image }: { n: number; id: string; title: string; scene: Scene; image?: string }) {
   return (
     <article id={`scene-${id}`} className="overflow-hidden rounded-[22px] bg-surface px-5 py-6 ring-1 ring-line/80">
@@ -53,34 +105,49 @@ function SceneCard({ n, id, title, scene, image }: { n: number; id: string; titl
       <p className="text-[13px] font-semibold text-indigo">장면 {n}</p>
       <h3 className="mt-0.5 font-serif text-[1.2rem] font-bold leading-snug text-ink">{title}</h3>
       <p className="mt-3 text-[15.5px] leading-relaxed text-ink">{scene.me}</p>
-      <dl className="mt-5 space-y-4 border-t border-line/70 pt-5 text-[15px] leading-relaxed">
-        <div>
-          <dt className="flex items-center gap-1.5 text-[13px] font-semibold text-muted">
-            <span aria-hidden className="text-[10px] text-indigo">
-              ◆
-            </span>
-            상대에게는 이렇게 보일 수 있어요
-          </dt>
-          <dd className="mt-1 text-ink-soft">{scene.seen}</dd>
-        </div>
-        <div>
-          <dt className="text-[13px] font-semibold text-muted">이렇게 해 보면 좋아요</dt>
-          <dd className="mt-1 text-ink-soft">{scene.tip}</dd>
-        </div>
-      </dl>
-      <figure className="mt-5">
-        <figcaption className="text-right text-[12.5px] font-semibold text-muted">이렇게 말해 보세요</figcaption>
-        <blockquote className="ml-auto mt-1.5 w-fit max-w-[88%] rounded-[20px] rounded-br-md bg-primary px-4 py-2.5 text-[15px] leading-relaxed text-white">
-          {scene.say}
-        </blockquote>
-      </figure>
+      <div className="mt-5 border-t border-line/70 pt-5 text-[15px] leading-relaxed">
+        <p className="flex items-center gap-1.5 text-[13px] font-semibold text-muted">
+          <span aria-hidden className="text-[10px] text-indigo">
+            ◆
+          </span>
+          상대에게는 이렇게 보일 수 있어요
+        </p>
+        <p className="mt-1 text-ink-soft">{scene.seen}</p>
+      </div>
+
+      {scene.talk ? (
+        <section className="mt-5 border-t border-line/70 pt-5">
+          <h4 className="text-[13px] font-semibold text-muted">대화로 보면</h4>
+          <p className="mt-1 text-[15px] leading-relaxed text-ink">{scene.talk.moment}</p>
+          <div className="mt-4 space-y-3">
+            <Dialogue kind="bad" lines={scene.talk.bad} />
+            <Dialogue kind="good" lines={scene.talk.good} />
+          </div>
+        </section>
+      ) : null}
+
+      <div className="mt-5 border-t border-line/70 pt-5 text-[15px] leading-relaxed">
+        <p className="text-[13px] font-semibold text-muted">이렇게 해 보면 좋아요</p>
+        <p className="mt-1 text-ink-soft">{scene.tip}</p>
+      </div>
+
+      {/* 2026-10-v3 전에 쓴 보고서: 대화 예시 대신 한 문장 ('새 보고서 받기'로 바꿀 수 있다) */}
+      {!scene.talk && scene.say && (
+        <figure className="mt-5">
+          <figcaption className="text-right text-[12.5px] font-semibold text-muted">이렇게 말해 보세요</figcaption>
+          <blockquote className="ml-auto mt-1.5 w-fit max-w-[88%] rounded-[20px] rounded-br-md bg-primary px-4 py-2.5 text-[15px] leading-relaxed text-white">
+            {scene.say}
+          </blockquote>
+        </figure>
+      )}
     </article>
   );
 }
 
 /**
  * 다 쓴 보고서. 한 줄 요약 → 화면 안 탭(장면 10가지 슬라이드 · 나의 연애 결(기질·성격, 강점, 잘 맞는 결, 한 가지) · 검사 결과) → 안내.
- * retest면 맨 아래에 '다시 검사하기', share면 그 아래에 이 검사를 친구에게 공유하는 버튼(가입 없이 받는 /love)
+ * retest면 맨 아래에 '다시 검사하기', share면 그 아래에 이 검사를 친구에게 공유하는 버튼(가입 없이 받는 /love).
+ * rewrite가 있으면(예전 PROMPT_VERSION으로 쓴 보고서) 맨 위에 '새 보고서 받기'
  */
 export function LoveReportView({
   report,
@@ -90,6 +157,7 @@ export function LoveReportView({
   share = false,
   guest = false,
   images = {},
+  rewrite,
 }: {
   report: LoveReport;
   scores: LoveScores;
@@ -100,6 +168,8 @@ export function LoveReportView({
   images?: Partial<Record<SituationId, string>>;
   /** 가입 전 비회원 보고서 (아래 안내 문구가 다르다) */
   guest?: boolean;
+  /** 같은 답으로 새 형식 보고서를 쓰는 서버 액션 (예전 형식 보고서에만 넘긴다) */
+  rewrite?: () => Promise<{ ok: true } | { ok: false; error: string }>;
 }) {
   // 문항 버전이 바뀌기 전 결과에는 없는 척도가 있어서, 점수가 있는 것만 보여준다
   const shown = LOVE_SCALES.filter((s) => typeof scores[s.id] === "number");
@@ -108,6 +178,7 @@ export function LoveReportView({
     : null;
   return (
     <article>
+      {rewrite && <RewriteOffer rewrite={rewrite} news={PROMPT_NEWS} />}
       <p className="text-sm font-semibold text-indigo">연애 상황 보고서</p>
       <h1 className="mt-1.5 font-serif text-[1.8rem] font-bold leading-snug text-ink">{report.headline}</h1>
       <p className="mt-4 text-[15.5px] leading-relaxed text-ink-soft">{report.summary}</p>

@@ -10,9 +10,9 @@ import { LoveProgress } from "@/app/report/love/LoveProgress";
 import { LoveReportView } from "@/app/report/love/LoveReportView";
 import { GUEST_KEEP_DAYS, isGuestToken } from "@/lib/love/guest";
 import { loadSceneImageUrls } from "@/lib/love/sceneImages";
-import { loadGuestReport } from "@/lib/love/server";
+import { canRewrite, loadGuestReport } from "@/lib/love/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { retryGuestLoveReport } from "../../actions";
+import { retryGuestLoveReport, rewriteGuestLoveReport } from "../../actions";
 import { ServiceInvite } from "../../ServiceInvite";
 
 // 주소에 비밀 열쇠가 있어서 검색에 걸리지 않게, 밖으로 나가는 링크에 주소를 넘기지 않게
@@ -84,23 +84,42 @@ async function GuestResultGate({ params }: { params: PageProps<"/love/r/[token]"
             </Callout>
           </div>
         )}
-        <LoveReportView report={row.report} scores={row.scores} completedAt={row.completed_at} share guest images={images} />
+        <LoveReportView
+          report={row.report}
+          scores={row.scores}
+          completedAt={row.completed_at}
+          share
+          guest
+          images={images}
+          rewrite={canRewrite(row) ? rewriteGuestLoveReport.bind(null, token) : undefined}
+        />
         {next}
       </div>
     );
   }
 
+  // 쓰는 중·실패. report가 있으면 '새 보고서 받기'로 같은 답을 다시 쓰는 중이라 지금 보고서를 아래에 둔다
+  const current = row.report;
+
   return (
     <div>
       <p className="text-sm font-semibold text-indigo">연애 상황 보고서</p>
-      <h1 className="mt-1.5 font-serif text-[1.7rem] font-bold leading-snug text-ink">검사를 마쳤어요</h1>
-      <p className="mb-6 mt-2 text-[15px] leading-relaxed text-ink-soft">답을 엮어 연애의 장면 10가지로 보고서를 쓰고 있어요.</p>
+      <h1 className="mt-1.5 font-serif text-[1.7rem] font-bold leading-snug text-ink">{current ? "새 보고서 받기" : "검사를 마쳤어요"}</h1>
+      <p className="mb-6 mt-2 text-[15px] leading-relaxed text-ink-soft">
+        {current ? "같은 답으로 보고서를 새로 써요. 다 쓸 때까지 지금 보고서는 아래에 그대로 있어요." : "답을 엮어 연애의 장면 10가지로 보고서를 쓰고 있어요."}
+      </p>
       <LoveProgress
         status={row.status === "done" ? "failed" : row.status}
         error={row.error}
         retry={retryGuestLoveReport.bind(null, token)}
         doneWhere="다 되면 이 화면에 바로 보여요. 이 주소를 저장해 두면 나중에도 볼 수 있어요."
       />
+      {current && (
+        <div className="mt-12 border-t border-line/80 pt-8">
+          <p className="mb-4 px-1 text-[13px] font-semibold text-muted">지금 보고서</p>
+          <LoveReportView report={current} scores={row.scores} completedAt={row.completed_at} share guest images={images} />
+        </div>
+      )}
       {next}
     </div>
   );

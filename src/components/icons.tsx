@@ -85,6 +85,12 @@ export const IconCheck = (p: IconProps) => (
   </Svg>
 );
 
+export const IconCross = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M7 7l10 10M17 7L7 17" />
+  </Svg>
+);
+
 export const IconCamera = (p: IconProps) => (
   <Svg {...p}>
     <path d="M4.5 8h3l1.8-2.5h5.4L16.5 8h3a1 1 0 0 1 1 1v9.5a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" />

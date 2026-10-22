@@ -9,23 +9,42 @@ import { loveLevel, type LoveScores } from "@/lib/love/score";
 import { traitLevel } from "@/lib/report";
 import type { Scores } from "@/lib/scoring";
 
-export const PROMPT_VERSION = "2026-10-v2";
+export const PROMPT_VERSION = "2026-10-v3";
+
+/**
+ * 이번 PROMPT_VERSION에서 보고서가 무엇이 달라졌는지 (예전 버전으로 쓴 보고서 위 '새 보고서 받기' 안내에 그대로 보여준다).
+ * PROMPT_VERSION을 올릴 때 같이 고친다
+ */
+export const PROMPT_NEWS = "장면마다 대화 예시가 들어갔어요. 같은 순간을 아쉬운 대화와 좋은 대화로 나눠 보여 주고, 그때 상대의 속마음도 함께 담았어요.";
 
 export type SituationId = "first" | "texting" | "expressing" | "hurt" | "fight" | "makeup" | "hard_day" | "deciding" | "together" | "long_term";
 
-/** 보고서의 장면 10가지 (순서대로 보여준다). short는 바로가기 칩 */
-export const SITUATIONS: { id: SituationId; title: string; short: string }[] = [
-  { id: "first", title: "처음 만나 알아갈 때", short: "알아갈 때" },
-  { id: "texting", title: "연락이 뜸하거나 답장이 늦을 때", short: "연락이 뜸할 때" },
-  { id: "expressing", title: "좋아하는 마음을 표현할 때", short: "마음 표현" },
-  { id: "hurt", title: "서운한 일이 생겼을 때", short: "서운할 때" },
-  { id: "fight", title: "의견이 부딪혀 다툴 때", short: "다툴 때" },
-  { id: "makeup", title: "다툰 뒤 화해할 때", short: "화해할 때" },
-  { id: "hard_day", title: "둘 중 한 사람이 힘든 날", short: "힘든 날" },
-  { id: "deciding", title: "데이트 계획과 중요한 결정을 할 때", short: "계획·결정" },
-  { id: "together", title: "함께 보내는 주말", short: "주말" },
-  { id: "long_term", title: "오래 만나 익숙해졌을 때", short: "오래 만날 때" },
+/** 보고서의 장면 10가지 (순서대로 보여준다) */
+export const SITUATIONS: { id: SituationId; title: string }[] = [
+  { id: "first", title: "처음 만나 알아갈 때" },
+  { id: "texting", title: "연락이 뜸하거나 답장이 늦을 때" },
+  { id: "expressing", title: "좋아하는 마음을 표현할 때" },
+  { id: "hurt", title: "서운한 일이 생겼을 때" },
+  { id: "fight", title: "의견이 부딪혀 다툴 때" },
+  { id: "makeup", title: "다툰 뒤 화해할 때" },
+  { id: "hard_day", title: "둘 중 한 사람이 힘든 날" },
+  { id: "deciding", title: "데이트 계획과 중요한 결정을 할 때" },
+  { id: "together", title: "함께 보내는 주말" },
+  { id: "long_term", title: "오래 만나 익숙해졌을 때" },
 ];
+
+/** 대화 한 줄. thought는 상대 줄에만 있다 (그 순간 상대의 속마음) */
+export type TalkLine = { who: "me" | "partner"; text: string; thought?: string };
+
+/** 대화로 보면: 같은 순간을 아쉬운 대화와 좋은 대화로 */
+export type Talk = {
+  /** 대화가 일어나는 구체적인 순간 한 문장 */
+  moment: string;
+  /** 이 사람의 결대로 하면 나오기 쉬운 아쉬운 대화 */
+  bad: TalkLine[];
+  /** 같은 순간에서 tip을 해 본 좋은 대화 */
+  good: TalkLine[];
+};
 
 export type Scene = {
   /** 이럴 때 나는 */
@@ -34,8 +53,10 @@ export type Scene = {
   seen: string;
   /** 이렇게 해 보면 좋아요 */
   tip: string;
-  /** 이렇게 말해 보세요 (한 문장) */
-  say: string;
+  /** 대화로 보면 (2026-10-v3부터) */
+  talk?: Talk;
+  /** 이렇게 말해 보세요 한 문장 (2026-10-v3 전에 쓴 보고서에만 있다. '새 보고서 받기' 전까지 그대로 보여준다) */
+  say?: string;
 };
 
 export type LoveReport = {
@@ -78,15 +99,24 @@ export const SYSTEM_PROMPT = `당신은 소개팅 서비스 '한결'의 연애 �
 - 좋은 점과 조심할 점을 함께 쓰되, 어느 방향도 나쁜 성격이 아니라 결이 다를 뿐이라는 태도로 씁니다.
 - seen(상대에게는 이렇게 보일 수 있어요)은 이 사람의 행동이 결이 다른 상대에게 오해를 살 수 있는 지점을 짚습니다. 한결이 가장 중요하게 여기는 부분입니다.
   누구 탓도 아니고 서로 다르게 받아들일 수 있다는 점을 쓰세요.
-- say(이렇게 말해 보세요)는 이 사람이 그 장면에서 연인에게 실제로 건넬 수 있는 한 문장입니다. 따옴표 없이, 그 장면에 맞는 자연스러운 말투로
-  (처음 알아가는 장면은 해요체, 오래 만난 장면은 반말도 괜찮습니다).
+- talk(대화로 보면)는 그 장면의 한 순간을 실제 대화로 보여 줍니다. 앞의 설명이 대화에서 그대로 보이게 쓰세요.
+  - moment: 대화가 일어나는 구체적인 순간 한 문장 (언제, 무슨 일이 있었는지). 예: 금요일 밤, 상대가 회사 일 때문에 약속에 40분 늦게 왔어요.
+  - bad(아쉬운 대화): 이 사람의 결대로 하면 나오기 쉬운 대화입니다. 이 사람이 실제로 할 법한 말로 쓰고, 못된 사람이나 과장된 모습으로 그리지 마세요.
+    나쁜 뜻은 없지만 상대에게는 다르게 닿는 말이어야 합니다 (seen에서 짚은 오해가 대화에서 드러나게).
+  - good(좋은 대화): 같은 순간에서 tip을 해 본 대화입니다. 이 사람의 결을 버리지 않고 말 한두 마디만 바꾼 모습으로, 지나치게 이상적인 대사는 피하세요.
+  - 두 대화는 같은 순간에서 시작합니다 (첫 줄이 같아도 됩니다). 각각 3~5줄, 나와 상대가 번갈아 말하고 마지막 줄은 상대(partner)의 말로 끝냅니다.
+  - 줄마다 who는 me(이 사람) 또는 partner(상대), text는 실제로 하는 말이나 보내는 메시지 한두 문장(60자 이내, 따옴표 없이)입니다.
+  - thought: partner 줄에는 그 순간 상대의 속마음을 한 문장(40자 이내, 따옴표 없이)으로 씁니다. 겉으로 한 말과 속마음이 다를 수 있다는 것,
+    바로 앞에서 이 사람이 한 말이 상대에게 어떻게 닿았는지가 보이게 쓰세요. me 줄의 thought는 빈 문자열로 둡니다.
+  - 상대도 나쁜 사람으로 그리지 않습니다. 상대의 속마음은 서운함, 안심, 고마움처럼 누구나 느낄 만한 마음입니다.
+  - 말투는 실제 연인 사이처럼 씁니다. 처음 알아가는 장면은 해요체, 사귄 뒤 장면은 반말도 괜찮고, 연락 장면은 메시지 말투도 괜찮습니다.
 
 ## 각 칸
 - headline: 이 사람의 연애 결을 담은 한 줄. 35자 이내, 마침표 없이. (예: 천천히 열지만 한번 열면 깊게 마음을 주는 사람)
 - summary: 3~4문장
 - nature: 타고난 기질과 다듬어 가는 성격이 연애에서 함께 어떻게 드러나는지 3~4문장. 첫 반응(기질)과 그것을 다루는 방식(성격)을 엮어서 씁니다.
 - strengths: 연애에서의 강점 3개, 각 1문장
-- situations: 장면마다 me 2~3문장, seen 1~2문장, tip 1~2문장, say 1문장(50자 이내)
+- situations: 장면마다 me 2~3문장, seen 1~2문장, tip 1~2문장, talk(moment 1문장, bad·good 각 3~5줄)
   first 처음 만나 알아갈 때 / texting 연락이 뜸하거나 답장이 늦을 때 / expressing 좋아하는 마음을 표현할 때 / hurt 서운한 일이 생겼을 때 /
   fight 의견이 부딪혀 다툴 때 / makeup 다툰 뒤 화해할 때 / hard_day 둘 중 한 사람이 힘든 날 / deciding 데이트 계획과 중요한 결정을 할 때 /
   together 함께 보내는 주말 / long_term 오래 만나 익숙해졌을 때
@@ -183,41 +213,88 @@ export function buildUserInput(ctx: LoveContext): string {
 }
 
 const STR = { type: "string" } as const;
+const LINE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["who", "text", "thought"],
+  properties: { who: { type: "string", enum: ["me", "partner"] }, text: STR, thought: STR },
+} as const;
+const TALK_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["moment", "bad", "good"],
+  properties: { moment: STR, bad: { type: "array", items: LINE_SCHEMA }, good: { type: "array", items: LINE_SCHEMA } },
+} as const;
 const SCENE_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["me", "seen", "tip", "say"],
-  properties: { me: STR, seen: STR, tip: STR, say: STR },
+  required: ["me", "seen", "tip", "talk"],
+  properties: { me: STR, seen: STR, tip: STR, talk: TALK_SCHEMA },
 } as const;
 
-export const RESPONSE_SCHEMA = {
-  name: "love_report",
-  strict: true,
-  schema: {
-    type: "object",
-    additionalProperties: false,
-    required: ["headline", "summary", "nature", "strengths", "situations", "match", "one_thing"],
-    properties: {
-      headline: STR,
-      summary: STR,
-      nature: STR,
-      strengths: { type: "array", items: STR },
-      situations: {
-        type: "object",
-        additionalProperties: false,
-        required: SITUATIONS.map((s) => s.id),
-        properties: Object.fromEntries(SITUATIONS.map((s) => [s.id, SCENE_SCHEMA])),
+/**
+ * 한 번에 다 쓰면 오래 걸려서(장면마다 대화 두 개) 두 번에 나눠 동시에 부른다.
+ * 0번: 요약·기질·강점·잘 맞는 결·한 가지 + 앞 장면 5개, 1번: 뒤 장면 5개. 받은 뒤 mergeParts로 합친다
+ */
+export const SCENE_PARTS: SituationId[][] = [SITUATIONS.slice(0, 5).map((s) => s.id), SITUATIONS.slice(5).map((s) => s.id)];
+
+const situationsSchema = (ids: SituationId[]) => ({
+  type: "object",
+  additionalProperties: false,
+  required: ids,
+  properties: Object.fromEntries(ids.map((id) => [id, SCENE_SCHEMA])),
+});
+
+export const RESPONSE_SCHEMAS = [
+  {
+    name: "love_report",
+    strict: true,
+    schema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["headline", "summary", "nature", "strengths", "situations", "match", "one_thing"],
+      properties: {
+        headline: STR,
+        summary: STR,
+        nature: STR,
+        strengths: { type: "array", items: STR },
+        situations: situationsSchema(SCENE_PARTS[0]),
+        match: {
+          type: "object",
+          additionalProperties: false,
+          required: ["good", "careful"],
+          properties: { good: STR, careful: STR },
+        },
+        one_thing: STR,
       },
-      match: {
-        type: "object",
-        additionalProperties: false,
-        required: ["good", "careful"],
-        properties: { good: STR, careful: STR },
-      },
-      one_thing: STR,
     },
   },
-} as const;
+  {
+    name: "love_report_scenes",
+    strict: true,
+    schema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["situations"],
+      properties: { situations: situationsSchema(SCENE_PARTS[1]) },
+    },
+  },
+] as const;
+
+/** 나눠 부를 때 입력 글 끝에 붙이는 안내 (이번 응답에 쓸 칸) */
+export function partInstruction(part: number): string {
+  const scenes = SCENE_PARTS[part].join(", ");
+  return part === 0
+    ? `\n\n## 이번 응답에 쓸 칸\nheadline, summary, nature, strengths, match, one_thing과 장면 ${scenes}만 씁니다. 나머지 장면은 따로 씁니다.`
+    : `\n\n## 이번 응답에 쓸 칸\n장면 ${scenes}만 씁니다. 요약과 다른 장면은 따로 씁니다.`;
+}
+
+/** 나눠 받은 응답을 하나로 (장면은 합치고 나머지 칸은 0번에서) */
+export function mergeParts(parts: unknown[]): unknown {
+  const objs = parts.map((p) => (p && typeof p === "object" ? (p as Record<string, unknown>) : {}));
+  const situations = Object.assign({}, ...objs.map((o) => (o.situations && typeof o.situations === "object" ? o.situations : {})));
+  return { ...objs[0], situations };
+}
 
 /** 앞뒤 공백·감싼 따옴표를 떼고, 너무 길면 자른다. 비었으면 null */
 function clean(v: unknown, max: number, unquote = false): string | null {
@@ -226,6 +303,31 @@ function clean(v: unknown, max: number, unquote = false): string | null {
   if (unquote) s = s.replace(/^["'“”‘’「『]+|["'“”‘’」』]+$/g, "").trim();
   if (!s) return null;
   return s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s;
+}
+
+/** 대화 한쪽: 2~6줄, 나와 상대가 모두 말하고 상대의 속마음이 하나 이상. 내 줄의 속마음은 버린다 */
+function parseLines(v: unknown): TalkLine[] | null {
+  if (!Array.isArray(v)) return null;
+  const lines: TalkLine[] = [];
+  for (const raw of v.slice(0, 6)) {
+    const o = (raw ?? {}) as Record<string, unknown>;
+    const who = o.who === "me" || o.who === "partner" ? o.who : null;
+    const text = clean(o.text, 160, true);
+    if (!who || !text) return null;
+    const thought = who === "partner" ? clean(o.thought, 120, true) : null;
+    lines.push(thought ? { who, text, thought } : { who, text });
+  }
+  if (lines.length < 2 || !lines.some((l) => l.who === "me") || !lines.some((l) => l.thought)) return null;
+  return lines;
+}
+
+function parseTalk(v: unknown): Talk | null {
+  if (!v || typeof v !== "object") return null;
+  const t = v as Record<string, unknown>;
+  const moment = clean(t.moment, 200);
+  const bad = parseLines(t.bad);
+  const good = parseLines(t.good);
+  return moment && bad && good ? { moment, bad, good } : null;
 }
 
 /** AI 응답을 검사해 보고서로. 칸이 빠졌거나 비었으면 null (실패로 처리해 다시 쓴다) */
@@ -246,9 +348,12 @@ export function parseLoveReport(raw: unknown): LoveReport | null {
   const situations = {} as Record<SituationId, Scene>;
   for (const { id } of SITUATIONS) {
     const s = rawScenes[id] ?? {};
-    const scene = { me: clean(s.me, 500), seen: clean(s.seen, 300), tip: clean(s.tip, 300), say: clean(s.say, 120, true) };
-    if (!scene.me || !scene.seen || !scene.tip || !scene.say) return null;
-    situations[id] = scene as Scene;
+    const me = clean(s.me, 500);
+    const seen = clean(s.seen, 300);
+    const tip = clean(s.tip, 300);
+    const talk = parseTalk(s.talk);
+    if (!me || !seen || !tip || !talk) return null;
+    situations[id] = { me, seen, tip, talk };
   }
   return { headline: headline.replace(/[.。]$/, ""), summary, nature, strengths, situations, match: { good, careful }, one_thing: oneThing };
 }

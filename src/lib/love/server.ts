@@ -97,10 +97,38 @@ export async function purgeGuestLove(admin: Admin): Promise<number> {
   return data?.length ?? 0;
 }
 
-/** 가장 최근 시도와, 가장 최근에 다 쓴 보고서 (새로 쓰는 중이거나 실패해도 이전 보고서는 보여준다) */
+/**
+ * 가장 최근 시도와, 보여줄 보고서(가장 최근에 쓴 보고서). 새로 검사해 쓰는 중이거나 실패해도 이전 보고서는 보여준다.
+ * '새 보고서 받기'로 같은 줄을 다시 쓰는 중이거나 그게 실패했으면 그 줄의 지금 보고서가 lastDone이다 (report는 다 쓰기 전까지 그대로 둔다)
+ */
 export function pickLove(rows: LoveRow[]): { latest: LoveRow | null; lastDone: (LoveRow & { report: LoveReport }) | null } {
-  const lastDone = rows.find((r): r is LoveRow & { report: LoveReport } => r.status === "done" && r.report !== null) ?? null;
+  const lastDone = rows.find((r): r is LoveRow & { report: LoveReport } => r.report !== null) ?? null;
   return { latest: rows[0] ?? null, lastDone };
+}
+
+/** 예전 PROMPT_VERSION으로 다 쓴 보고서라 '새 보고서 받기'를 보여줄지 */
+export const canRewrite = (row: Pick<LoveRow, "status" | "report" | "prompt_version">): boolean =>
+  row.status === "done" && row.report !== null && row.prompt_version !== PROMPT_VERSION;
+
+/**
+ * '새 보고서 받기': 예전 형식으로 쓴 보고서를 같은 답으로 새로 쓰기 시작한다 (검사 횟수에 세지 않는다).
+ * 새 줄을 만들지 않고 그 줄을 다시 쓴다: 같은 답을 새 줄로 복사하면 재검사 분석(첫·최근 시도 r)이 흐려진다.
+ * 다 쓸 때까지 예전 보고서(report)는 그대로 둬서 화면에 계속 보인다. 실패하면 '다시 쓰기'(retry)로 이어진다.
+ * 부르는 쪽에서 본인 확인·횟수 제한·하루 상한을 먼저 본다. 이미 새 형식이거나 쓰는 중이면 아무것도 하지 않는다
+ */
+export async function rewriteLove(admin: Admin, id: string): Promise<{ ok: true } | { ok: false; error: { code?: string; message?: string } }> {
+  const { data: row } = await admin.from("love_reports").select("id, status, report, prompt_version, tries").eq("id", id).maybeSingle();
+  if (!row || !canRewrite(row as LoveRow)) return { ok: true };
+  const { data: claimed, error } = await admin
+    .from("love_reports")
+    .update({ status: "pending", error: null, tries: ((row.tries as number | null) ?? 1) + 1, started_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("status", "done")
+    .or(`prompt_version.is.null,prompt_version.neq.${PROMPT_VERSION}`)
+    .select("id");
+  if (error) return { ok: false, error };
+  if (claimed?.length) startLoveReport(id);
+  return { ok: true };
 }
 
 /** 오늘(한국 날짜) 쓰기 시작한 보고서가 상한을 넘었는지 (실패 제외) */

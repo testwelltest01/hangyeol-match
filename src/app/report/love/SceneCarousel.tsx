@@ -5,11 +5,14 @@ import { IconBack, IconChevron } from "@/components/icons";
 
 /**
  * 장면 10가지를 옆으로 밀어 한 장씩 보는 슬라이드 (CSS scroll-snap). 다음 카드가 살짝 보여서 밀 수 있다는 걸 알 수 있다.
- * 아래쪽 '이전·다음'과 '3 / 10'. 카드 내용은 서버에서 그려 children으로 받는다
+ * 아래쪽 '이전·다음'과 '3 / 10'. 카드 내용은 서버에서 그려 children으로 받는다.
+ * 카드가 길어서(대화 예시) 아래쪽에서 넘기면 새 카드의 맨 위로 올려 준다
  */
 export function SceneCarousel({ children }: { children: ReactNode }) {
   const slides = Children.toArray(children);
+  const sectionRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const shownRef = useRef(0);
   const [index, setIndex] = useState(0);
 
   // 밀 때마다 지금 보이는 카드 번호를 맞춘다 (가장 왼쪽에 가까운 카드)
@@ -50,6 +53,14 @@ export function SceneCarousel({ children }: { children: ReactNode }) {
     return () => ro.disconnect();
   }, [index]);
 
+  // 다른 장면으로 넘어갔는데 카드 위쪽이 위 바·탭 줄 밑에 가려져 있으면 새 카드의 맨 위부터 보이게
+  useEffect(() => {
+    if (shownRef.current === index) return;
+    shownRef.current = index;
+    const el = sectionRef.current;
+    if (el && el.getBoundingClientRect().top < 110) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [index]);
+
   function go(i: number) {
     const track = trackRef.current;
     const el = track?.children[Math.max(0, Math.min(slides.length - 1, i))] as HTMLElement | undefined;
@@ -59,7 +70,7 @@ export function SceneCarousel({ children }: { children: ReactNode }) {
   }
 
   return (
-    <section aria-roledescription="carousel" aria-label="장면 10가지">
+    <section ref={sectionRef} aria-roledescription="carousel" aria-label="장면 10가지" className="scroll-mt-[60px]">
       <div
         ref={trackRef}
         className="-mx-5 flex snap-x snap-mandatory items-start gap-3 overflow-x-auto overflow-y-hidden scroll-px-5 px-5 transition-[height] duration-300 [scrollbar-width:none]"

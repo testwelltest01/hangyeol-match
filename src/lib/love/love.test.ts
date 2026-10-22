@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { hashGuestToken, isGuestToken, newGuestToken } from "./guest";
 import { SCENE_PROMPT_VERSION, SCENE_PROMPTS, scenePath, scenePrompt } from "./scenes";
 import { LOVE_ITEMS, LOVE_PAGES, LOVE_SCALES } from "./items";
-import { buildUserInput, parseLoveReport, RESPONSE_SCHEMA, SITUATIONS } from "./prompt";
+import { buildUserInput, mergeParts, parseLoveReport, partInstruction, RESPONSE_SCHEMAS, SCENE_PARTS, SITUATIONS } from "./prompt";
 import { loveLevel, scoreLove, validateLove } from "./score";
 import type { Scores } from "@/lib/scoring";
 
@@ -125,23 +125,35 @@ describe("비회원 열쇠", () => {
   });
 });
 
-const scene = { me: "나는 이래요.", seen: "이렇게 보여요.", tip: "해 보세요.", say: "“우리 천천히 알아가요.”" };
+const line = (who: "me" | "partner", text: string, thought = "") => ({ who, text, thought });
+const talk = {
+  moment: "금요일 밤, 상대가 약속에 40분 늦게 왔어요.",
+  bad: [line("partner", "미안, 일이 안 끝나서…", "화났으려나"), line("me", "괜찮아, 뭐 먹을래?", "속으로는 서운해"), line("partner", "응… 아무거나", "괜찮다는데 표정이 굳었네")],
+  good: [line("partner", "미안, 일이 안 끝나서…", "화났으려나"), line("me", "많이 바빴구나. 사실 조금 기다리기 힘들었어"), line("partner", "“말해 줘서 고마워”", "솔직하게 말해 주니 오히려 편하다")],
+};
+const scene = { me: "나는 이래요.", seen: "이렇게 보여요.", tip: "해 보세요.", talk };
+const allScenes = Object.fromEntries(SITUATIONS.map((s) => [s.id, scene]));
 const VALID_RAW = {
   headline: "천천히 열지만 깊게 주는 사람.",
   summary: "요약이에요.",
   nature: "기질과 성격이에요.",
   strengths: ["하나", "둘", "셋", "넷"],
-  situations: Object.fromEntries(SITUATIONS.map((s) => [s.id, scene])),
+  situations: allScenes,
   match: { good: "잘 맞아요.", careful: "이야기가 필요해요." },
   one_thing: "한 가지예요.",
 };
 
 describe("AI 응답 검사", () => {
-  it("형식이 맞으면 다듬어서 돌려준다 (마침표·따옴표 떼기, 강점 3개까지)", () => {
+  it("형식이 맞으면 다듬어서 돌려준다 (마침표·따옴표 떼기, 강점 3개까지, 내 줄의 속마음은 버림)", () => {
     const r = parseLoveReport(VALID_RAW)!;
     expect(r.headline).toBe("천천히 열지만 깊게 주는 사람");
     expect(r.strengths).toEqual(["하나", "둘", "셋"]);
-    expect(r.situations.first.say).toBe("우리 천천히 알아가요.");
+    const t = r.situations.first.talk!;
+    expect(t.moment).toBe("금요일 밤, 상대가 약속에 40분 늦게 왔어요.");
+    expect(t.bad[1]).toEqual({ who: "me", text: "괜찮아, 뭐 먹을래?" });
+    expect(t.bad[0]).toEqual({ who: "partner", text: "미안, 일이 안 끝나서…", thought: "화났으려나" });
+    expect(t.good[2].text).toBe("말해 줘서 고마워");
+    expect(r.situations.first.say).toBeUndefined();
   });
 
   it("장면이 하나라도 빠지거나 비면 실패", () => {
@@ -154,8 +166,26 @@ describe("AI 응답 검사", () => {
     expect(parseLoveReport("x")).toBeNull();
   });
 
-  it("응답 형식(JSON schema)의 장면 키가 화면 장면과 같다", () => {
-    expect(RESPONSE_SCHEMA.schema.properties.situations.required).toEqual(SITUATIONS.map((s) => s.id));
+  it("대화가 없거나, 한 사람만 말하거나, 상대의 속마음이 없으면 실패", () => {
+    const withTalk = (t: unknown) => ({ ...VALID_RAW, situations: { ...VALID_RAW.situations, hurt: { ...scene, talk: t } } });
+    expect(parseLoveReport(withTalk(undefined))).toBeNull();
+    expect(parseLoveReport(withTalk({ ...talk, moment: "" }))).toBeNull();
+    expect(parseLoveReport(withTalk({ ...talk, bad: [line("me", "하나"), line("me", "둘")] }))).toBeNull();
+    expect(parseLoveReport(withTalk({ ...talk, good: [line("partner", "하나"), line("me", "둘")] }))).toBeNull();
+    expect(parseLoveReport(withTalk({ ...talk, good: [line("partner", "하나", "속"), { who: "friend", text: "둘", thought: "" }] }))).toBeNull();
+  });
+
+  it("두 번에 나눠 받은 응답을 합친다: 장면 5개씩, 합치면 화면 장면과 같다", () => {
+    expect(SCENE_PARTS.flat()).toEqual(SITUATIONS.map((s) => s.id));
+    expect(RESPONSE_SCHEMAS[0].schema.properties.situations.required).toEqual(SCENE_PARTS[0]);
+    expect(RESPONSE_SCHEMAS[1].schema.properties.situations.required).toEqual(SCENE_PARTS[1]);
+    const pick = (ids: string[]) => Object.fromEntries(ids.map((id) => [id, scene]));
+    const a = { ...VALID_RAW, situations: pick(SCENE_PARTS[0]) };
+    const b = { situations: pick(SCENE_PARTS[1]) };
+    expect(parseLoveReport(a)).toBeNull();
+    expect(parseLoveReport(mergeParts([a, b]))).not.toBeNull();
+    expect(parseLoveReport(mergeParts([a, null]))).toBeNull();
+    expect(partInstruction(1)).toContain(SCENE_PARTS[1].join(", "));
   });
 });
 
