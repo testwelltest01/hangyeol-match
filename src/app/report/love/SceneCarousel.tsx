@@ -4,7 +4,8 @@ import { Children, useEffect, useRef, useState, type ReactNode } from "react";
 import { IconBack, IconChevron } from "@/components/icons";
 
 /**
- * 장면 10가지를 옆으로 밀어 한 장씩 보는 슬라이드 (CSS scroll-snap). 다음 카드가 살짝 보여서 밀 수 있다는 걸 알 수 있다.
+ * 장면 10가지를 옆으로 밀어 한 장씩 보는 슬라이드 (CSS scroll-snap). 카드는 늘 화면 가운데에 멈추고(snap-center, 한 번에 한 장씩 snap-always),
+ * 양옆에 이전·다음 카드가 같은 폭으로 살짝 보여서 밀 수 있다는 걸 알 수 있다.
  * 아래쪽 '이전·다음'과 '3 / 10'. 카드 내용은 서버에서 그려 children으로 받는다.
  * 카드가 길어서(대화 예시) 아래쪽에서 넘기면 새 카드의 맨 위로 올려 준다
  */
@@ -15,7 +16,7 @@ export function SceneCarousel({ children }: { children: ReactNode }) {
   const shownRef = useRef(0);
   const [index, setIndex] = useState(0);
 
-  // 밀 때마다 지금 보이는 카드 번호를 맞춘다 (가장 왼쪽에 가까운 카드)
+  // 밀 때마다 지금 보이는 카드 번호를 맞춘다 (가운데에 가장 가까운 카드). offsetLeft는 트랙 기준(트랙이 relative)
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
@@ -24,10 +25,11 @@ export function SceneCarousel({ children }: { children: ReactNode }) {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const items = [...track.children] as HTMLElement[];
-        const left = track.scrollLeft + parseFloat(getComputedStyle(track).scrollPaddingLeft || "0");
+        const center = track.scrollLeft + track.clientWidth / 2;
+        const gap = (el: HTMLElement) => Math.abs(el.offsetLeft + el.offsetWidth / 2 - center);
         let best = 0;
         items.forEach((el, i) => {
-          if (Math.abs(el.offsetLeft - left) < Math.abs(items[best].offsetLeft - left)) best = i;
+          if (gap(el) < gap(items[best])) best = i;
         });
         setIndex(best);
       });
@@ -65,15 +67,14 @@ export function SceneCarousel({ children }: { children: ReactNode }) {
     const track = trackRef.current;
     const el = track?.children[Math.max(0, Math.min(slides.length - 1, i))] as HTMLElement | undefined;
     if (!track || !el) return;
-    const pad = parseFloat(getComputedStyle(track).scrollPaddingLeft || "0");
-    track.scrollTo({ left: el.offsetLeft - pad, behavior: "smooth" });
+    track.scrollTo({ left: el.offsetLeft - (track.clientWidth - el.offsetWidth) / 2, behavior: "smooth" });
   }
 
   return (
     <section ref={sectionRef} aria-roledescription="carousel" aria-label="장면 10가지" className="scroll-mt-[60px]">
       <div
         ref={trackRef}
-        className="relative -mx-5 flex snap-x snap-mandatory items-start gap-3 overflow-x-auto overflow-y-hidden scroll-px-5 px-5 transition-[height] duration-300 [scrollbar-width:none]"
+        className="relative -mx-5 flex snap-x snap-mandatory items-start gap-3 overflow-x-auto overflow-y-hidden px-7 transition-[height] duration-300 [scrollbar-width:none]"
       >
         {slides.map((slide, i) => (
           <div
@@ -81,7 +82,7 @@ export function SceneCarousel({ children }: { children: ReactNode }) {
             role="group"
             aria-roledescription="slide"
             aria-label={`${slides.length}개 중 ${i + 1}번째 장면`}
-            className="flex w-[88%] shrink-0 snap-start self-start [&>*]:w-full"
+            className="flex w-full shrink-0 snap-center snap-always self-start [&>*]:w-full"
           >
             {slide}
           </div>
