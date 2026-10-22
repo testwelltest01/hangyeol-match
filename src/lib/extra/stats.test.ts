@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cronbachAlpha, meanSd } from "./stats";
+import { cronbachAlpha, meanSd, pearson } from "./stats";
 
 describe("meanSd", () => {
   it("표본 표준편차 (n − 1)", () => {
@@ -27,5 +27,16 @@ describe("cronbachAlpha", () => {
     expect(cronbachAlpha([[1, 1], [2, 2], [3, 3]])).toBeCloseTo(1, 10);
     expect(cronbachAlpha([[1, 2], [2, 3]])).toBeNaN();
     expect(cronbachAlpha([[3, 3], [3, 3], [3, 3]])).toBeNaN();
+  });
+});
+
+describe("pearson", () => {
+  it("완전 정적·부적 상관과 계산 불가", () => {
+    expect(pearson([[1, 2], [2, 4], [3, 6]])).toBeCloseTo(1, 10);
+    expect(pearson([[1, 3], [2, 2], [3, 1]])).toBeCloseTo(-1, 10);
+    // numpy.corrcoef([1,2,3,4,5],[2,1,4,3,5]) = 0.8
+    expect(pearson([[1, 2], [2, 1], [3, 4], [4, 3], [5, 5]])).toBeCloseTo(0.8, 10);
+    expect(pearson([[1, 2], [2, 2], [3, 2]])).toBeNaN();
+    expect(pearson([[1, 2], [2, 3]])).toBeNaN();
   });
 });

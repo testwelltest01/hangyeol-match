@@ -51,7 +51,7 @@ export type ExportData = {
   chatEvents: { id: number; room_id: string; user_id: string | null; kind: string; created_at: string }[];
   /** 추가 검사 */
   extras: { user_id: string; test_id: string; version: string; answers: ExtraAnswers; scores: ExtraScores; share: boolean; completed_at: string }[];
-  /** 연애 상황 보고서 검사 (응답·점수·상태만. AI가 쓴 보고서 글은 넣지 않는다) */
+  /** 연애 상황 보고서 검사 시도마다 한 줄, 오래된 순 (응답·점수·상태만. AI가 쓴 보고서 글은 넣지 않는다) */
   love: { user_id: string; version: string; answers: LoveAnswers; scores: LoveScores; status: string; created_at: string }[];
 };
 
@@ -138,7 +138,7 @@ export async function buildWorkbook(d: ExportData): Promise<Buffer> {
     ["만남 피드백", "연락처 공개 뒤 남긴 만남 결과와 1~5점 평가 (상대에게는 보이지 않음)"],
     ["신고", "신고 기록과 확인 완료 시각"],
     ["추가 · …", "한결 시범 검사(선택) 응답 원자료와 하위척도 평균. 역문항은 응답 칸에는 원래 값, 점수에는 뒤집은 값이 들어가요."],
-    ["추가 · 연애 상황 보고서", "IPIP 12척도 × 4문항 응답 원자료(역채점 전)와 척도 평균, 보고서 상태. AI가 쓴 보고서 글은 넣지 않았어요."],
+    ["추가 · 연애 상황 보고서", "관계 척도(IPIP 12) + 기질·성격(한결 문항 7), 척도마다 4문항 응답 원자료(역채점 전)와 척도 평균, 보고서 상태. 다시 검사하면 한 사람에 여러 줄(회차). AI가 쓴 보고서 글은 넣지 않았어요."],
     ["대화방", "서로 수락한 두 사람의 대화방 하나에 한 줄. 메시지 수, 말차례, 평균 글자 수, 응답 시간 중앙값, 연락처 전달, 만남 결과"],
     ["대화 메시지", "메시지 하나에 한 줄. 대화 내용은 넣지 않고 순번, 말차례, 글자 수, 응답까지 걸린 초, 시각만 넣어요."],
     ["대화 이벤트", "방 열림, 연락처 전달 누름·취소, 연락처 교환, 메시지 한도 도달, 닫힘"],
@@ -319,14 +319,18 @@ export async function buildWorkbook(d: ExportData): Promise<Buffer> {
     );
   }
 
+  const loveRound = new Map<string, number>();
   addSheet(
     wb,
     "추가 · 연애 상황 보고서",
-    ["사용자ID", "닉네임", "성별", "검사 버전", "완료", "보고서 상태", ...LOVE_ITEMS.map((i) => i.id), ...LOVE_SCALES.map((sc) => `점수_${sc.label}`)],
+    ["사용자ID", "닉네임", "성별", "회차", "검사 버전", "완료", "보고서 상태", ...LOVE_ITEMS.map((i) => i.id), ...LOVE_SCALES.map((sc) => `점수_${sc.label}`)],
     d.love.map((e) => {
       const m = memberById.get(e.user_id);
+      // 회차: 그 사람의 몇 번째 검사인지 (d.love는 오래된 순)
+      const round = (loveRound.get(e.user_id) ?? 0) + 1;
+      loveRound.set(e.user_id, round);
       return [
-        e.user_id, m?.nickname, m?.gender ? GENDER[m.gender] : null, e.version, kst(e.created_at),
+        e.user_id, m?.nickname, m?.gender ? GENDER[m.gender] : null, round, e.version, kst(e.created_at),
         ({ pending: "쓰는 중", done: "완료", failed: "실패" } as Record<string, string>)[e.status] ?? e.status,
         ...LOVE_ITEMS.map((i) => e.answers[i.id] ?? null),
         ...LOVE_SCALES.map((sc) => e.scores[sc.id] ?? null),

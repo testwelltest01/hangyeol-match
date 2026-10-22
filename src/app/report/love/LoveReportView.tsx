@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { IconCheck } from "@/components/icons";
 import { LOVE_GROUPS, LOVE_SCALES } from "@/lib/love/items";
@@ -68,8 +69,23 @@ function SceneCard({ n, id, title, scene }: { n: number; id: string; title: stri
   );
 }
 
-/** 다 쓴 보고서. 한 줄 요약 → 마음의 결 12가지 → 강점 → 장면 10가지 → 잘 맞는 결 → 한 가지 */
-export function LoveReportView({ report, scores, completedAt }: { report: LoveReport; scores: LoveScores; completedAt: string | null }) {
+/**
+ * 다 쓴 보고서. 한 줄 요약 → 타고난 기질과 다듬어 가는 성격 → 강점 → 장면 10가지 → 잘 맞는 결 → 마음의 결(척도) → 한 가지.
+ * retest면 맨 아래에 '다시 검사하기'
+ */
+export function LoveReportView({
+  report,
+  scores,
+  completedAt,
+  retest = false,
+}: {
+  report: LoveReport;
+  scores: LoveScores;
+  completedAt: string | null;
+  retest?: boolean;
+}) {
+  // 문항 버전이 바뀌기 전 결과에는 없는 척도가 있어서, 점수가 있는 것만 보여준다
+  const shown = LOVE_SCALES.filter((s) => typeof scores[s.id] === "number");
   const date = completedAt
     ? new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "long", day: "numeric" }).format(new Date(completedAt))
     : null;
@@ -78,6 +94,12 @@ export function LoveReportView({ report, scores, completedAt }: { report: LoveRe
       <p className="text-sm font-semibold text-indigo">연애 상황 보고서</p>
       <h1 className="mt-1.5 font-serif text-[1.8rem] font-bold leading-snug text-ink">{report.headline}</h1>
       <p className="mt-4 text-[15.5px] leading-relaxed text-ink-soft">{report.summary}</p>
+
+      {report.nature && (
+        <Block title="타고난 기질, 다듬어 가는 성격" lead="처음 반응이 어느 쪽으로 기우는지(기질)와, 그 반응을 살면서 어떻게 다루게 됐는지(성격)를 함께 봤어요.">
+          <p className="rounded-[22px] bg-surface px-5 py-5 text-[15px] leading-relaxed text-ink ring-1 ring-line/80">{report.nature}</p>
+        </Block>
+      )}
 
       <Block title="연애에서 나의 강점">
         <ul className="space-y-3 rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
@@ -125,13 +147,13 @@ export function LoveReportView({ report, scores, completedAt }: { report: LoveRe
         </div>
       </Block>
 
-      <Block title="마음의 결 12가지" lead="보고서의 바탕이 된 검사 결과예요. 점이 가까운 쪽이 나에 더 가까워요. 좋고 나쁨이 아니라 방향의 차이예요.">
+      <Block title={`마음의 결 ${shown.length}가지`} lead="보고서의 바탕이 된 검사 결과예요. 점이 가까운 쪽이 나에 더 가까워요. 좋고 나쁨이 아니라 방향의 차이예요.">
         <div className="space-y-4">
-          {LOVE_GROUPS.map((g) => (
+          {LOVE_GROUPS.filter((g) => shown.some((s) => s.group === g.id)).map((g) => (
             <div key={g.id} className="rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
               <h3 className="text-[13px] font-semibold text-muted">{g.label}</h3>
               <div className="mt-3 space-y-5">
-                {LOVE_SCALES.filter((s) => s.group === g.id).map((s) => (
+                {shown.filter((s) => s.group === g.id).map((s) => (
                   <ScaleTrack key={s.id} label={s.label} low={s.low} high={s.high} score={scores[s.id]} />
                 ))}
               </div>
@@ -146,9 +168,22 @@ export function LoveReportView({ report, scores, completedAt }: { report: LoveRe
       </section>
 
       <p className="mt-8 px-1 text-[13px] leading-relaxed text-muted">
-        공개 성격검사(IPIP) 문항으로 잰 결과와 기본 검사 결과를 바탕으로 AI(OpenAI)가 쓴 보고서예요{date ? ` (${date})` : ""}. 진단이 아니라 나를 돌아보는
-        참고용이고, 나만 볼 수 있어요. 추천 계산에는 쓰지 않아요.
+        공개 성격검사(IPIP) 문항과 한결이 만든 기질·성격 문항으로 잰 결과, 기본 검사 결과를 바탕으로 AI(OpenAI)가 쓴 보고서예요
+        {date ? ` (${date})` : ""}. 진단이 아니라 나를 돌아보는 참고용이고, 나만 볼 수 있어요. 추천 계산에는 쓰지 않아요.
       </p>
+
+      {retest && (
+        <div className="mt-8 rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
+          <p className="text-[15px] font-semibold text-ink">요즘의 나는 좀 달라졌나요?</p>
+          <p className="mt-1 text-[14px] leading-relaxed text-muted">다시 검사하면 새 답으로 보고서를 새로 써 드려요. 하루 3번까지 할 수 있어요.</p>
+          <Link
+            href="/report/love/test"
+            className="mt-4 block rounded-full border border-primary px-5 py-3 text-center text-[15px] font-semibold text-primary active:scale-[0.98] active:opacity-80"
+          >
+            다시 검사하기
+          </Link>
+        </div>
+      )}
     </article>
   );
 }

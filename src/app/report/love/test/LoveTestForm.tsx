@@ -15,10 +15,10 @@ const OPENAI_DATA_POLICY = "https://openai.com/ko-KR/policies/how-your-data-is-u
 type Draft = { v: string; page: number; answers: LoveAnswers };
 
 /**
- * 연애 상황 검사: 4쪽 × 12문항. 답은 이 기기에 임시로 남겨 두고(앱을 닫았다 열어도 이어서), 마지막 쪽에서 동의와 함께 한 번에 낸다.
+ * 연애 상황 검사: 8쪽(관계 척도 + 기질·성격 문항). 답은 이 기기에 임시로 남겨 두고(앱을 닫았다 열어도 이어서), 마지막 쪽에서 동의와 함께 한 번에 낸다.
  * 임시 저장은 계정마다 따로 (같은 기기를 여러 계정이 써도 섞이지 않게)
  */
-export function LoveTestForm({ userId }: { userId: string }) {
+export function LoveTestForm({ userId, again }: { userId: string; again: boolean }) {
   const router = useRouter();
   const draftKey = `hg-love-draft:${userId}`;
   const [answers, setAnswers] = useState<LoveAnswers>({});
@@ -105,7 +105,11 @@ export function LoveTestForm({ userId }: { userId: string }) {
       </div>
 
       <h1 className="mt-8 font-serif text-[1.7rem] font-bold leading-tight">{isLast ? "마지막 쪽이에요" : "평소의 나"}</h1>
-      <p className="mt-2 text-ink-soft">연애할 때만이 아니라 평소 사람을 대하는 나를 떠올리며 답해주세요. 정답은 없어요.</p>
+      <p className="mt-2 text-ink-soft">
+        {again && page === 0
+          ? "다시 하는 검사예요. 지난번 답은 떠올리지 말고 지금의 나로 답해주세요."
+          : "연애할 때만이 아니라 평소 사람을 대하는 나를 떠올리며 답해주세요. 정답은 없어요."}
+      </p>
 
       <div className="mt-8 divide-y divide-line">
         {items.map((item) => (
@@ -141,7 +145,11 @@ export function LoveTestForm({ userId }: { userId: string }) {
               </span>
             </span>
           </label>
-          <p className="px-1 text-[13.5px] leading-relaxed text-muted">답을 내면 바꿀 수 없어요. 보고서는 계정당 한 번, 이 답으로 써 드려요.</p>
+          <p className="px-1 text-[13.5px] leading-relaxed text-muted">
+            {again
+              ? "이 답으로 보고서를 새로 써요. 새 보고서가 나오면 이전 보고서 대신 보여요."
+              : "이 답으로 보고서를 써요. 나중에 마음이 달라졌다 싶으면 다시 검사할 수 있어요."}
+          </p>
         </div>
       )}
 

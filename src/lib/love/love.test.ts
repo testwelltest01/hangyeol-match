@@ -7,10 +7,12 @@ import type { Scores } from "@/lib/scoring";
 const allAnswers = (v: number) => Object.fromEntries(LOVE_ITEMS.map((i) => [i.id, v]));
 
 describe("문항 구성", () => {
-  it("12척도 × 4문항, id가 겹치지 않고 척도마다 역문항이 1개 이상", () => {
-    expect(LOVE_SCALES).toHaveLength(12);
-    expect(LOVE_ITEMS).toHaveLength(48);
-    expect(new Set(LOVE_ITEMS.map((i) => i.id)).size).toBe(48);
+  it("관계 12 + 기질 4 + 성격 3 = 19척도 × 4문항, id가 겹치지 않고 척도마다 역문항이 1개 이상", () => {
+    expect(LOVE_SCALES).toHaveLength(19);
+    expect(LOVE_SCALES.filter((s) => s.group === "temperament")).toHaveLength(4);
+    expect(LOVE_SCALES.filter((s) => s.group === "character")).toHaveLength(3);
+    expect(LOVE_ITEMS).toHaveLength(76);
+    expect(new Set(LOVE_ITEMS.map((i) => i.id)).size).toBe(76);
     for (const s of LOVE_SCALES) {
       const items = LOVE_ITEMS.filter((i) => i.scale === s.id);
       expect(items).toHaveLength(4);
@@ -19,13 +21,14 @@ describe("문항 구성", () => {
     }
   });
 
-  it("4쪽에 모든 문항이 한 번씩, 한 쪽에는 척도마다 하나씩", () => {
-    expect(LOVE_PAGES).toHaveLength(4);
+  it("8쪽(10·9문항)에 모든 문항이 한 번씩, 같은 척도 문항은 한 쪽에 하나뿐", () => {
+    expect(LOVE_PAGES).toHaveLength(8);
     const ids = LOVE_PAGES.flat().map((i) => i.id);
-    expect(new Set(ids).size).toBe(48);
+    expect(ids).toHaveLength(76);
+    expect(new Set(ids).size).toBe(76);
     for (const page of LOVE_PAGES) {
-      expect(page).toHaveLength(12);
-      expect(new Set(page.map((i) => i.scale)).size).toBe(12);
+      expect(page.length === 10 || page.length === 9).toBe(true);
+      expect(new Set(page.map((i) => i.scale)).size).toBe(page.length);
       // 한 쪽에 정문항·역문항이 섞인다
       expect(page.some((i) => i.reverse) && page.some((i) => !i.reverse)).toBe(true);
     }
@@ -78,10 +81,17 @@ describe("AI 입력", () => {
   it("검사 점수·성격·가치관·추가 검사 요약이 들어간다", () => {
     expect(text).toContain("성별: 여성 (매칭 상대는 남성)");
     expect(text).toContain("마음 여는 속도");
+    expect(text).toContain("## 기질과 성격");
+    expect(text).toContain("[타고난 기질]");
+    expect(text).toContain("- 스스로 서기:");
     expect(text).toContain("외향성: 4.00 (높은 편)");
     expect(text).toContain("연애 중 연락은 하루 몇 번이면 충분하다");
     expect(text).toContain("[연락] 이 영역에서 생각이 다른 상대: 많이 신경 쓰인다");
     expect(text).toContain("마음이 전해지는 순간: 함께하는 시간");
+  });
+
+  it("기질·성격은 한결식 이름으로만 보낸다 (상업 검사 이름·차원 이름 없음)", () => {
+    expect(text).not.toMatch(/TCI|Cloninger|자극추구|위험회피|사회적 민감성|인내력|자율성|연대감|자기초월/);
   });
 
   it("조건(결혼·자녀·흡연·음주)·위생·꾸밈은 보내지 않는다", () => {
@@ -93,6 +103,7 @@ const scene = { me: "나는 이래요.", seen: "이렇게 보여요.", tip: "해
 const VALID_RAW = {
   headline: "천천히 열지만 깊게 주는 사람.",
   summary: "요약이에요.",
+  nature: "기질과 성격이에요.",
   strengths: ["하나", "둘", "셋", "넷"],
   situations: Object.fromEntries(SITUATIONS.map((s) => [s.id, scene])),
   match: { good: "잘 맞아요.", careful: "이야기가 필요해요." },
@@ -113,6 +124,7 @@ describe("AI 응답 검사", () => {
     expect(parseLoveReport({ ...VALID_RAW, situations: rest })).toBeNull();
     expect(parseLoveReport({ ...VALID_RAW, situations: { ...VALID_RAW.situations, fight: { ...scene, tip: "  " } } })).toBeNull();
     expect(parseLoveReport({ ...VALID_RAW, strengths: ["하나"] })).toBeNull();
+    expect(parseLoveReport({ ...VALID_RAW, nature: "" })).toBeNull();
     expect(parseLoveReport("x")).toBeNull();
   });
 

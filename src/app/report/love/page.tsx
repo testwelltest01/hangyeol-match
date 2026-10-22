@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
-import { loadLoveReport } from "@/lib/love/server";
+import { loadLoveReports, pickLove } from "@/lib/love/server";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserId } from "@/lib/supabase/server";
@@ -31,15 +31,25 @@ async function LoveGate() {
   const progress = await getProgress(userId);
   if (progress !== "report") redirect(PROGRESS_PATH[progress]);
 
-  const row = await loadLoveReport(createAdminClient(), userId!);
-  if (!row) return <LoveIntro />;
-  if (row.status === "done" && row.report) return <LoveReportView report={row.report} scores={row.scores} completedAt={row.completed_at} />;
+  const { latest, lastDone } = pickLove(await loadLoveReports(createAdminClient(), userId!));
+  if (!latest) return <LoveIntro />;
+  // 가장 최근 시도가 다 쓴 보고서면 그대로. 쓰는 중·실패면 진행 상황을 위에, 이전 보고서가 있으면 그 아래에
+  if (latest === lastDone) return <LoveReportView report={lastDone.report} scores={lastDone.scores} completedAt={lastDone.completed_at} retest />;
+  const pending = latest.status === "pending";
   return (
     <div>
       <p className="text-sm font-semibold text-indigo">연애 상황 보고서</p>
-      <h1 className="mt-1.5 font-serif text-[1.7rem] font-bold leading-snug text-ink">검사를 마쳤어요</h1>
-      <p className="mt-2 mb-6 text-[15px] leading-relaxed text-ink-soft">답과 기본 검사 결과를 엮어 10가지 장면별 보고서를 쓰고 있어요.</p>
-      <LoveProgress status={row.status === "done" ? "failed" : row.status} error={row.error} />
+      <h1 className="mt-1.5 font-serif text-[1.7rem] font-bold leading-snug text-ink">{lastDone ? "다시 검사했어요" : "검사를 마쳤어요"}</h1>
+      <p className="mt-2 mb-6 text-[15px] leading-relaxed text-ink-soft">
+        {lastDone ? "새 답과 기본 검사 결과를 엮어 보고서를 새로 쓰고 있어요." : "답과 기본 검사 결과를 엮어 10가지 장면별 보고서를 쓰고 있어요."}
+      </p>
+      <LoveProgress status={pending ? "pending" : "failed"} error={latest.error} />
+      {lastDone && (
+        <div className="mt-12 border-t border-line/80 pt-8">
+          <p className="mb-4 px-1 text-[13px] font-semibold text-muted">이전 보고서</p>
+          <LoveReportView report={lastDone.report} scores={lastDone.scores} completedAt={lastDone.completed_at} retest={!pending} />
+        </div>
+      )}
     </div>
   );
 }

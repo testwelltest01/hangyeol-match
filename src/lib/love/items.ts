@@ -1,17 +1,22 @@
-// 연애 상황 보고서 검사 (선택). IPIP(퍼블릭 도메인, ipip.ori.org) 척도에서 연애 장면으로 풀기 좋은 12개를 골라
-// 척도마다 4문항씩(정·역문항 섞음) 우리말로 옮겼다. 원문은 문항 옆 주석. 순수 모듈(테스트용).
+// 연애 상황 보고서 검사 (선택). 순수 모듈(테스트용). 추천 계산에는 쓰지 않는다. 결과는 보고서(AI)와 관리자 통계에만 쓴다.
+// 1) 관계 척도 12개: IPIP(퍼블릭 도메인, ipip.ori.org) 척도에서 연애 장면으로 풀기 좋은 것을 골라 4문항씩 우리말로 옮겼다. 원문은 문항 옆 주석.
+// 2) 기질 4개·성격 3개: Cloninger의 기질·성격 모델이 말하는 개념(자극추구·위험회피·사회적 민감성·인내력 / 자율성·연대감·자기초월)을
+//    재려고 한결이 처음부터 쓴 문항 4개씩. 상업 검사(TCI)의 문항을 옮기거나 고쳐 쓰지 않았고, 화면에는 TCI 이름이나
+//    차원 이름(자극추구 등)을 쓰지 않고 한결식 이름을 쓴다. 검증되지 않은 시범 문항이라 관리자 화면에서 α·재검사 r을 본다.
 // 문항·보기·척도를 바꾸면 LOVE_VERSION을 올린다 (예전 응답과 섞이지 않게).
-// 추천 계산에는 쓰지 않는다. 결과는 보고서(AI)와 관리자 통계에만 쓴다.
 
-export const LOVE_VERSION = "2026-10-v1";
+export const LOVE_VERSION = "2026-10-v2";
 
-export type LoveGroupId = "close" | "shaken" | "clash" | "together";
+export type LoveGroupId = "close" | "shaken" | "clash" | "together" | "temperament" | "character";
 
-export const LOVE_GROUPS: { id: LoveGroupId; label: string }[] = [
-  { id: "close", label: "가까워질 때" },
-  { id: "shaken", label: "마음이 흔들릴 때" },
-  { id: "clash", label: "부딪힐 때" },
-  { id: "together", label: "함께할 때" },
+/** part: relation = 관계 척도(IPIP), nature = 기질·성격(한결 문항) */
+export const LOVE_GROUPS: { id: LoveGroupId; label: string; part: "relation" | "nature" }[] = [
+  { id: "close", label: "가까워질 때", part: "relation" },
+  { id: "shaken", label: "마음이 흔들릴 때", part: "relation" },
+  { id: "clash", label: "부딪힐 때", part: "relation" },
+  { id: "together", label: "함께할 때", part: "relation" },
+  { id: "temperament", label: "타고난 기질", part: "nature" },
+  { id: "character", label: "다듬어 가는 성격", part: "nature" },
 ];
 
 export type LoveScaleId =
@@ -26,7 +31,14 @@ export type LoveScaleId =
   | "lead"
   | "novelty"
   | "humor"
-  | "gratitude";
+  | "gratitude"
+  | "seeking"
+  | "caution"
+  | "attach"
+  | "persist"
+  | "selfdir"
+  | "coop"
+  | "meaning";
 
 export type LoveScale = {
   id: LoveScaleId;
@@ -55,6 +67,15 @@ export const LOVE_SCALES: LoveScale[] = [
   { id: "novelty", group: "together", label: "새로움", low: "익숙한 게 좋아요", high: "새로운 게 좋아요", about: "익숙한 것보다 새로운 곳·새로운 일을 좋아하는 정도", source: "IPIP-NEO O4 Adventurousness" },
   { id: "humor", group: "together", label: "유머", low: "차분한 편이에요", high: "웃음을 만들어요", about: "장난과 유머로 분위기를 밝게 만드는 정도", source: "IPIP VIA Humor/Playfulness" },
   { id: "gratitude", group: "together", label: "고마움", low: "덤덤한 편이에요", high: "자주 느끼고 말해요", about: "고마움을 느끼고 표현하는 정도", source: "IPIP VIA Gratitude" },
+  // 기질: 처음 반응이 어느 쪽으로 쉽게 기우는지 (타고난 경향)
+  { id: "seeking", group: "temperament", label: "설렘 찾기", low: "차분하게 가요", high: "끌리는 대로 가요", about: "새롭고 재미있는 것에 끌려 즉흥적으로 움직이는 정도 (낮으면 신중하고 절제하는 편)", source: "한결 문항 · 기질: 자극추구 개념" },
+  { id: "caution", group: "temperament", label: "조심성", low: "일단 해 봐요", high: "미리 조심해요", about: "확실하지 않거나 위험해 보이는 일 앞에서 망설이고 조심하는 정도, 쉽게 지치는 정도", source: "한결 문항 · 기질: 위험회피 개념" },
+  { id: "attach", group: "temperament", label: "정에 기대기", low: "혼자서도 괜찮아요", high: "정을 나눠야 힘이 나요", about: "따뜻한 말과 인정에 마음이 움직이고 사람에게 기대는 정도", source: "한결 문항 · 기질: 사회적 민감성 개념" },
+  { id: "persist", group: "temperament", label: "끈기", low: "아니다 싶으면 바꿔요", high: "끝까지 해내요", about: "보상이 없어도 꾸준히 버티고 목표를 높게 잡는 정도", source: "한결 문항 · 기질: 인내력 개념" },
+  // 성격: 그 반응을 살면서 어떻게 다루게 됐는지 (다듬어 온 태도)
+  { id: "selfdir", group: "character", label: "스스로 서기", low: "아직 찾는 중이에요", high: "스스로 방향을 정해요", about: "자기 선택에 책임지고, 원하는 방향을 알고, 자신을 받아들이는 정도", source: "한결 문항 · 성격: 자율성 개념" },
+  { id: "coop", group: "character", label: "함께하는 마음", low: "내 기준이 먼저예요", high: "함께가 먼저예요", about: "나와 다른 사람을 받아들이고 공정하게 대하며 돕는 정도", source: "한결 문항 · 성격: 연대감 개념" },
+  { id: "meaning", group: "character", label: "더 큰 의미", low: "현실에 발 딛고 있어요", high: "의미와 연결을 찾아요", about: "무언가에 깊이 몰입하고, 자연·사람과 이어진 느낌이나 일상의 의미를 느끼는 정도", source: "한결 문항 · 성격: 자기초월 개념" },
 ];
 
 export type LoveItem = { id: string; scale: LoveScaleId; text: string; reverse: boolean };
@@ -133,17 +154,67 @@ const BY_SCALE: Record<LoveScaleId, LoveItem[]> = {
     { id: "LG3", scale: "gratitude", reverse: false, text: "살면서 받은 것들에 고마움을 느낀다" }, // + Feel thankful for what I have received in life.
     { id: "LG4", scale: "gratitude", reverse: false, text: "가끔 멈춰서 내가 가진 좋은 것들을 떠올린다" }, // + Stop to count my blessings.
   ],
+  // ---- 기질·성격: 한결이 쓴 문항 (원문 없음) ----
+  seeking: [
+    { id: "MN1", scale: "seeking", reverse: false, text: "재미있어 보이는 일이 생기면 깊이 따지지 않고 일단 뛰어든다" },
+    { id: "MN2", scale: "seeking", reverse: false, text: "같은 일이 반복되면 금방 지루해진다" },
+    { id: "MN3", scale: "seeking", reverse: true, text: "충동적으로 돈을 쓰는 일이 거의 없다" },
+    { id: "MN4", scale: "seeking", reverse: false, text: "정해진 규칙보다 그때그때 마음 가는 대로 움직인다" },
+  ],
+  caution: [
+    { id: "MH1", scale: "caution", reverse: false, text: "확실하지 않으면 시작을 미루는 편이다" },
+    { id: "MH2", scale: "caution", reverse: true, text: "위험이 조금 있어도 해 볼 만하면 과감하게 도전한다" },
+    { id: "MH3", scale: "caution", reverse: false, text: "결과를 알 수 없는 선택 앞에서 오래 망설인다" },
+    { id: "MH4", scale: "caution", reverse: false, text: "남들보다 쉽게 지치고 회복하는 데 시간이 걸린다" },
+  ],
+  attach: [
+    { id: "MR1", scale: "attach", reverse: false, text: "가까운 사람의 따뜻한 말 한마디에 큰 힘을 얻는다" },
+    { id: "MR2", scale: "attach", reverse: true, text: "다른 사람이 나를 어떻게 생각하든 크게 신경 쓰지 않는다" },
+    { id: "MR3", scale: "attach", reverse: false, text: "영화나 이야기 속 장면에 쉽게 마음이 움직인다" },
+    { id: "MR4", scale: "attach", reverse: true, text: "힘든 일이 있어도 누구에게 기대기보다 혼자 해결하는 게 편하다" },
+  ],
+  persist: [
+    { id: "MP1", scale: "persist", reverse: false, text: "한번 시작한 일은 힘들어도 끝까지 해낸다" },
+    { id: "MP2", scale: "persist", reverse: true, text: "잘 안 풀리면 쉽게 포기하는 편이다" },
+    { id: "MP3", scale: "persist", reverse: false, text: "칭찬이나 보상이 없어도 꾸준히 노력할 수 있다" },
+    { id: "MP4", scale: "persist", reverse: false, text: "목표를 세우면 남들보다 높게 잡는다" },
+  ],
+  selfdir: [
+    { id: "MS1", scale: "selfdir", reverse: false, text: "내 선택의 결과는 남 탓을 하지 않고 내가 책임진다" },
+    { id: "MS2", scale: "selfdir", reverse: true, text: "내 모습 중 받아들이기 어려운 부분이 많다" },
+    { id: "MS3", scale: "selfdir", reverse: false, text: "내가 무엇을 원하고 어디로 가고 싶은지 비교적 분명히 안다" },
+    { id: "MS4", scale: "selfdir", reverse: true, text: "고치고 싶은 습관이 있어도 잘 바뀌지 않는다" },
+  ],
+  coop: [
+    { id: "MC1", scale: "coop", reverse: false, text: "나와 생각이 아주 다른 사람에게도 그럴 만한 이유가 있다고 본다" },
+    { id: "MC2", scale: "coop", reverse: true, text: "내 이익이 걸리면 상대 사정은 뒤로 미루게 된다" },
+    { id: "MC3", scale: "coop", reverse: false, text: "손해를 조금 보더라도 함께하는 사람을 공정하게 대하려 한다" },
+    { id: "MC4", scale: "coop", reverse: false, text: "도움이 필요한 사람을 보면 내 일처럼 신경이 쓰인다" },
+  ],
+  meaning: [
+    { id: "MT1", scale: "meaning", reverse: false, text: "무언가에 푹 빠지면 시간 가는 줄 모르고 나를 잊을 만큼 몰입한다" },
+    { id: "MT2", scale: "meaning", reverse: true, text: "눈앞의 현실 말고 다른 의미를 찾는 데는 별로 관심이 없다" },
+    { id: "MT3", scale: "meaning", reverse: false, text: "자연이나 음악 앞에서 나보다 큰 무언가와 이어진 느낌을 받을 때가 있다" },
+    { id: "MT4", scale: "meaning", reverse: false, text: "일상의 작은 일에서도 깊은 의미를 느낄 때가 있다" },
+  ],
 };
 
 export const LOVE_ITEMS: LoveItem[] = LOVE_SCALES.flatMap((s) => BY_SCALE[s.id]);
 
-/** 화면에 묻는 순서: 같은 척도·같은 묶음이 붙지 않게 네 묶음을 번갈아 놓는다 */
-const PAGE_SCALE_ORDER: LoveScaleId[] = ["warmth", "worry", "soft", "novelty", "disclosure", "trust", "forgive", "humor", "love", "anger", "lead", "gratitude"];
+/** 화면에 묻는 순서: 같은 척도·같은 묶음이 붙지 않게 여섯 묶음을 번갈아 놓는다 */
+const PAGE_SCALE_ORDER: LoveScaleId[] = [
+  "warmth", "seeking", "worry", "soft", "novelty", "selfdir", "disclosure", "caution", "trust", "coop",
+  "forgive", "humor", "attach", "love", "meaning", "anger", "lead", "persist", "gratitude",
+];
 
 /**
- * 4쪽 × 12문항. p쪽에는 척도마다 한 문항씩, 척도 순서에 따라 (p + 척도 번호) % 4번째 문항을 놓는다.
- * 그래서 한 쪽에 정문항과 역문항이 섞인다
+ * 4바퀴 × 19문항을 바퀴마다 둘로 나눠 8쪽(10·9문항). 바퀴 r에는 척도마다 한 문항씩, (r + 척도 번호) % 4번째 문항을 놓는다.
+ * 그래서 같은 척도 문항은 한 쪽에 하나뿐이고, 한 쪽에 정문항과 역문항이 섞인다
  */
-export const LOVE_PAGES: LoveItem[][] = [0, 1, 2, 3].map((p) => PAGE_SCALE_ORDER.map((id, s) => BY_SCALE[id][(p + s) % 4]));
+export const LOVE_PAGES: LoveItem[][] = [0, 1, 2, 3].flatMap((r) => {
+  const round = PAGE_SCALE_ORDER.map((id, s) => BY_SCALE[id][(r + s) % 4]);
+  const half = Math.ceil(round.length / 2);
+  return [round.slice(0, half), round.slice(half)];
+});
 
-export const LOVE_MINUTES = 7;
+export const LOVE_MINUTES = 10;

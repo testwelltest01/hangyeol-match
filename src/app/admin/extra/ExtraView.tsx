@@ -1,13 +1,14 @@
 import type { GenderKey } from "@/lib/admin/trends";
 import type { ExtraRow } from "@/lib/extra/server";
-import { cronbachAlpha, meanSd } from "@/lib/extra/stats";
+import { cronbachAlpha, meanSd, pearson } from "@/lib/extra/stats";
 import { EXTRA_TESTS, topScales, type ExtraTest } from "@/lib/extra/tests";
 import { LOVE_GROUPS, LOVE_ITEMS, LOVE_SCALES, LOVE_VERSION } from "@/lib/love/items";
 import type { LoveAnswers, LoveScores } from "@/lib/love/score";
 import { AdminShell, AdminTitle, Empty, Panel, TableWrap, td, th } from "../ui";
 
 export type Row = ExtraRow & { user_id: string; gender: GenderKey };
-export type LoveRowG = { user_id: string; version: string; answers: LoveAnswers; scores: LoveScores; status: string; gender: GenderKey };
+/** 연애 상황 검사 시도 하나 (다시 검사하면 한 사람에 여러 줄, 오래된 순) */
+export type LoveRowG = { user_id: string; version: string; answers: LoveAnswers; scores: LoveScores; status: string; created_at: string; gender: GenderKey };
 
 const fmt = (v: number, d = 2) => (Number.isFinite(v) ? v.toFixed(d) : "–");
 const ms = (vals: number[]) => {
@@ -154,9 +155,16 @@ function TestPanel({ test, all }: { test: ExtraTest; all: Row[] }) {
   );
 }
 
-/** 연애 상황 검사(IPIP 12척도 × 4문항): 척도별 평균(표준편차)·α와 보고서 상태 */
+/**
+ * 연애 상황 검사(관계 척도 IPIP 12 + 기질·성격 한결 문항 7, 척도마다 4문항): 지금 문항 버전의 사람마다 가장 최근 시도로 평균(표준편차)·α,
+ * 두 번 이상 검사한 사람은 첫 시도와 가장 최근 시도의 상관(재검사 r)
+ */
 function LovePanel({ all }: { all: LoveRowG[] }) {
-  const rows = all.filter((r) => r.version === LOVE_VERSION);
+  const attempts = all.filter((r) => r.version === LOVE_VERSION);
+  const byUser = new Map<string, LoveRowG[]>();
+  for (const r of attempts) byUser.set(r.user_id, [...(byUser.get(r.user_id) ?? []), r]);
+  const rows = [...byUser.values()].map((list) => list[list.length - 1]);
+  const retested = [...byUser.values()].filter((list) => list.length >= 2);
   const male = rows.filter((r) => r.gender === "male");
   const female = rows.filter((r) => r.gender === "female");
   const count = (st: string) => rows.filter((r) => r.status === st).length;
@@ -164,7 +172,7 @@ function LovePanel({ all }: { all: LoveRowG[] }) {
     <Panel
       className="mt-4"
       title={`연애 상황 보고서 · ${rows.length}명`}
-      lead={`남 ${male.length} · 여 ${female.length} · 문항 버전 ${LOVE_VERSION} · 보고서 완료 ${count("done")} · 쓰는 중 ${count("pending")} · 실패 ${count("failed")}. IPIP 척도마다 4문항, 평균(표준편차)은 1~5점.`}
+      lead={`남 ${male.length} · 여 ${female.length} · 문항 버전 ${LOVE_VERSION} · 검사 ${attempts.length}번(두 번 이상 ${retested.length}명) · 최근 보고서 완료 ${count("done")} · 쓰는 중 ${count("pending")} · 실패 ${count("failed")}. 사람마다 가장 최근 검사로 계산, 평균(표준편차)은 1~5점.`}
     >
       {rows.length === 0 ? (
         <Empty>아직 응답이 없어요.</Empty>
@@ -179,10 +187,12 @@ function LovePanel({ all }: { all: LoveRowG[] }) {
                 <th className={`${th} text-right`}>남</th>
                 <th className={`${th} text-right`}>여</th>
                 <th className={`${th} text-right`}>α</th>
+                <th className={`${th} text-right`}>재검사 r</th>
               </tr>
             </thead>
             <tbody className="tabular-nums [&_td]:whitespace-nowrap">
               {LOVE_SCALES.map((s) => {
+                const retest = pearson(retested.map((list) => [list[0].scores[s.id], list[list.length - 1].scores[s.id]]));
                 const items = LOVE_ITEMS.filter((i) => i.scale === s.id);
                 const alpha = cronbachAlpha(rows.map((r) => items.map((i) => (i.reverse ? 6 - r.answers[i.id] : r.answers[i.id]))));
                 const v = (rs: LoveRowG[]) => rs.map((r) => r.scores[s.id]);
@@ -197,12 +207,16 @@ function LovePanel({ all }: { all: LoveRowG[] }) {
                     <td className={`${td} text-right`}>{ms(v(male))}</td>
                     <td className={`${td} text-right`}>{ms(v(female))}</td>
                     <td className={`${td} text-right ${Number.isFinite(alpha) && alpha < 0.6 ? "text-alert" : ""}`}>{fmt(alpha)}</td>
+                    <td className={`${td} text-right ${Number.isFinite(retest) && retest < 0.6 ? "text-alert" : ""}`}>{fmt(retest)}</td>
                   </tr>
                 );
               })}
             </tbody>
           </TableWrap>
-          <p className="mt-3 text-sm text-muted">α가 .60보다 낮으면 빨간색이에요. 역문항은 뒤집어서 계산해요.</p>
+          <p className="mt-3 text-sm text-muted">
+            α·재검사 r이 .60보다 낮으면 빨간색이에요. 역문항은 뒤집어서 계산해요. 재검사 r은 두 번 이상 검사한 사람이 3명 이상일 때 첫 검사와 가장 최근 검사의 피어슨
+            상관이에요(검사 간격은 사람마다 달라요). 기질·성격 7척도는 한결이 쓴 시범 문항이에요.
+          </p>
         </>
       )}
     </Panel>

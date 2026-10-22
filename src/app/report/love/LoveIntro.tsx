@@ -1,6 +1,8 @@
 import { PrimaryLink } from "@/components/buttons";
-import { LOVE_ITEMS, LOVE_MINUTES, LOVE_SCALES } from "@/lib/love/items";
+import { LOVE_GROUPS, LOVE_ITEMS, LOVE_MINUTES, LOVE_SCALES } from "@/lib/love/items";
 import { SITUATIONS } from "@/lib/love/prompt";
+
+const RELATION_COUNT = LOVE_SCALES.filter((s) => LOVE_GROUPS.find((g) => g.id === s.group)?.part === "relation").length;
 
 /** 아직 검사를 하지 않았을 때: 무엇을 받는지 먼저 보여준다 */
 export function LoveIntro() {
@@ -29,10 +31,10 @@ export function LoveIntro() {
         <h2 className="text-[13px] font-semibold text-muted">이렇게 만들어요</h2>
         <ul className="mt-3 space-y-2.5 text-[15px] leading-relaxed text-ink-soft">
           <li>
-            세계적으로 쓰이는 공개 성격검사(IPIP)에서 연애 장면으로 풀기 좋은 {LOVE_SCALES.length}가지(마음 여는 속도, 속마음 꺼내기, 믿음, 걱정, 털어내기 등)를
-            골라 우리말로 옮겼어요.
+            세계적으로 쓰이는 공개 성격검사(IPIP)에서 연애 장면으로 풀기 좋은 관계 척도 {RELATION_COUNT}가지(마음 여는 속도, 속마음 꺼내기, 믿음, 걱정, 털어내기 등)를 골라 우리말로 옮겼어요.
           </li>
-          <li>계정당 한 번 써 드려요. 답을 낸 뒤에는 바꿀 수 없으니 평소의 나를 떠올리며 답해주세요.</li>
+          <li>여기에 타고난 기질(설렘 찾기, 조심성, 정에 기대기, 끈기)과 다듬어 가는 성격(스스로 서기, 함께하는 마음, 더 큰 의미)을 보는 한결 문항을 더해, 처음 반응과 그걸 다루는 방식을 함께 풀어요.</li>
+          <li>마음이 달라졌다 싶으면 다시 검사할 수 있어요. 다시 하면 보고서를 새로 써 드려요.</li>
           <li>나만 볼 수 있고, 추천 계산에는 쓰지 않아요.</li>
         </ul>
       </section>

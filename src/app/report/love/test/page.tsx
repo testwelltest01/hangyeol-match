@@ -27,8 +27,9 @@ async function LoveTestGate() {
   const userId = await getUserId();
   const progress = await getProgress(userId);
   if (progress !== "report") redirect(PROGRESS_PATH[progress]);
-  // 계정당 한 번: 이미 냈으면 보고서 화면으로
-  const { data } = await createAdminClient().from("love_reports").select("status").eq("user_id", userId!).maybeSingle();
-  if (data) redirect("/report/love");
-  return <LoveTestForm userId={userId!} />;
+  // 보고서를 쓰는 중이면 다 쓸 때까지 다시 검사하지 않는다. 다시 검사는 처음처럼 빈 답에서 시작한다 (이전 답에 끌리지 않게)
+  const { data } = await createAdminClient().from("love_reports").select("id").eq("user_id", userId!).eq("status", "pending").limit(1);
+  if (data?.length) redirect("/report/love");
+  const { count } = await createAdminClient().from("love_reports").select("id", { count: "exact", head: true }).eq("user_id", userId!);
+  return <LoveTestForm userId={userId!} again={(count ?? 0) > 0} />;
 }

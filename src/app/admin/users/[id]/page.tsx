@@ -20,7 +20,7 @@ import { extraCards } from "@/lib/extra/cards";
 import { loadExtraResults } from "@/lib/extra/server";
 import { EXTRA_TESTS } from "@/lib/extra/tests";
 import { LOVE_SCALES } from "@/lib/love/items";
-import { loadLoveReport, type LoveStatus } from "@/lib/love/server";
+import { loadLoveReports, type LoveStatus } from "@/lib/love/server";
 
 const LOVE_STATUS_LABEL: Record<LoveStatus, string> = { pending: "쓰는 중", done: "완료", failed: "실패" };
 import { ResolveButton, SuspendButton } from "../../AdminButtons";
@@ -85,7 +85,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
   const user = authData?.user;
   if (!user) notFound();
 
-  const [setup, scoreRow, flag, ratings, reactions, reports, feedback, recsReceived, recsShown, allPhotos, attempts, extra, chats, illus, love] = await Promise.all([
+  const [setup, scoreRow, flag, ratings, reactions, reports, feedback, recsReceived, recsShown, allPhotos, attempts, extra, chats, illus, loveRows] = await Promise.all([
     loadMySetup(id),
     admin.from("test_scores").select("scores, version, computed_at").eq("user_id", id).maybeSingle(),
     admin.from("user_flags").select("suspended_at, reason").eq("user_id", id).maybeSingle(),
@@ -116,8 +116,9 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
       .eq("user_id", id)
       .order("created_at", { ascending: false })
       .limit(20),
-    loadLoveReport(admin, id),
+    loadLoveReports(admin, id),
   ]);
+  const love = loveRows[0] ?? null;
 
   // 관계·신고에 나오는 다른 사람의 닉네임
   const rx = (reactions.data ?? []) as Reaction[];
@@ -548,7 +549,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
       <Panel
         className="mt-4"
         title="연애 상황 보고서"
-        lead="IPIP 48문항 척도 평균 (1~5)과 AI 보고서 상태. 보고서 글은 회원만 봐요. 추천에는 쓰지 않아요."
+        lead="가장 최근 검사의 척도 평균 (1~5, 관계 척도는 IPIP, 기질·성격은 한결 문항)과 AI 보고서 상태. 보고서 글은 회원만 봐요. 추천에는 쓰지 않아요."
       >
         {love ? (
           <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
@@ -556,6 +557,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
               {[
                 ["상태", LOVE_STATUS_LABEL[love.status]],
                 ["검사", `${kstTime(love.created_at)} (${love.version})`],
+                ["검사 횟수", loveRows.length > 1 ? `${loveRows.length}번 (처음 ${kstTime(loveRows[loveRows.length - 1].created_at)})` : "1번"],
                 ["쓰기 시도", `${love.tries}번 · 마지막 ${kstTime(love.started_at)}`],
                 ["완료", love.completed_at ? kstTime(love.completed_at) : "–"],
                 ["모델", love.model ? `${love.model} · ${love.prompt_version}` : "–"],
@@ -571,10 +573,10 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
                 ))}
             </ul>
             <ul className="grid gap-x-6 text-sm tabular-nums sm:grid-cols-2">
-              {LOVE_SCALES.map((s) => (
+              {LOVE_SCALES.filter((s) => typeof love.scores[s.id] === "number").map((s) => (
                 <li key={s.id} className="flex justify-between gap-3 border-b border-line/70 py-1.5">
                   <span>{s.label}</span>
-                  <span>{love.scores[s.id]?.toFixed(2)}</span>
+                  <span>{love.scores[s.id].toFixed(2)}</span>
                 </li>
               ))}
             </ul>

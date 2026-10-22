@@ -27,3 +27,20 @@ export function cronbachAlpha(rows: number[][]): number {
   if (totalVar === 0) return NaN;
   return (k / (k - 1)) * (1 - itemVar / totalVar);
 }
+
+/** 피어슨 상관 (재검사 신뢰도용). 짝이 3쌍 미만이거나 한쪽 분산이 0이면 NaN */
+export function pearson(pairs: [number, number][]): number {
+  const n = pairs.length;
+  if (n < 3) return NaN;
+  const mx = pairs.reduce((a, [x]) => a + x, 0) / n;
+  const my = pairs.reduce((a, [, y]) => a + y, 0) / n;
+  let sxy = 0;
+  let sxx = 0;
+  let syy = 0;
+  for (const [x, y] of pairs) {
+    sxy += (x - mx) * (y - my);
+    sxx += (x - mx) ** 2;
+    syy += (y - my) ** 2;
+  }
+  return sxx === 0 || syy === 0 ? NaN : sxy / Math.sqrt(sxx * syy);
+}

@@ -5,7 +5,7 @@ import { Shell } from "@/components/Shell";
 import type { Answers } from "@/lib/items";
 import { extraCards } from "@/lib/extra/cards";
 import { loadExtraResults } from "@/lib/extra/server";
-import { loadLoveReport } from "@/lib/love/server";
+import { loadLoveReports, pickLove } from "@/lib/love/server";
 import { MIN_FRIEND_RATINGS_TO_SHOW } from "@/lib/match/rules";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
 import { buildReport } from "@/lib/report";
@@ -41,7 +41,7 @@ async function ReportGate() {
   const [{ data: ratings }, extra, love] = await Promise.all([
     admin.from("friend_ratings").select("answers").eq("user_id", userId!),
     loadExtraResults(admin, userId!),
-    loadLoveReport(admin, userId!),
+    loadLoveReports(admin, userId!).then(pickLove),
   ]);
   const friends = aggregateFriendRatings((ratings ?? []).map((r) => r.answers as Answers));
   const showFriends = friends.count >= MIN_FRIEND_RATINGS_TO_SHOW;
@@ -55,7 +55,7 @@ async function ReportGate() {
       minFriendCount={MIN_FRIEND_RATINGS_TO_SHOW}
       inviteToken={invite?.token ?? null}
       extras={extraCards(extra)}
-      love={{ status: love?.status ?? "none", headline: love?.report?.headline ?? null }}
+      love={{ status: love.latest?.status ?? "none", headline: love.lastDone?.report.headline ?? null }}
     />
   );
 }

@@ -42,7 +42,7 @@ export function LoveProgress({ status, error }: { status: "pending" | "failed"; 
       <div className="rounded-[22px] bg-surface px-5 py-6 ring-1 ring-line/80">
         <p className="text-[1.05rem] font-semibold text-ink">보고서를 다 쓰지 못했어요</p>
         <p className="mt-1.5 text-[15px] leading-relaxed text-ink-soft">{error ?? "잠시 후 다시 시도해주세요."}</p>
-        <p className="mt-3 text-[13.5px] text-muted">답은 그대로 남아 있어요. 다시 써도 &lsquo;계정당 한 번&rsquo;에 세지 않아요.</p>
+        <p className="mt-3 text-[13.5px] text-muted">답은 그대로 남아 있어요. 다시 써도 검사 횟수에 세지 않아요.</p>
       </div>
       {message && (
         <p role="alert" className="text-alert">

@@ -1,14 +1,18 @@
 import Link from "next/link";
 import { IconDoc } from "@/components/icons";
 import { PendingChevron } from "@/components/LinkPending";
+import { LOVE_ITEMS } from "@/lib/love/items";
 
 export type LoveEntryState = { status: "none" | "pending" | "failed" | "done"; headline: string | null };
 
 const TEXT: Record<LoveEntryState["status"], { title: string; sub: string }> = {
-  none: { title: "연애 상황 보고서 받기", sub: "다툴 때, 연락이 뜸할 때, 화해할 때의 나를 10가지 장면으로 풀어 드려요. 48문항에 답하면 AI가 써요." },
+  none: {
+    title: "연애 상황 보고서 받기",
+    sub: `다툴 때, 연락이 뜸할 때, 화해할 때의 나를 10가지 장면으로 풀어 드려요. ${LOVE_ITEMS.length}문항에 답하면 AI가 써요.`,
+  },
   pending: { title: "연애 상황 보고서를 쓰고 있어요", sub: "1~2분쯤 걸려요. 눌러서 확인해 보세요." },
   failed: { title: "연애 상황 보고서를 다 쓰지 못했어요", sub: "답은 그대로 있어요. 눌러서 다시 써 보세요." },
-  done: { title: "내 연애 상황 보고서", sub: "10가지 장면에서 나는 어떤지 다시 볼 수 있어요." },
+  done: { title: "내 연애 상황 보고서", sub: "10가지 장면에서 나는 어떤지 다시 보거나, 다시 검사할 수 있어요." },
 };
 
 /** 내 결 맨 위: 연애 상황 보고서 입구 (상태에 따라 문구만 바뀐다) */
