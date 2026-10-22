@@ -19,8 +19,21 @@ function subscribe(cb: () => void) {
 const readHash = () => window.location.hash.slice(1);
 const noHash = () => "";
 
-/** syncHash=false: 관리자 화면처럼 주소의 #를 다른 바로가기가 쓰는 곳에서는 탭을 화면 안에서만 기억한다. sticky=false면 탭 줄을 붙이지 않는다 */
-export function ReportTabs({ tabs, syncHash = true, sticky = true }: { tabs: ReportTab[]; syncHash?: boolean; sticky?: boolean }) {
+/**
+ * syncHash=false: 관리자 화면처럼 주소의 #를 다른 바로가기가 쓰는 곳에서는 탭을 화면 안에서만 기억한다. sticky=false면 탭 줄을 붙이지 않는다.
+ * label: 화면 읽기 프로그램용 탭 묶음 이름 (연애 상황 보고서도 이 탭을 쓴다)
+ */
+export function ReportTabs({
+  tabs,
+  syncHash = true,
+  sticky = true,
+  label = "내 결",
+}: {
+  tabs: ReportTab[];
+  syncHash?: boolean;
+  sticky?: boolean;
+  label?: string;
+}) {
   const hash = useSyncExternalStore(subscribe, readHash, noHash);
   const [local, setLocal] = useState(tabs[0].id);
   const wanted = syncHash ? hash : local;
@@ -66,7 +79,7 @@ export function ReportTabs({ tabs, syncHash = true, sticky = true }: { tabs: Rep
       <div
         ref={listRef}
         role="tablist"
-        aria-label="내 결"
+        aria-label={label}
         onKeyDown={onKeyDown}
         className={`-mx-5 flex gap-1 overflow-x-auto border-b border-line/80 bg-paper/95 px-4 backdrop-blur-md [scrollbar-width:none] ${
           sticky ? "sticky top-[calc(52px+env(safe-area-inset-top))] z-30" : ""

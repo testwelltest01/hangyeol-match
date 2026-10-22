@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { IconCheck } from "@/components/icons";
 import { ShareLink } from "@/components/ShareLink";
+import { ReportTabs } from "@/app/report/ReportTabs";
+import { SceneCarousel } from "./SceneCarousel";
 import { LOVE_GROUPS, LOVE_SCALES } from "@/lib/love/items";
 import { SITUATIONS, type LoveReport, type Scene, type SituationId } from "@/lib/love/prompt";
 import { SCENE_IMAGE_NOTE } from "@/lib/love/scenes";
@@ -30,19 +32,19 @@ function ScaleTrack({ label, low, high, score }: { label: string; low: string; h
   );
 }
 
-function Block({ title, lead, children }: { title: string; lead?: string; children: ReactNode }) {
+function Part({ title, lead, children }: { title: string; lead?: string; children: ReactNode }) {
   return (
-    <section className="mt-10">
+    <section>
       <h2 className="px-1 text-[1.05rem] font-semibold text-ink">{title}</h2>
       {lead && <p className="mt-1 px-1 text-[14px] leading-relaxed text-muted">{lead}</p>}
-      <div className="mt-4">{children}</div>
+      <div className="mt-3">{children}</div>
     </section>
   );
 }
 
 function SceneCard({ n, id, title, scene, image }: { n: number; id: string; title: string; scene: Scene; image?: string }) {
   return (
-    <li id={`scene-${id}`} className="scroll-mt-4 overflow-hidden rounded-[22px] bg-surface px-5 py-6 ring-1 ring-line/80">
+    <article id={`scene-${id}`} className="overflow-hidden rounded-[22px] bg-surface px-5 py-6 ring-1 ring-line/80">
       {image && (
         <figure className="relative -mx-5 -mt-6 mb-5">
           {/* eslint-disable-next-line @next/next/no-img-element -- Supabase 공개 버킷의 장면 사진 (모든 보고서가 같이 쓴다) */}
@@ -74,12 +76,12 @@ function SceneCard({ n, id, title, scene, image }: { n: number; id: string; titl
           {scene.say}
         </blockquote>
       </figure>
-    </li>
+    </article>
   );
 }
 
 /**
- * 다 쓴 보고서. 한 줄 요약 → 타고난 기질과 다듬어 가는 성격 → 강점 → 장면 10가지 → 잘 맞는 결 → 마음의 결(척도) → 한 가지.
+ * 다 쓴 보고서. 한 줄 요약 → 화면 안 탭(장면 10가지 슬라이드 · 나의 연애 결(기질·성격, 강점, 잘 맞는 결, 한 가지) · 검사 결과) → 안내.
  * retest면 맨 아래에 '다시 검사하기', share면 그 아래에 이 검사를 친구에게 공유하는 버튼(가입 없이 받는 /love)
  */
 export function LoveReportView({
@@ -112,77 +114,90 @@ export function LoveReportView({
       <h1 className="mt-1.5 font-serif text-[1.8rem] font-bold leading-snug text-ink">{report.headline}</h1>
       <p className="mt-4 text-[15.5px] leading-relaxed text-ink-soft">{report.summary}</p>
 
-      {report.nature && (
-        <Block title="타고난 기질, 다듬어 가는 성격" lead="처음 반응이 어느 쪽으로 기우는지(기질)와, 그 반응을 살면서 어떻게 다루게 됐는지(성격)를 함께 봤어요.">
-          <p className="rounded-[22px] bg-surface px-5 py-5 text-[15px] leading-relaxed text-ink ring-1 ring-line/80">{report.nature}</p>
-        </Block>
-      )}
-
-      <Block title="연애에서 나의 강점">
-        <ul className="space-y-3 rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
-          {report.strengths.map((s) => (
-            <li key={s} className="flex gap-3 text-[15px] leading-relaxed text-ink">
-              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-moss text-white">
-                <IconCheck size={12} strong />
-              </span>
-              {s}
-            </li>
-          ))}
-        </ul>
-      </Block>
-
-      <Block title="장면별로 보면" lead="연애에서 자주 만나는 10가지 장면이에요. 궁금한 장면부터 눌러 보세요.">
-        <nav aria-label="장면 바로가기" className="flex flex-wrap gap-2">
-          {SITUATIONS.map((s, i) => (
-            <a
-              key={s.id}
-              href={`#scene-${s.id}`}
-              className="rounded-full bg-surface px-3 py-1.5 text-[13.5px] text-ink-soft ring-1 ring-line/80 hover:bg-mist"
-            >
-              <span className="mr-1 text-indigo">{i + 1}</span>
-              {s.short}
-            </a>
-          ))}
-        </nav>
-        <ol className="mt-5 space-y-4">
-          {SITUATIONS.map((s, i) => (
-            <SceneCard key={s.id} n={i + 1} id={s.id} title={s.title} scene={report.situations[s.id]} image={images[s.id]} />
-          ))}
-        </ol>
-      </Block>
-
-      <Block title="나와 결이 맞는 사람">
-        <div className="space-y-5 rounded-[22px] bg-surface px-5 py-6 ring-1 ring-line/80 text-[15px] leading-relaxed">
-          <div>
-            <p className="text-[13px] font-semibold text-moss">잘 맞는 결</p>
-            <p className="mt-1 text-ink">{report.match.good}</p>
-          </div>
-          <div className="border-t border-line/70 pt-5">
-            <p className="text-[13px] font-semibold text-indigo">먼저 이야기해 두면 좋은 결</p>
-            <p className="mt-1 text-ink">{report.match.careful}</p>
-          </div>
-        </div>
-      </Block>
-
-      <Block title={`마음의 결 ${shown.length}가지`} lead="보고서의 바탕이 된 검사 결과예요. 점이 가까운 쪽이 나에 더 가까워요. 좋고 나쁨이 아니라 방향의 차이예요.">
-        <div className="space-y-4">
-          {LOVE_GROUPS.filter((g) => shown.some((s) => s.group === g.id)).map((g) => (
-            <div key={g.id} className="rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
-              <h3 className="text-[13px] font-semibold text-muted">{g.label}</h3>
-              <div className="mt-3 space-y-5">
-                {shown.filter((s) => s.group === g.id).map((s) => (
-                  <ScaleTrack key={s.id} label={s.label} low={s.low} high={s.high} score={scores[s.id]} />
-                ))}
+      {/* 길어지지 않게 화면 안 탭 3개로 나눈다: 장면(옆으로 밀어 한 장씩) · 나의 연애 결 · 검사 결과. 고른 탭은 주소 #에 */}
+      <ReportTabs
+        label="연애 상황 보고서"
+        tabs={[
+          {
+            id: "scenes",
+            label: "장면 10가지",
+            content: (
+              <>
+                <p className="mb-4 px-1 text-[14px] leading-relaxed text-muted">연애에서 자주 만나는 장면이에요. 옆으로 밀어 넘겨 보세요.</p>
+                <SceneCarousel labels={SITUATIONS.map((s) => s.short)}>
+                  {SITUATIONS.map((s, i) => (
+                    <SceneCard key={s.id} n={i + 1} id={s.id} title={s.title} scene={report.situations[s.id]} image={images[s.id]} />
+                  ))}
+                </SceneCarousel>
+              </>
+            ),
+          },
+          {
+            id: "summary",
+            label: "나의 연애 결",
+            content: (
+              <div className="space-y-8">
+                {report.nature && (
+                  <Part title="타고난 기질, 다듬어 가는 성격" lead="처음 반응이 어느 쪽으로 기우는지(기질)와, 그 반응을 살면서 어떻게 다루게 됐는지(성격)를 함께 봤어요.">
+                    <p className="rounded-[22px] bg-surface px-5 py-5 text-[15px] leading-relaxed text-ink ring-1 ring-line/80">{report.nature}</p>
+                  </Part>
+                )}
+                <Part title="연애에서 나의 강점">
+                  <ul className="space-y-3 rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
+                    {report.strengths.map((s) => (
+                      <li key={s} className="flex gap-3 text-[15px] leading-relaxed text-ink">
+                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-moss text-white">
+                          <IconCheck size={12} strong />
+                        </span>
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                </Part>
+                <Part title="나와 결이 맞는 사람">
+                  <div className="space-y-5 rounded-[22px] bg-surface px-5 py-6 text-[15px] leading-relaxed ring-1 ring-line/80">
+                    <div>
+                      <p className="text-[13px] font-semibold text-moss">잘 맞는 결</p>
+                      <p className="mt-1 text-ink">{report.match.good}</p>
+                    </div>
+                    <div className="border-t border-line/70 pt-5">
+                      <p className="text-[13px] font-semibold text-indigo">먼저 이야기해 두면 좋은 결</p>
+                      <p className="mt-1 text-ink">{report.match.careful}</p>
+                    </div>
+                  </div>
+                </Part>
+                <section className="rounded-[22px] bg-indigo/5 px-5 py-6 ring-1 ring-indigo/15">
+                  <h2 className="text-[13px] font-semibold text-indigo">더 편한 연애를 위해 한 가지만</h2>
+                  <p className="mt-2 font-serif text-[1.1rem] leading-relaxed text-ink">{report.one_thing}</p>
+                </section>
               </div>
-            </div>
-          ))}
-        </div>
-      </Block>
-
-      <section className="mt-10 rounded-[22px] bg-indigo/5 px-5 py-6 ring-1 ring-indigo/15">
-        <h2 className="text-[13px] font-semibold text-indigo">더 편한 연애를 위해 한 가지만</h2>
-        <p className="mt-2 font-serif text-[1.1rem] leading-relaxed text-ink">{report.one_thing}</p>
-      </section>
+            ),
+          },
+          {
+            id: "scores",
+            label: `검사 결과 ${shown.length}가지`,
+            content: (
+              <>
+                <p className="mb-4 px-1 text-[14px] leading-relaxed text-muted">
+                  보고서의 바탕이 된 검사 결과예요. 점이 가까운 쪽이 나에 더 가까워요. 좋고 나쁨이 아니라 방향의 차이예요.
+                </p>
+                <div className="space-y-4">
+                  {LOVE_GROUPS.filter((g) => shown.some((s) => s.group === g.id)).map((g) => (
+                    <div key={g.id} className="rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
+                      <h3 className="text-[13px] font-semibold text-muted">{g.label}</h3>
+                      <div className="mt-3 space-y-5">
+                        {shown.filter((s) => s.group === g.id).map((s) => (
+                          <ScaleTrack key={s.id} label={s.label} low={s.low} high={s.high} score={scores[s.id]} />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ),
+          },
+        ]}
+      />
 
       <p className="mt-8 px-1 text-[13px] leading-relaxed text-muted">
         공개 성격검사(IPIP) 문항과 한결이 만든 기질·성격 문항으로 잰 결과{guest ? "" : ", 기본 검사 결과"}를 바탕으로 AI(OpenAI)가 쓴 보고서예요
