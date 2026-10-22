@@ -10,15 +10,21 @@ import { getUserId } from "@/lib/supabase/server";
 
 type Result = { ok: true } | { ok: false; error: string };
 
-/** 검사(다시 검사 포함)를 낼 수 있는 횟수: 24시간에 이만큼 */
+/** 검사(다시 검사 포함)를 낼 수 있는 횟수: 24시간에 이만큼. 저장에 성공한 검사만 센다 (DB의 love_reports 줄 수) */
 const SUBMITS_PER_DAY = 3;
+
+/** 저장 실패를 로그에 남긴다 (Vercel 함수 로그에서 원인 확인: 42P01 표 없음, 42703 칸 없음, 23514 동의 종류 검사 = SQL 미적용) */
+function logDbError(where: string, error: { code?: string; message?: string } | null) {
+  if (error) console.error(`love ${where} failed`, error.code, error.message);
+}
 
 const CAP_ERROR = "오늘은 보고서 요청이 많아 다 쓰지 못했어요. 내일 이 화면에서 '다시 쓰기'를 눌러주세요.";
 const BUSY_ERROR = "지금 보고서를 쓰고 있어요. 다 쓴 뒤에 다시 검사할 수 있어요.";
 
 /**
  * 연애 상황 검사 제출 (처음·다시 검사 모두): 답을 검사·채점해 새 줄로 저장하고, 응답 뒤 AI가 보고서를 쓰기 시작한다.
- * 이전 결과는 지우지 않는다(재검사 분석용, 화면에는 가장 최근 보고서). 국외 이전 동의 필수, 24시간에 3번까지.
+ * 이전 결과는 지우지 않는다(재검사 분석용, 화면에는 가장 최근 보고서). 국외 이전 동의 필수, 저장된 검사 기준 24시간에 3번까지
+ * (저장에 실패한 시도는 세지 않는다. allow()는 연타·자동 요청만 막는다).
  * '쓰는 중'은 한 사람에 하나만(DB 부분 유일 인덱스). 하루 상한이 찼으면 답만 저장하고 실패로 둔다 (다음 날 '다시 쓰기')
  */
 export async function submitLoveTest(answers: unknown, agree: unknown): Promise<Result> {
@@ -29,14 +35,21 @@ export async function submitLoveTest(answers: unknown, agree: unknown): Promise<
   const valid = validateLove(answers);
   if (!valid) return { ok: false, error: "모든 문항에 답해주세요." };
 
+  if (!(await allow(`love-burst:${userId}`, 10, 600))) return { ok: false, error: "요청이 너무 많아요. 잠시 후 다시 시도해주세요." };
+
   const admin = createAdminClient();
   const { data: busy } = await admin.from("love_reports").select("id").eq("user_id", userId).eq("status", "pending").limit(1);
   if (busy?.length) return { ok: false, error: BUSY_ERROR };
-  if (!(await allow(`love-submit:${userId}`, SUBMITS_PER_DAY, 86400))) {
-    return { ok: false, error: `검사는 하루 ${SUBMITS_PER_DAY}번까지 낼 수 있어요. 내일 다시 해주세요.` };
-  }
+  const { count: today, error: countError } = await admin
+    .from("love_reports")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .gte("created_at", new Date(Date.now() - 86400_000).toISOString());
+  logDbError("count", countError);
+  if ((today ?? 0) >= SUBMITS_PER_DAY) return { ok: false, error: `검사는 하루 ${SUBMITS_PER_DAY}번까지 낼 수 있어요. 내일 다시 해주세요.` };
 
   const { error: consentError } = await admin.from("consents").upsert({ user_id: userId, kind: "love_report" });
+  logDbError("consent", consentError);
   if (consentError) return { ok: false, error: "저장하지 못했어요. 잠시 후 다시 시도해주세요." };
 
   const capped = await overLoveCap(admin);
@@ -55,6 +68,7 @@ export async function submitLoveTest(answers: unknown, agree: unknown): Promise<
   if (error || !row) {
     // 부분 유일 인덱스 충돌 = 다른 창에서 먼저 냈다
     if (error?.code === "23505") return { ok: false, error: BUSY_ERROR };
+    logDbError("insert", error);
     return { ok: false, error: "저장하지 못했어요. 잠시 후 다시 시도해주세요." };
   }
   if (!capped) startLoveReport(userId, row.id as string);
@@ -85,6 +99,7 @@ export async function retryLoveReport(): Promise<Result> {
     .eq("id", row.id)
     .eq("status", "failed")
     .select("id");
+  logDbError("retry", error);
   if (error) return { ok: false, error: error.code === "23505" ? BUSY_ERROR : "다시 쓰지 못했어요. 잠시 후 다시 시도해주세요." };
   if (claimed?.length) startLoveReport(userId, row.id as string);
   return { ok: true };
