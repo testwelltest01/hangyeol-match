@@ -16,6 +16,8 @@ async function nicknameByToken(token: string): Promise<string | null> {
 }
 
 /** 카카오톡에 친구 평가 링크를 보내면 "○○님은 어떤 사람인가요?"로 보이게 한다. 이미지는 같은 폴더의 opengraph-image.png */
+const SHARE_IMAGE = { url: "/opengraph-image.png", width: 1200, height: 630, alt: "한결: 결이 맞는 사람" };
+
 export async function generateMetadata({ params }: PageProps<"/f/[token]">): Promise<Metadata> {
   const { token } = await params;
   const name = await nicknameByToken(token);
@@ -25,8 +27,9 @@ export async function generateMetadata({ params }: PageProps<"/f/[token]">): Pro
     title,
     description,
     robots: { index: false, follow: false },
-    openGraph: { type: "website", siteName: "한결", locale: "ko_KR", title, description },
-    twitter: { card: "summary_large_image", title, description },
+    // openGraph를 여기서 다시 정하면 루트의 그림(app/opengraph-image.png)이 빠지므로 직접 붙인다
+    openGraph: { type: "website", siteName: "한결", locale: "ko_KR", title, description, images: [SHARE_IMAGE] },
+    twitter: { card: "summary_large_image", title, description, images: [SHARE_IMAGE] },
   };
 }
 
