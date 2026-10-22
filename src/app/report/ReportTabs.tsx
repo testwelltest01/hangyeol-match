@@ -82,7 +82,7 @@ export function ReportTabs({
         aria-label={label}
         onKeyDown={onKeyDown}
         className={`-mx-5 flex gap-1 overflow-x-auto border-b border-line/80 bg-paper/95 px-4 backdrop-blur-md [scrollbar-width:none] ${
-          sticky ? "sticky top-[calc(52px+env(safe-area-inset-top))] z-30" : ""
+          sticky ? "sticky top-[calc(52px+env(safe-area-inset-top))] z-30" : "relative"
         }`}
       >
         {tabs.map((t) => {

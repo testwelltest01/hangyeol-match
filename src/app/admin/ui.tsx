@@ -264,7 +264,7 @@ export function Chip({ children, tone = "mist" }: { children: ReactNode; tone?: 
 /** 넓은 표는 표 안에서만 가로로 밀리게 한다 (페이지 전체가 밀리지 않게) */
 export function TableWrap({ children, wide = true }: { children: ReactNode; /** 칸이 많은 표만 최소 폭을 둔다 */ wide?: boolean }) {
   return (
-    <div className="-mx-5 overflow-x-auto px-5">
+    <div className="relative -mx-5 overflow-x-auto px-5">
       <table className={`w-full border-collapse text-left text-sm ${wide ? "min-w-[640px]" : ""}`}>{children}</table>
     </div>
   );
@@ -280,7 +280,7 @@ export function Empty({ children }: { children: ReactNode }) {
 /** 화면 안 바로가기 (긴 화면의 섹션으로) */
 export function JumpLinks({ links }: { links: { href: string; label: string }[] }) {
   return (
-    <nav aria-label="바로가기" className="-mx-5 mt-5 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]">
+    <nav aria-label="바로가기" className="relative -mx-5 mt-5 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]">
       {links.map((l) => (
         <a key={l.href} href={l.href} className="shrink-0 rounded-full bg-surface px-3.5 py-1.5 text-[13.5px] text-ink-soft ring-1 ring-line/80 hover:text-ink">
           {l.label}

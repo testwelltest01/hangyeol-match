@@ -81,7 +81,7 @@ export default function PrivacyPage() {
       </P>
 
       <H>1. 처리 목적, 항목, 보유기간</H>
-      <div className="mt-4 overflow-x-auto">
+      <div className="relative mt-4 overflow-x-auto">
         <table className="w-full min-w-[520px] border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-line text-muted">

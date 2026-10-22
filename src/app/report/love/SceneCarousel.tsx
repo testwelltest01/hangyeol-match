@@ -73,7 +73,7 @@ export function SceneCarousel({ children }: { children: ReactNode }) {
     <section ref={sectionRef} aria-roledescription="carousel" aria-label="장면 10가지" className="scroll-mt-[60px]">
       <div
         ref={trackRef}
-        className="-mx-5 flex snap-x snap-mandatory items-start gap-3 overflow-x-auto overflow-y-hidden scroll-px-5 px-5 transition-[height] duration-300 [scrollbar-width:none]"
+        className="relative -mx-5 flex snap-x snap-mandatory items-start gap-3 overflow-x-auto overflow-y-hidden scroll-px-5 px-5 transition-[height] duration-300 [scrollbar-width:none]"
       >
         {slides.map((slide, i) => (
           <div

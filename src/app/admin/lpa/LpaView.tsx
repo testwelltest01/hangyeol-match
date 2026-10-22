@@ -63,7 +63,7 @@ function ProfilePlot({ set, r, overall }: { set: LpaSet; r: LpaResult; overall: 
   const ticks = Array.from({ length: hi - lo + 1 }, (_, i) => lo + i);
   const path = (vals: number[]) => vals.map((v, j) => `${j ? "L" : "M"}${x(j).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
   return (
-    <div className="-mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0">
+    <div className="relative -mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0">
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full min-w-[560px]" role="img" aria-label="프로필별 지표 평균 그래프">
         {ticks.map((t) => (
           <g key={t}>
