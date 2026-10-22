@@ -7,8 +7,8 @@ import type { LoveAnswers, LoveScores } from "@/lib/love/score";
 import { AdminShell, AdminTitle, Empty, Panel, TableWrap, td, th } from "../ui";
 
 export type Row = ExtraRow & { user_id: string; gender: GenderKey };
-/** 연애 상황 검사 시도 하나 (다시 검사하면 한 사람에 여러 줄, 오래된 순) */
-export type LoveRowG = { user_id: string; version: string; answers: LoveAnswers; scores: LoveScores; status: string; created_at: string; gender: GenderKey };
+/** 연애 상황 검사 시도 하나 (다시 검사하면 한 사람에 여러 줄, 오래된 순). user_id가 없으면 가입 전 비회원 검사 */
+export type LoveRowG = { id: string; user_id: string | null; version: string; answers: LoveAnswers; scores: LoveScores; status: string; created_at: string; gender: GenderKey };
 
 const fmt = (v: number, d = 2) => (Number.isFinite(v) ? v.toFixed(d) : "–");
 const ms = (vals: number[]) => {
@@ -161,8 +161,13 @@ function TestPanel({ test, all }: { test: ExtraTest; all: Row[] }) {
  */
 function LovePanel({ all }: { all: LoveRowG[] }) {
   const attempts = all.filter((r) => r.version === LOVE_VERSION);
+  // 비회원 검사는 한 번이 한 사람이다 (누가 다시 했는지 알 수 없다)
   const byUser = new Map<string, LoveRowG[]>();
-  for (const r of attempts) byUser.set(r.user_id, [...(byUser.get(r.user_id) ?? []), r]);
+  for (const r of attempts) {
+    const key = r.user_id ?? `guest:${r.id}`;
+    byUser.set(key, [...(byUser.get(key) ?? []), r]);
+  }
+  const guests = attempts.filter((r) => !r.user_id).length;
   const rows = [...byUser.values()].map((list) => list[list.length - 1]);
   const retested = [...byUser.values()].filter((list) => list.length >= 2);
   const male = rows.filter((r) => r.gender === "male");
@@ -172,7 +177,7 @@ function LovePanel({ all }: { all: LoveRowG[] }) {
     <Panel
       className="mt-4"
       title={`연애 상황 보고서 · ${rows.length}명`}
-      lead={`남 ${male.length} · 여 ${female.length} · 문항 버전 ${LOVE_VERSION} · 검사 ${attempts.length}번(두 번 이상 ${retested.length}명) · 최근 보고서 완료 ${count("done")} · 쓰는 중 ${count("pending")} · 실패 ${count("failed")}. 사람마다 가장 최근 검사로 계산, 평균(표준편차)은 1~5점.`}
+      lead={`남 ${male.length} · 여 ${female.length} · 가입 전 비회원 ${guests} · 문항 버전 ${LOVE_VERSION} · 검사 ${attempts.length}번(두 번 이상 ${retested.length}명) · 최근 보고서 완료 ${count("done")} · 쓰는 중 ${count("pending")} · 실패 ${count("failed")}. 사람마다 가장 최근 검사로 계산, 평균(표준편차)은 1~5점.`}
     >
       {rows.length === 0 ? (
         <Empty>아직 응답이 없어요.</Empty>

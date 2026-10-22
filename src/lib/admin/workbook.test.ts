@@ -88,6 +88,7 @@ function sample(): ExportData {
     extras: [talkRow],
     love: [
       {
+        id: "l1",
         user_id: A,
         version: "2026-10-v1",
         answers: Object.fromEntries(LOVE_ITEMS.map((i) => [i.id, 4])),
@@ -96,12 +97,22 @@ function sample(): ExportData {
         created_at: "2026-10-17T03:00:00Z",
       },
       {
+        id: "l2",
         user_id: A,
         version: "2026-10-v2",
         answers: Object.fromEntries(LOVE_ITEMS.map((i) => [i.id, 3])),
         scores: Object.fromEntries(LOVE_SCALES.map((s) => [s.id, 3])) as LoveScores,
         status: "pending",
         created_at: "2026-10-18T03:00:00Z",
+      },
+      {
+        id: "g1",
+        user_id: null,
+        version: "2026-10-v2",
+        answers: Object.fromEntries(LOVE_ITEMS.map((i) => [i.id, 5])),
+        scores: Object.fromEntries(LOVE_SCALES.map((s) => [s.id, 3])) as LoveScores,
+        status: "done",
+        created_at: "2026-10-19T03:00:00Z",
       },
     ],
     chatRooms: [
@@ -175,7 +186,9 @@ describe("buildWorkbook", () => {
     expect(items.rowCount).toBe(1 + ALL_ITEMS.length + 29 + LOVE_ITEMS.length);
     const love = wb.getWorksheet("추가 · 연애 상황 보고서")!;
     const loveHeader = (love.getRow(1).values as unknown[]).map(String);
-    expect(love.rowCount).toBe(3);
+    expect(love.rowCount).toBe(4);
+    expect(love.getRow(4).getCell(loveHeader.indexOf("닉네임")).value).toBe("비회원");
+    expect(love.getRow(4).getCell(loveHeader.indexOf("회차")).value).toBe(1);
     expect(love.getRow(2).getCell(loveHeader.indexOf("보고서 상태")).value).toBe("완료");
     expect(love.getRow(2).getCell(loveHeader.indexOf("회차")).value).toBe(1);
     expect(love.getRow(3).getCell(loveHeader.indexOf("회차")).value).toBe(2);

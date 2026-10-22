@@ -10,7 +10,8 @@ export type GenerateResult = { ok: true; report: LoveReport; model: string } | {
 
 export const reportModel = () => process.env.OPENAI_REPORT_MODEL || process.env.OPENAI_VISION_MODEL || "";
 
-export async function writeLoveReport(ctx: LoveContext, userId: string): Promise<GenerateResult> {
+/** who: 남용 감시용 식별자 재료 (회원 id 또는 'guest:<검사 id>', 해시해서 보낸다) */
+export async function writeLoveReport(ctx: LoveContext, who: string): Promise<GenerateResult> {
   const apiKey = process.env.OPENAI_API_KEY;
   const model = reportModel();
   if (!apiKey || !model) return { ok: false, error: "AI 설정이 아직 안 돼 있어요. 잠시 후 다시 시도해주세요." };
@@ -23,7 +24,7 @@ export async function writeLoveReport(ctx: LoveContext, userId: string): Promise
       { role: "user", content: buildUserInput(ctx) },
     ],
     // 남용 감시용 식별자 (회원 id를 그대로 보내지 않고 해시로, 그림 프로필과 같은 방식)
-    safety_identifier: createHash("sha256").update(`hangyeol:${userId}`).digest("hex"),
+    safety_identifier: createHash("sha256").update(`hangyeol:${who}`).digest("hex"),
   };
   const temperature = process.env.OPENAI_TEMPERATURE;
   if (temperature && temperature.toLowerCase() !== "none") body.temperature = Number(temperature);

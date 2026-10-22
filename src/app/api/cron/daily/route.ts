@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { CHAT_BODY_RETENTION_DAYS } from "@/lib/chat/rules";
 import { matchDay } from "@/lib/day";
+import { purgeGuestLove } from "@/lib/love/server";
 import { generateRecommendations } from "@/lib/match/server";
 import { pushMessages } from "@/lib/push/rules";
 import { sendPushMany } from "@/lib/push/server";
@@ -58,6 +59,8 @@ export async function GET(request: Request) {
   const { data: chatPurged } = await admin.rpc("purge_chat_bodies", { p_days: CHAT_BODY_RETENTION_DAYS });
   // 방문 기록은 처리방침의 '접속 로그 3개월'에 맞춰 90일 뒤 지운다
   await admin.from("activity_events").delete().lt("created_at", new Date(Date.now() - 90 * 86_400_000).toISOString());
+  // 가입하지 않은(계정으로 옮기지 않은) 비회원 연애 상황 검사는 30일 뒤 지운다 (처리방침의 보유기간)
+  const loveGuestPurged = await purgeGuestLove(admin).catch(() => 0);
 
-  return Response.json({ day, created, notified, purged, chatPurged: chatPurged ?? 0 });
+  return Response.json({ day, created, notified, purged, chatPurged: chatPurged ?? 0, loveGuestPurged });
 }

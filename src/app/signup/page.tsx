@@ -1,7 +1,10 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { Callout } from "@/components/app-ui";
 import { EmailCodeForm } from "@/components/auth/EmailCodeForm";
+import { GUEST_CLAIM_COOKIE } from "@/lib/love/guest";
 import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
 import { getUserId } from "@/lib/supabase/server";
@@ -32,5 +35,16 @@ export default function SignupPage() {
 
 async function SignupGate() {
   if (await getUserId()) redirect("/start");
-  return <EmailCodeForm mode="signup" />;
+  // 가입 전에 공유 링크로 연애 상황 검사를 했으면(/love/claim이 남긴 쿠키) 가입하면 그 보고서가 계정에 저장된다고 알려준다
+  const fromLove = Boolean((await cookies()).get(GUEST_CLAIM_COOKIE));
+  return (
+    <>
+      {fromLove && (
+        <div className="mt-6">
+          <Callout>가입하면 방금 받은 연애 상황 보고서가 이 계정에 그대로 저장돼요.</Callout>
+        </div>
+      )}
+      <EmailCodeForm mode="signup" />
+    </>
+  );
 }

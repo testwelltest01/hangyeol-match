@@ -92,7 +92,7 @@ export async function submitLoveTest(answers: unknown, agree: unknown): Promise<
     if (error?.code === "23505") return { ok: false, error: BUSY_ERROR };
     return { ok: false, error: await failText("insert", error, "저장하지 못했어요. 잠시 후 다시 시도해주세요.") };
   }
-  if (!capped) startLoveReport(userId, row.id as string);
+  if (!capped) startLoveReport(row.id as string);
   return { ok: true };
 }
 
@@ -124,6 +124,6 @@ export async function retryLoveReport(): Promise<Result> {
     if (error.code === "23505") return { ok: false, error: BUSY_ERROR };
     return { ok: false, error: await failText("retry", error, "다시 쓰지 못했어요. 잠시 후 다시 시도해주세요.") };
   }
-  if (claimed?.length) startLoveReport(userId, row.id as string);
+  if (claimed?.length) startLoveReport(row.id as string);
   return { ok: true };
 }

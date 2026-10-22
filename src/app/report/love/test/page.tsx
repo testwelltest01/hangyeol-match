@@ -31,5 +31,5 @@ async function LoveTestGate() {
   const { data } = await createAdminClient().from("love_reports").select("id").eq("user_id", userId!).eq("status", "pending").limit(1);
   if (data?.length) redirect("/report/love");
   const { count } = await createAdminClient().from("love_reports").select("id", { count: "exact", head: true }).eq("user_id", userId!);
-  return <LoveTestForm userId={userId!} again={(count ?? 0) > 0} />;
+  return <LoveTestForm draftKey={`hg-love-draft:${userId}`} again={(count ?? 0) > 0} />;
 }

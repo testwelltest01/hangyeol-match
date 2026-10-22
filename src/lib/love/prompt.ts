@@ -58,6 +58,7 @@ export const SYSTEM_PROMPT = `당신은 소개팅 서비스 '한결'의 연애 �
 - 기질 4가지와 성격 3가지 (1~5점). 기질은 상황에 처음 반응하는 타고난 경향(설렘 찾기, 조심성, 정에 기대기, 끈기)이고,
   성격은 그 반응을 살면서 어떻게 다루게 되었는지 보여 주는 태도(스스로 서기, 함께하는 마음, 더 큰 의미)입니다.
 - 기본 검사 결과: 성격 5요인(1~5점), 관계 가치관(두 문장 중 어느 쪽에 가까운지 1~6점), 영역마다 생각이 다른 상대가 얼마나 신경 쓰이는지.
+  가입 전에 한 검사라 기본 검사 결과나 성별이 없을 수 있습니다. 없으면 연애 상황 검사 결과만으로 쓰고, 없는 정보를 짐작해 채우지 마세요.
 - 추가 검사 요약 (추가 검사를 한 사람만 있음).
 점수는 이 사람이 스스로 답한 결과이고, 다른 사람과 비교한 순위가 아닙니다.
 
@@ -104,10 +105,11 @@ export const SYSTEM_PROMPT = `당신은 소개팅 서비스 '한결'의 연애 �
 - 모든 글은 한국어로 씁니다.`;
 
 export type LoveContext = {
-  gender: "male" | "female";
+  /** 모르면 null (가입 전 비회원 검사) */
+  gender: "male" | "female" | null;
   love: LoveScores;
-  /** 기본 검사 점수 */
-  main: Scores;
+  /** 기본 검사 점수. 없으면 null (가입 전 비회원 검사, 기본 검사 전 회원) */
+  main: Scores | null;
   /** 추가 검사 요약 (src/lib/extra/tests.ts summarizeExtra의 chips) */
   extraChips: string[];
 };
@@ -126,7 +128,10 @@ function leanText(value: number, left: string, right: string): string {
 /** AI에게 보내는 입력 글 */
 export function buildUserInput(ctx: LoveContext): string {
   const lines: string[] = [];
-  lines.push(`성별: ${GENDER_KO[ctx.gender]} (매칭 상대는 ${GENDER_KO[ctx.gender === "male" ? "female" : "male"]})`, "");
+  lines.push(
+    ctx.gender ? `성별: ${GENDER_KO[ctx.gender]} (매칭 상대는 ${GENDER_KO[ctx.gender === "male" ? "female" : "male"]})` : "성별: 알 수 없음 (상대를 성별로 부르지 말고 '상대'로 쓰세요)",
+    "",
+  );
 
   const scaleLines = (part: "relation" | "nature") => {
     for (const g of LOVE_GROUPS.filter((x) => x.part === part)) {
@@ -143,19 +148,29 @@ export function buildUserInput(ctx: LoveContext): string {
   scaleLines("nature");
   lines.push("");
 
+  const main = ctx.main;
+  if (!main) {
+    lines.push("## 기본 검사 결과: 없음 (가입 전에 한 검사라 연애 상황 검사 결과만 있어요)");
+    if (ctx.extraChips.length) {
+      lines.push("", "## 추가 검사 요약");
+      for (const c of ctx.extraChips) lines.push(`- ${c}`);
+    }
+    return lines.join("\n");
+  }
+
   lines.push("## 성격 5요인 (1~5점, 정서 안정성은 높을수록 안정적)");
   for (const t of TRAITS) {
-    const v = ctx.main.bigFive[t.id];
+    const v = main.bigFive[t.id];
     lines.push(`- ${t.label}: ${fmt(v)} (${LEVEL_KO[traitLevel(v)]})`);
   }
   lines.push("");
 
   lines.push("## 관계 가치관 (1~6점, 1은 왼쪽 문장에 매우 가까움, 6은 오른쪽 문장에 매우 가까움)");
   for (const d of DOMAINS) {
-    const imp = IMPORTANCE_OPTIONS.find((o) => o.value === ctx.main.values.importance[d.id])?.label ?? "모름";
+    const imp = IMPORTANCE_OPTIONS.find((o) => o.value === main.values.importance[d.id])?.label ?? "모름";
     lines.push(`[${d.label}] 이 영역에서 생각이 다른 상대: ${imp}`);
     for (const v of VALUE_ITEMS.filter((x) => x.domain === d.id)) {
-      const value = ctx.main.values.items[v.id];
+      const value = main.values.items[v.id];
       lines.push(`- ${v.left} ↔ ${v.right}: ${value} → ${leanText(value, v.leftShort, v.rightShort)}`);
     }
   }

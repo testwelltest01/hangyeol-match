@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { hashGuestToken, isGuestToken, newGuestToken } from "./guest";
 import { LOVE_ITEMS, LOVE_PAGES, LOVE_SCALES } from "./items";
 import { buildUserInput, parseLoveReport, RESPONSE_SCHEMA, SITUATIONS } from "./prompt";
 import { loveLevel, scoreLove, validateLove } from "./score";
@@ -96,6 +97,30 @@ describe("AI 입력", () => {
 
   it("조건(결혼·자녀·흡연·음주)·위생·꾸밈은 보내지 않는다", () => {
     expect(text).not.toMatch(/흡연|음주|위생|꾸밈|결혼 의사|자녀 계획/);
+  });
+});
+
+describe("AI 입력 (가입 전 비회원)", () => {
+  const text = buildUserInput({ gender: null, love: scoreLove(allAnswers(4)), main: null, extraChips: [] });
+  it("성별·기본 검사 없이 연애 상황 검사 결과만 보낸다", () => {
+    expect(text).toContain("성별: 알 수 없음");
+    expect(text).toContain("## 관계 척도");
+    expect(text).toContain("## 기질과 성격");
+    expect(text).toContain("기본 검사 결과: 없음");
+    expect(text).not.toContain("성격 5요인");
+    expect(text).not.toContain("관계 가치관");
+  });
+});
+
+describe("비회원 열쇠", () => {
+  it("32자 base64url, 해시는 열쇠마다 다르고 같은 열쇠는 같다", () => {
+    const t = newGuestToken();
+    expect(isGuestToken(t)).toBe(true);
+    expect(isGuestToken("short")).toBe(false);
+    expect(isGuestToken(`${t.slice(0, 31)}!`)).toBe(false);
+    expect(hashGuestToken(t)).toBe(hashGuestToken(t));
+    expect(hashGuestToken(t)).not.toBe(hashGuestToken(newGuestToken()));
+    expect(hashGuestToken(t)).toMatch(/^[0-9a-f]{64}$/);
   });
 });
 

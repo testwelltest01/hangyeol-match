@@ -1,14 +1,13 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { TraitBar, ValueTrack } from "@/components/ReportParts";
-import { IconLink, IconSliders } from "@/components/icons";
+import { IconSliders } from "@/components/icons";
 import type { ExtraCard } from "@/lib/extra/cards";
 import type { Trait } from "@/lib/items";
 import type { Report } from "@/lib/report";
 import { InviteBox } from "./InviteBox";
 import { LoveEntry, type LoveEntryState } from "./LoveEntry";
 import { ReportTabs } from "./ReportTabs";
-import { ShareService } from "./ShareService";
 
 function ExtraCards({ cards, admin }: { cards: ExtraCard[]; admin: boolean }) {
   return (
@@ -221,14 +220,6 @@ export function ReportParts({
           },
         ]}
       />
-
-      {!admin && (
-        <div className="mt-12 border-t border-line/80 pt-8">
-          <Section icon={<IconLink size={20} />} title="친구에게 한결 알리기" lead="결이 맞는 사람을 찾는 친구가 있다면 소개해주세요.">
-            <ShareService />
-          </Section>
-        </div>
-      )}
     </article>
   );
 }

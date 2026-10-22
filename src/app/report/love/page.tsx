@@ -34,7 +34,7 @@ async function LoveGate() {
   const { latest, lastDone } = pickLove(await loadLoveReports(createAdminClient(), userId!));
   if (!latest) return <LoveIntro />;
   // 가장 최근 시도가 다 쓴 보고서면 그대로. 쓰는 중·실패면 진행 상황을 위에, 이전 보고서가 있으면 그 아래에
-  if (latest === lastDone) return <LoveReportView report={lastDone.report} scores={lastDone.scores} completedAt={lastDone.completed_at} retest />;
+  if (latest === lastDone) return <LoveReportView report={lastDone.report} scores={lastDone.scores} completedAt={lastDone.completed_at} retest share />;
   const pending = latest.status === "pending";
   return (
     <div>
@@ -47,7 +47,7 @@ async function LoveGate() {
       {lastDone && (
         <div className="mt-12 border-t border-line/80 pt-8">
           <p className="mb-4 px-1 text-[13px] font-semibold text-muted">이전 보고서</p>
-          <LoveReportView report={lastDone.report} scores={lastDone.scores} completedAt={lastDone.completed_at} retest={!pending} />
+          <LoveReportView report={lastDone.report} scores={lastDone.scores} completedAt={lastDone.completed_at} retest={!pending} share />
         </div>
       )}
     </div>

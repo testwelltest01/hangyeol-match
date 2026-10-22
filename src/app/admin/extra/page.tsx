@@ -23,6 +23,6 @@ async function ExtraGate() {
   const admin = createAdminClient();
   const [rows, loveRows, genderOf] = await Promise.all([loadAllExtra(admin), loadAllLove(admin), loadGenderOf(admin)]);
   const all: Row[] = rows.map((r) => ({ ...r, gender: genderOf(r.user_id) }));
-  const love: LoveRowG[] = loveRows.map((r) => ({ ...r, gender: genderOf(r.user_id) }));
+  const love: LoveRowG[] = loveRows.map((r) => ({ ...r, gender: r.user_id ? genderOf(r.user_id) : "unknown" }));
   return <ExtraView all={all} love={love} />;
 }

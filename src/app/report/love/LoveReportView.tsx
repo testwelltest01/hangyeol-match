@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { IconCheck } from "@/components/icons";
+import { ShareLink } from "@/components/ShareLink";
 import { LOVE_GROUPS, LOVE_SCALES } from "@/lib/love/items";
 import { SITUATIONS, type LoveReport, type Scene } from "@/lib/love/prompt";
 import { lovePercent, type LoveScores } from "@/lib/love/score";
@@ -71,18 +72,23 @@ function SceneCard({ n, id, title, scene }: { n: number; id: string; title: stri
 
 /**
  * 다 쓴 보고서. 한 줄 요약 → 타고난 기질과 다듬어 가는 성격 → 강점 → 장면 10가지 → 잘 맞는 결 → 마음의 결(척도) → 한 가지.
- * retest면 맨 아래에 '다시 검사하기'
+ * retest면 맨 아래에 '다시 검사하기', share면 그 아래에 이 검사를 친구에게 공유하는 버튼(가입 없이 받는 /love)
  */
 export function LoveReportView({
   report,
   scores,
   completedAt,
   retest = false,
+  share = false,
+  guest = false,
 }: {
   report: LoveReport;
   scores: LoveScores;
   completedAt: string | null;
   retest?: boolean;
+  share?: boolean;
+  /** 가입 전 비회원 보고서 (아래 안내 문구가 다르다) */
+  guest?: boolean;
 }) {
   // 문항 버전이 바뀌기 전 결과에는 없는 척도가 있어서, 점수가 있는 것만 보여준다
   const shown = LOVE_SCALES.filter((s) => typeof scores[s.id] === "number");
@@ -168,8 +174,9 @@ export function LoveReportView({
       </section>
 
       <p className="mt-8 px-1 text-[13px] leading-relaxed text-muted">
-        공개 성격검사(IPIP) 문항과 한결이 만든 기질·성격 문항으로 잰 결과, 기본 검사 결과를 바탕으로 AI(OpenAI)가 쓴 보고서예요
-        {date ? ` (${date})` : ""}. 진단이 아니라 나를 돌아보는 참고용이고, 나만 볼 수 있어요. 추천 계산에는 쓰지 않아요.
+        공개 성격검사(IPIP) 문항과 한결이 만든 기질·성격 문항으로 잰 결과{guest ? "" : ", 기본 검사 결과"}를 바탕으로 AI(OpenAI)가 쓴 보고서예요
+        {date ? ` (${date})` : ""}. 진단이 아니라 나를 돌아보는 참고용이고,{" "}
+        {guest ? "이 주소를 아는 사람만 볼 수 있어요." : "나만 볼 수 있어요. 추천 계산에는 쓰지 않아요."}
       </p>
 
       {retest && (
@@ -182,6 +189,16 @@ export function LoveReportView({
           >
             다시 검사하기
           </Link>
+        </div>
+      )}
+
+      {share && (
+        <div className="mt-4 rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
+          <p className="text-[15px] font-semibold text-ink">친구도 받아 보게 하기</p>
+          <p className="mt-1 text-[14px] leading-relaxed text-muted">가입하지 않아도 10분이면 자기 연애 상황 보고서를 받아 볼 수 있어요.</p>
+          <div className="mt-4">
+            <ShareLink path="/love" label="이 검사 공유하기" />
+          </div>
         </div>
       )}
     </article>

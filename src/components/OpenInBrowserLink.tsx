@@ -20,7 +20,8 @@ const STYLE = {
  * - 안드로이드: 기본 브라우저로 (카카오톡·라인·intent)
  * safari를 주면 아이폰의 앱 밖 다른 브라우저(Chrome 등)에서도 Safari로 연다 (내 정보 '앱처럼 쓰기').
  * 가입·로그인으로 들어가는 입구(첫 화면 '검사 시작하기'·둘러보기·로그인, 친구 평가를 마친 화면의 '시작하기')에 쓴다.
- * className을 주면 그 모양을 쓰고 안내 문장은 숨긴다(위쪽 바 등)
+ * className을 주면 그 모양을 쓰고 안내 문장은 숨긴다(위쪽 바 등).
+ * plain이면 Next Link 대신 보통 <a>로 (미리 불러오기 없이 페이지를 새로 연다. 쿠키를 쓰는 route handler 주소, 예: /love/claim)
  */
 export function OpenInBrowserLink({
   href,
@@ -28,12 +29,14 @@ export function OpenInBrowserLink({
   variant = "primary",
   className,
   safari = false,
+  plain = false,
 }: {
   href: string;
   children: ReactNode;
   variant?: keyof typeof STYLE;
   className?: string;
   safari?: boolean;
+  plain?: boolean;
 }) {
   const [handedOff, setHandedOff] = useState(false);
 
@@ -46,10 +49,16 @@ export function OpenInBrowserLink({
 
   return (
     <>
-      <Link href={href} onClick={onClick} className={className ?? STYLE[variant]}>
-        {children}
-        {!className && variant === "primary" && <PendingSpinner />}
-      </Link>
+      {plain ? (
+        <a href={href} onClick={onClick} className={className ?? STYLE[variant]}>
+          {children}
+        </a>
+      ) : (
+        <Link href={href} onClick={onClick} className={className ?? STYLE[variant]}>
+          {children}
+          {!className && variant === "primary" && <PendingSpinner />}
+        </Link>
+      )}
       {handedOff && !className && (
         <p className="mt-3 text-center text-[14px] leading-relaxed text-muted">
           다른 브라우저에서 열었어요. 열리지 않으면 화면의 ⋯ 메뉴에서 &apos;Safari로 열기&apos;나 &apos;다른 브라우저로 열기&apos;를 눌러주세요.
