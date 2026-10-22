@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
+import { loadSceneImageUrls } from "@/lib/love/sceneImages";
 import { loadLoveReports, pickLove } from "@/lib/love/server";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -31,10 +32,12 @@ async function LoveGate() {
   const progress = await getProgress(userId);
   if (progress !== "report") redirect(PROGRESS_PATH[progress]);
 
-  const { latest, lastDone } = pickLove(await loadLoveReports(createAdminClient(), userId!));
+  const admin = createAdminClient();
+  const [rows, images] = await Promise.all([loadLoveReports(admin, userId!), loadSceneImageUrls(admin)]);
+  const { latest, lastDone } = pickLove(rows);
   if (!latest) return <LoveIntro />;
   // 가장 최근 시도가 다 쓴 보고서면 그대로. 쓰는 중·실패면 진행 상황을 위에, 이전 보고서가 있으면 그 아래에
-  if (latest === lastDone) return <LoveReportView report={lastDone.report} scores={lastDone.scores} completedAt={lastDone.completed_at} retest share />;
+  if (latest === lastDone) return <LoveReportView report={lastDone.report} scores={lastDone.scores} completedAt={lastDone.completed_at} retest share images={images} />;
   const pending = latest.status === "pending";
   return (
     <div>
@@ -47,7 +50,7 @@ async function LoveGate() {
       {lastDone && (
         <div className="mt-12 border-t border-line/80 pt-8">
           <p className="mb-4 px-1 text-[13px] font-semibold text-muted">이전 보고서</p>
-          <LoveReportView report={lastDone.report} scores={lastDone.scores} completedAt={lastDone.completed_at} retest={!pending} share />
+          <LoveReportView report={lastDone.report} scores={lastDone.scores} completedAt={lastDone.completed_at} retest={!pending} share images={images} />
         </div>
       )}
     </div>

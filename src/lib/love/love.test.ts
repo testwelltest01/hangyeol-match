@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { hashGuestToken, isGuestToken, newGuestToken } from "./guest";
+import { SCENE_PROMPT_VERSION, SCENE_PROMPTS, scenePath, scenePrompt } from "./scenes";
 import { LOVE_ITEMS, LOVE_PAGES, LOVE_SCALES } from "./items";
 import { buildUserInput, parseLoveReport, RESPONSE_SCHEMA, SITUATIONS } from "./prompt";
 import { loveLevel, scoreLove, validateLove } from "./score";
@@ -155,5 +156,17 @@ describe("AI 응답 검사", () => {
 
   it("응답 형식(JSON schema)의 장면 키가 화면 장면과 같다", () => {
     expect(RESPONSE_SCHEMA.schema.properties.situations.required).toEqual(SITUATIONS.map((s) => s.id));
+  });
+});
+
+describe("장면 사진 프롬프트", () => {
+  it("장면 10가지마다 프롬프트가 있고 공통 화풍(글자 없음·실제 사진풍)이 붙는다", () => {
+    for (const s of SITUATIONS) {
+      const p = scenePrompt(s.id);
+      expect(SCENE_PROMPTS[s.id].length).toBeGreaterThan(40);
+      expect(p).toContain("No readable text");
+      expect(p).toContain("Candid lifestyle photograph");
+    }
+    expect(scenePath("first", 123)).toBe(`first-${SCENE_PROMPT_VERSION}-123.webp`);
   });
 });

@@ -5,6 +5,7 @@ import { EXTRA_TESTS, topScales, type ExtraTest } from "@/lib/extra/tests";
 import { LOVE_GROUPS, LOVE_ITEMS, LOVE_SCALES, LOVE_VERSION } from "@/lib/love/items";
 import type { LoveAnswers, LoveScores } from "@/lib/love/score";
 import { AdminShell, AdminTitle, Empty, Panel, TableWrap, td, th } from "../ui";
+import { ScenePanel, type SceneItem } from "./ScenePanel";
 
 export type Row = ExtraRow & { user_id: string; gender: GenderKey };
 /** 연애 상황 검사 시도 하나 (다시 검사하면 한 사람에 여러 줄, 오래된 순). user_id가 없으면 가입 전 비회원 검사 */
@@ -228,7 +229,7 @@ function LovePanel({ all }: { all: LoveRowG[] }) {
   );
 }
 
-export function ExtraView({ all, love }: { all: Row[]; love: LoveRowG[] }) {
+export function ExtraView({ all, love, scenes }: { all: Row[]; love: LoveRowG[]; scenes: SceneItem[] }) {
   return (
     <AdminShell current="extra">
       <AdminTitle
@@ -236,6 +237,13 @@ export function ExtraView({ all, love }: { all: Row[]; love: LoveRowG[] }) {
         lead="연애 상황 보고서(IPIP)와 한결이 직접 만든 시범 검사(선택)의 응답 현황이에요. 추천 계산에는 쓰지 않아요. 원자료는 엑셀의 '추가 · …' 시트에 있어요."
       />
       <LovePanel all={love} />
+      <Panel
+        className="mt-4"
+        title="연애 보고서 장면 사진"
+        lead="보고서의 장면 10가지 위에 붙는 예시 사진이에요 (모든 보고서가 같이 써요). OpenAI 이미지 생성으로 만들고 'AI로 만든 예시 사진'이라고 표시해요. 장면마다 다시 만들 수 있어요."
+      >
+        <ScenePanel items={scenes} />
+      </Panel>
       {EXTRA_TESTS.map((t) => (
         <TestPanel key={t.id} test={t} all={all} />
       ))}

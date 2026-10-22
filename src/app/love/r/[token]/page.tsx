@@ -9,6 +9,7 @@ import { Shell } from "@/components/Shell";
 import { LoveProgress } from "@/app/report/love/LoveProgress";
 import { LoveReportView } from "@/app/report/love/LoveReportView";
 import { GUEST_KEEP_DAYS, isGuestToken } from "@/lib/love/guest";
+import { loadSceneImageUrls } from "@/lib/love/sceneImages";
 import { loadGuestReport } from "@/lib/love/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { retryGuestLoveReport } from "../../actions";
@@ -36,7 +37,8 @@ const fmtDate = (d: Date) => new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/
 async function GuestResultGate({ params }: { params: PageProps<"/love/r/[token]">["params"] }) {
   const { token } = await params;
   if (!isGuestToken(token)) notFound();
-  const row = await loadGuestReport(createAdminClient(), token);
+  const admin = createAdminClient();
+  const [row, images] = await Promise.all([loadGuestReport(admin, token), loadSceneImageUrls(admin)]);
   if (!row) {
     return (
       <div>
@@ -82,7 +84,7 @@ async function GuestResultGate({ params }: { params: PageProps<"/love/r/[token]"
             </Callout>
           </div>
         )}
-        <LoveReportView report={row.report} scores={row.scores} completedAt={row.completed_at} share guest />
+        <LoveReportView report={row.report} scores={row.scores} completedAt={row.completed_at} share guest images={images} />
         {next}
       </div>
     );
