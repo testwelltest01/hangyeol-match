@@ -6,7 +6,6 @@ import { ReportTabs } from "@/app/report/ReportTabs";
 import { SceneCarousel } from "./SceneCarousel";
 import { LOVE_GROUPS, LOVE_SCALES } from "@/lib/love/items";
 import { SITUATIONS, type LoveReport, type Scene, type SituationId } from "@/lib/love/prompt";
-import { SCENE_IMAGE_NOTE } from "@/lib/love/scenes";
 import { lovePercent, type LoveScores } from "@/lib/love/score";
 
 /** 척도 하나: 낮은 쪽 말 ↔ 높은 쪽 말 사이 결 위에 점. 가까운 쪽 말을 진하게 */
@@ -46,11 +45,10 @@ function SceneCard({ n, id, title, scene, image }: { n: number; id: string; titl
   return (
     <article id={`scene-${id}`} className="overflow-hidden rounded-[22px] bg-surface px-5 py-6 ring-1 ring-line/80">
       {image && (
-        <figure className="relative -mx-5 -mt-6 mb-5">
+        <div className="-mx-5 -mt-6 mb-5">
           {/* eslint-disable-next-line @next/next/no-img-element -- Supabase 공개 버킷의 장면 사진 (모든 보고서가 같이 쓴다) */}
-          <img src={image} alt={`'${title}' 장면 예시 사진`} className="aspect-[3/2] w-full bg-mist object-cover" loading="lazy" decoding="async" />
-          <figcaption className="absolute bottom-2 right-2 rounded-full bg-ink/55 px-2 py-0.5 text-[11px] text-white">{SCENE_IMAGE_NOTE}</figcaption>
-        </figure>
+          <img src={image} alt={`'${title}' 장면 사진`} className="aspect-[3/2] w-full bg-mist object-cover" loading="lazy" decoding="async" />
+        </div>
       )}
       <p className="text-[13px] font-semibold text-indigo">장면 {n}</p>
       <h3 className="mt-0.5 font-serif text-[1.2rem] font-bold leading-snug text-ink">{title}</h3>
@@ -124,7 +122,7 @@ export function LoveReportView({
             content: (
               <>
                 <p className="mb-4 px-1 text-[14px] leading-relaxed text-muted">연애에서 자주 만나는 장면이에요. 옆으로 밀어 넘겨 보세요.</p>
-                <SceneCarousel labels={SITUATIONS.map((s) => s.short)}>
+                <SceneCarousel>
                   {SITUATIONS.map((s, i) => (
                     <SceneCard key={s.id} n={i + 1} id={s.id} title={s.title} scene={report.situations[s.id]} image={images[s.id]} />
                   ))}

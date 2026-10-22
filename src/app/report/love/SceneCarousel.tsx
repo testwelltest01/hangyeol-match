@@ -5,12 +5,11 @@ import { IconBack, IconChevron } from "@/components/icons";
 
 /**
  * 장면 10가지를 옆으로 밀어 한 장씩 보는 슬라이드 (CSS scroll-snap). 다음 카드가 살짝 보여서 밀 수 있다는 걸 알 수 있다.
- * 위쪽 장면 칩을 누르면 그 장면으로, 아래쪽 '이전·다음'과 '3 / 10'. 카드 내용은 서버에서 그려 children으로 받는다
+ * 아래쪽 '이전·다음'과 '3 / 10'. 카드 내용은 서버에서 그려 children으로 받는다
  */
-export function SceneCarousel({ labels, children }: { labels: string[]; children: ReactNode }) {
+export function SceneCarousel({ children }: { children: ReactNode }) {
   const slides = Children.toArray(children);
   const trackRef = useRef<HTMLDivElement>(null);
-  const chipsRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
 
   // 밀 때마다 지금 보이는 카드 번호를 맞춘다 (가장 왼쪽에 가까운 카드)
@@ -51,14 +50,6 @@ export function SceneCarousel({ labels, children }: { labels: string[]; children
     return () => ro.disconnect();
   }, [index]);
 
-  // 지금 장면의 칩이 칩 줄에서 보이게
-  useEffect(() => {
-    const chip = chipsRef.current?.children[index] as HTMLElement | undefined;
-    const row = chipsRef.current;
-    if (!chip || !row) return;
-    row.scrollTo({ left: chip.offsetLeft - row.clientWidth / 2 + chip.clientWidth / 2, behavior: "smooth" });
-  }, [index]);
-
   function go(i: number) {
     const track = trackRef.current;
     const el = track?.children[Math.max(0, Math.min(slides.length - 1, i))] as HTMLElement | undefined;
@@ -69,26 +60,9 @@ export function SceneCarousel({ labels, children }: { labels: string[]; children
 
   return (
     <section aria-roledescription="carousel" aria-label="장면 10가지">
-      <div ref={chipsRef} className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]">
-        {labels.map((label, i) => (
-          <button
-            key={label}
-            type="button"
-            onClick={() => go(i)}
-            aria-current={i === index ? "true" : undefined}
-            className={`shrink-0 rounded-full px-3 py-1.5 text-[13.5px] ring-1 transition-colors ${
-              i === index ? "bg-primary text-white ring-primary" : "bg-surface text-ink-soft ring-line/80"
-            }`}
-          >
-            <span className={`mr-1 ${i === index ? "text-white/80" : "text-indigo"}`}>{i + 1}</span>
-            {label}
-          </button>
-        ))}
-      </div>
-
       <div
         ref={trackRef}
-        className="-mx-5 mt-4 flex snap-x snap-mandatory items-start gap-3 overflow-x-auto overflow-y-hidden scroll-px-5 px-5 transition-[height] duration-300 [scrollbar-width:none]"
+        className="-mx-5 flex snap-x snap-mandatory items-start gap-3 overflow-x-auto overflow-y-hidden scroll-px-5 px-5 transition-[height] duration-300 [scrollbar-width:none]"
       >
         {slides.map((slide, i) => (
           <div

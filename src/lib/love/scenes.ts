@@ -46,6 +46,3 @@ export const scenePrompt = (id: SituationId): string => `${SCENE_PROMPTS[id]} ${
 
 /** 저장 경로: 만들 때마다 새 이름(브라우저·CDN 캐시에 예전 사진이 남지 않게) */
 export const scenePath = (id: SituationId, stamp: number): string => `${id}-${SCENE_PROMPT_VERSION}-${stamp}.webp`;
-
-/** 화면에 붙이는 안내 (AI로 만든 사진임을 알린다) */
-export const SCENE_IMAGE_NOTE = "AI로 만든 예시 사진";

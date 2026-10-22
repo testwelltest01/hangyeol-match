@@ -240,7 +240,7 @@ export function ExtraView({ all, love, scenes }: { all: Row[]; love: LoveRowG[];
       <Panel
         className="mt-4"
         title="연애 보고서 장면 사진"
-        lead="보고서의 장면 10가지 위에 붙는 예시 사진이에요 (모든 보고서가 같이 써요). OpenAI 이미지 생성으로 만들고 'AI로 만든 예시 사진'이라고 표시해요. 장면마다 다시 만들 수 있어요."
+        lead="보고서의 장면 10가지 위에 붙는 예시 사진이에요 (모든 보고서가 같이 써요). OpenAI 이미지 생성으로 만들어요. 장면마다 다시 만들 수 있어요."
       >
         <ScenePanel items={scenes} />
       </Panel>
