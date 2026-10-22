@@ -45,7 +45,7 @@ export function LoveProgress({ status, error }: { status: "pending" | "failed"; 
         <p className="mt-3 text-[13.5px] text-muted">답은 그대로 남아 있어요. 다시 써도 검사 횟수에 세지 않아요.</p>
       </div>
       {message && (
-        <p role="alert" className="text-alert">
+        <p role="alert" className="whitespace-pre-line break-words text-alert">
           {message}
         </p>
       )}

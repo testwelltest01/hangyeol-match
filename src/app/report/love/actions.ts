@@ -1,5 +1,6 @@
 "use server";
 
+import { getAdmin } from "@/lib/admin/auth";
 import { LOVE_VERSION } from "@/lib/love/items";
 import { scoreLove, validateLove } from "@/lib/love/score";
 import { overLoveCap, startLoveReport } from "@/lib/love/server";
@@ -13,9 +14,31 @@ type Result = { ok: true } | { ok: false; error: string };
 /** 검사(다시 검사 포함)를 낼 수 있는 횟수: 24시간에 이만큼. 저장에 성공한 검사만 센다 (DB의 love_reports 줄 수) */
 const SUBMITS_PER_DAY = 3;
 
-/** 저장 실패를 로그에 남긴다 (Vercel 함수 로그에서 원인 확인: 42P01 표 없음, 42703 칸 없음, 23514 동의 종류 검사 = SQL 미적용) */
-function logDbError(where: string, error: { code?: string; message?: string } | null) {
+type DbError = { code?: string; message?: string } | null;
+
+/** 저장 실패를 로그에 남긴다 (Vercel 함수 로그) */
+function logDbError(where: string, error: DbError) {
   if (error) console.error(`love ${where} failed`, error.code, error.message);
+}
+
+/** 오류 코드로 짐작한 원인. 대부분 Supabase에 SQL을 아직 실행하지 않은 경우다 */
+function schemaHint(error: DbError): string {
+  const code = error?.code ?? "";
+  if (code === "23514") return "동의 종류에 love_report가 없어요. Supabase SQL Editor에서 0002_love_report.sql을 실행해 주세요.";
+  if (code === "42P01" || code === "PGRST205") return "love_reports 표가 없어요. 0002_love_report.sql과 0003_love_retest.sql을 차례로 실행해 주세요.";
+  if (code === "42703" || code === "PGRST204") return "love_reports에 id 칸이 없어요. 0003_love_retest.sql을 실행해 주세요.";
+  return "";
+}
+
+/**
+ * 저장 실패 문구. 회원에게는 짧은 안내만, 관리자 계정에는 원인(오류 코드·내용과 짐작한 해결 방법)을 함께 보여준다
+ * (로그를 열지 않고도 SQL 미적용 같은 설정 문제를 바로 알 수 있게)
+ */
+async function failText(where: string, error: DbError, text: string): Promise<string> {
+  logDbError(where, error);
+  if (!error || !(await getAdmin())) return text;
+  const hint = schemaHint(error);
+  return `${text}\n[관리자에게만 보여요] ${where}: ${error.code ?? ""} ${error.message ?? ""}${hint ? `\n→ ${hint}` : ""}`;
 }
 
 const CAP_ERROR = "오늘은 보고서 요청이 많아 다 쓰지 못했어요. 내일 이 화면에서 '다시 쓰기'를 눌러주세요.";
@@ -49,8 +72,7 @@ export async function submitLoveTest(answers: unknown, agree: unknown): Promise<
   if ((today ?? 0) >= SUBMITS_PER_DAY) return { ok: false, error: `검사는 하루 ${SUBMITS_PER_DAY}번까지 낼 수 있어요. 내일 다시 해주세요.` };
 
   const { error: consentError } = await admin.from("consents").upsert({ user_id: userId, kind: "love_report" });
-  logDbError("consent", consentError);
-  if (consentError) return { ok: false, error: "저장하지 못했어요. 잠시 후 다시 시도해주세요." };
+  if (consentError) return { ok: false, error: await failText("consent", consentError, "저장하지 못했어요. 잠시 후 다시 시도해주세요.") };
 
   const capped = await overLoveCap(admin);
   const { data: row, error } = await admin
@@ -68,8 +90,7 @@ export async function submitLoveTest(answers: unknown, agree: unknown): Promise<
   if (error || !row) {
     // 부분 유일 인덱스 충돌 = 다른 창에서 먼저 냈다
     if (error?.code === "23505") return { ok: false, error: BUSY_ERROR };
-    logDbError("insert", error);
-    return { ok: false, error: "저장하지 못했어요. 잠시 후 다시 시도해주세요." };
+    return { ok: false, error: await failText("insert", error, "저장하지 못했어요. 잠시 후 다시 시도해주세요.") };
   }
   if (!capped) startLoveReport(userId, row.id as string);
   return { ok: true };
@@ -99,8 +120,10 @@ export async function retryLoveReport(): Promise<Result> {
     .eq("id", row.id)
     .eq("status", "failed")
     .select("id");
-  logDbError("retry", error);
-  if (error) return { ok: false, error: error.code === "23505" ? BUSY_ERROR : "다시 쓰지 못했어요. 잠시 후 다시 시도해주세요." };
+  if (error) {
+    if (error.code === "23505") return { ok: false, error: BUSY_ERROR };
+    return { ok: false, error: await failText("retry", error, "다시 쓰지 못했어요. 잠시 후 다시 시도해주세요.") };
+  }
   if (claimed?.length) startLoveReport(userId, row.id as string);
   return { ok: true };
 }

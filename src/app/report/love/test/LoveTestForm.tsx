@@ -154,7 +154,7 @@ export function LoveTestForm({ userId, again }: { userId: string; again: boolean
       )}
 
       {error && (
-        <p role="alert" className="mt-4 text-alert">
+        <p role="alert" className="mt-4 whitespace-pre-line break-words text-alert">
           {error}
         </p>
       )}
