@@ -85,6 +85,15 @@ export const IconCheck = (p: IconProps) => (
   </Svg>
 );
 
+/** API 사용량·비용: 쌓인 동전 */
+export const IconCoins = (p: IconProps) => (
+  <Svg {...p}>
+    <ellipse cx="12" cy="6.5" rx="6.5" ry="2.5" />
+    <path d="M5.5 6.5v5c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5v-5" />
+    <path d="M5.5 11.5v5c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5v-5" />
+  </Svg>
+);
+
 export const IconCross = (p: IconProps) => (
   <Svg {...p}>
     <path d="M7 7l10 10M17 7L7 17" />

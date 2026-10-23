@@ -10,6 +10,8 @@ import "server-only";
 // 환경 변수: OPENAI_API_KEY, OPENAI_VISION_MODEL, (선택) OPENAI_TEMPERATURE
 
 import { postprocess, type FeedbackResult, type Improvement, type PhotoSlot, type Raw } from "@/lib/photo/score";
+import { logApiUsage } from "@/lib/usage/server";
+import { parseChatUsage, type Usage } from "@/lib/usage/usage";
 
 export type { FeedbackResult, Improvement, Internal, PhotoSlot, UserView } from "@/lib/photo/score";
 
@@ -190,6 +192,11 @@ export async function analyzePhoto(input: {
   const temperature = process.env.OPENAI_TEMPERATURE;
   if (temperature && temperature.toLowerCase() !== "none") body.temperature = Number(temperature);
 
+  // 관리자 'API 사용량' 기록 (용도·토큰·시간)
+  const started = Date.now();
+  const log = (ok: boolean, usage: Usage | null, usedModel: string, error?: string) =>
+    logApiUsage({ purpose: "photo_feedback", endpoint: "chat", model: usedModel, ok, usage, durationMs: Date.now() - started, error });
+
   let res: Response;
   try {
     res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -198,15 +205,19 @@ export async function analyzePhoto(input: {
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(55_000),
     });
-  } catch {
+  } catch (e) {
+    await log(false, null, model, (e as Error).name === "TimeoutError" ? "timeout" : "network");
     return { ok: false, error: "AI 응답이 늦어요. 잠시 후 다시 시도해주세요." };
   }
   if (!res.ok) {
-    console.error("photo feedback failed", res.status, await res.text().catch(() => ""));
+    const detail = await res.text().catch(() => "");
+    console.error("photo feedback failed", res.status, detail);
+    await log(false, null, model, `${res.status} ${detail.match(/"code":\s*"([^"]+)"/)?.[1] ?? ""}`.trim());
     return { ok: false, error: "AI 피드백을 받지 못했어요. 잠시 후 다시 시도해주세요." };
   }
 
-  const json = (await res.json()) as { choices?: { message?: { content?: string | null; refusal?: string | null } }[] };
+  const json = (await res.json()) as { model?: string; usage?: unknown; choices?: { message?: { content?: string | null; refusal?: string | null } }[] };
+  await log(true, parseChatUsage(json.usage), json.model ?? model);
   const msg = json.choices?.[0]?.message;
   if (msg?.refusal) {
     return { ok: true, valid: false, rejectReason: "이 사진은 분석할 수 없었어요. 다른 사진으로 다시 시도해주세요." };

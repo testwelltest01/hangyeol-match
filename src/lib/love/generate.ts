@@ -5,6 +5,8 @@ import "server-only";
 // 환경 변수: OPENAI_API_KEY, OPENAI_REPORT_MODEL(없으면 OPENAI_VISION_MODEL), (선택) OPENAI_TEMPERATURE
 
 import { createHash } from "node:crypto";
+import { logApiUsage } from "@/lib/usage/server";
+import { parseChatUsage, type Usage } from "@/lib/usage/usage";
 import {
   buildUserInput,
   mergeParts,
@@ -38,6 +40,11 @@ async function writePart(apiKey: string, model: string, input: string, part: num
   const temperature = process.env.OPENAI_TEMPERATURE;
   if (temperature && temperature.toLowerCase() !== "none") body.temperature = Number(temperature);
 
+  // 관리자 'API 사용량' 기록. 보고서 1건은 두 번 부르므로 첫 번째만 1건으로 센다
+  const started = Date.now();
+  const log = (ok: boolean, usage: Usage | null, usedModel: string, error?: string) =>
+    logApiUsage({ purpose: "love_report", endpoint: "chat", model: usedModel, ok, usage, durationMs: Date.now() - started, unit: part === 0, error });
+
   let res: Response;
   try {
     res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -46,14 +53,22 @@ async function writePart(apiKey: string, model: string, input: string, part: num
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(240_000),
     });
-  } catch {
+  } catch (e) {
+    await log(false, null, model, (e as Error).name === "TimeoutError" ? "timeout" : "network");
     return { ok: false, error: LATE };
   }
   if (!res.ok) {
-    console.error("love report failed", part, res.status, (await res.text().catch(() => "")).slice(0, 500));
+    const detail = await res.text().catch(() => "");
+    console.error("love report failed", part, res.status, detail.slice(0, 500));
+    await log(false, null, model, `${res.status} ${detail.match(/"code":\s*"([^"]+)"/)?.[1] ?? ""}`.trim());
     return { ok: false, error: FAILED };
   }
-  const json = (await res.json().catch(() => null)) as { model?: string; choices?: { message?: { content?: string | null; refusal?: string | null } }[] } | null;
+  const json = (await res.json().catch(() => null)) as {
+    model?: string;
+    usage?: unknown;
+    choices?: { message?: { content?: string | null; refusal?: string | null } }[];
+  } | null;
+  await log(true, parseChatUsage(json?.usage), json?.model ?? model);
   const msg = json?.choices?.[0]?.message;
   if (!msg || msg.refusal) return { ok: false, error: FAILED };
   try {

@@ -4,6 +4,7 @@ import { cache, Suspense, type ReactNode } from "react";
 import {
   IconBack,
   IconClusters,
+  IconCoins,
   IconDownload,
   IconExternal,
   IconFlask,
@@ -15,14 +16,16 @@ import { PendingFill } from "@/components/LinkPending";
 import { ClearTheme } from "@/components/ThemeSync";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-type AdminTab = "dashboard" | "users" | "trends" | "lpa" | "extra";
+type AdminTab = "dashboard" | "users" | "trends" | "lpa" | "extra" | "usage";
 
-const TABS: { id: AdminTab; href: string; label: string; Icon: typeof IconGrid }[] = [
+/** short: 좁은 화면 아래쪽 탭에 쓰는 짧은 이름 */
+const TABS: { id: AdminTab; href: string; label: string; short?: string; Icon: typeof IconGrid }[] = [
   { id: "dashboard", href: "/admin", label: "대시보드", Icon: IconGrid },
   { id: "users", href: "/admin/users", label: "회원", Icon: IconFriends },
   { id: "trends", href: "/admin/trends", label: "추세", Icon: IconTrend },
   { id: "lpa", href: "/admin/lpa", label: "LPA", Icon: IconClusters },
   { id: "extra", href: "/admin/extra", label: "추가 검사", Icon: IconFlask },
+  { id: "usage", href: "/admin/usage", label: "API 사용량", short: "API", Icon: IconCoins },
 ];
 
 /** 처리하지 않은 신고 수 (대시보드 메뉴 옆 숫자). 넓은 화면·좁은 화면 메뉴가 함께 쓰므로 한 번만 읽는다 */
@@ -138,7 +141,7 @@ export function AdminShell({ current, back, children }: { current?: AdminTab; ba
           aria-label="관리 메뉴"
           className="fixed inset-x-0 bottom-0 z-40 border-t border-line/80 bg-surface/95 pb-[max(env(safe-area-inset-bottom),0.375rem)] backdrop-blur-md lg:hidden"
         >
-          <ul className="grid grid-cols-5">
+          <ul className="grid grid-cols-6">
             {TABS.map((t) => {
               const active = t.id === current;
               return (
@@ -157,7 +160,7 @@ export function AdminShell({ current, back, children }: { current?: AdminTab; ba
                         </Suspense>
                       )}
                     </span>
-                    {t.label}
+                    {t.short ?? t.label}
                   </Link>
                 </li>
               );

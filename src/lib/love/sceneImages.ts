@@ -5,6 +5,8 @@ import { imageModel } from "@/lib/illustration/generate";
 import { SITUATIONS, type SituationId } from "@/lib/love/prompt";
 import { SCENE_PROMPT_VERSION, scenePath, scenePrompt } from "@/lib/love/scenes";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { logApiUsage } from "@/lib/usage/server";
+import { parseImageUsage, type Usage } from "@/lib/usage/usage";
 
 // 연애 상황 보고서의 장면 사진 만들기·불러오기. 관리자 화면에서만 만든다(비용이 들어서 회원 화면에서는 만들지 않는다).
 // OpenAI Images Generations(그림 프로필과 같은 OPENAI_IMAGE_MODEL), 가로 1536x1024 webp → 공개 버킷 'scenes'
@@ -67,6 +69,10 @@ async function generate(prompt: string): Promise<{ ok: true; image: Buffer; mode
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return { ok: false, error: "AI 설정(OPENAI_API_KEY)이 없어요." };
   const model = imageModel();
+  // 관리자 'API 사용량' 기록 (용도·토큰·시간)
+  const started = Date.now();
+  const log = (ok: boolean, usage: Usage | null, usedModel: string, error?: string) =>
+    logApiUsage({ purpose: "scene_image", endpoint: "image_generate", model: usedModel, ok, usage, durationMs: Date.now() - started, error });
   try {
     const res = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
@@ -82,16 +88,24 @@ async function generate(prompt: string): Promise<{ ok: true; image: Buffer; mode
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-    const json = (await res.json().catch(() => null)) as { data?: { b64_json?: string }[]; error?: { code?: string; message?: string } } | null;
+    const json = (await res.json().catch(() => null)) as {
+      model?: string;
+      usage?: unknown;
+      data?: { b64_json?: string }[];
+      error?: { code?: string; message?: string };
+    } | null;
     if (!res.ok) {
       const msg = `${res.status} ${json?.error?.code ?? ""} ${json?.error?.message ?? ""}`.trim();
       console.error("scene image failed", msg.slice(0, 300));
+      await log(false, null, model, `${res.status} ${json?.error?.code ?? ""}`.trim());
       return { ok: false, error: `사진을 만들지 못했어요 (${msg.slice(0, 160)})` };
     }
+    await log(true, parseImageUsage(json?.usage), json?.model ?? model);
     const b64 = json?.data?.[0]?.b64_json;
     if (!b64) return { ok: false, error: "사진을 받지 못했어요." };
     return { ok: true, image: Buffer.from(b64, "base64"), model };
   } catch (e) {
+    await log(false, null, model, (e as Error).name === "TimeoutError" || (e as Error).name === "AbortError" ? "timeout" : "network");
     if ((e as Error).name === "TimeoutError" || (e as Error).name === "AbortError") return { ok: false, error: "너무 오래 걸렸어요. 다시 만들어 주세요." };
     return { ok: false, error: "사진을 만들지 못했어요." };
   }

@@ -105,9 +105,78 @@ export function GroupedBars({
   );
 }
 
-/** 요일 × 시간 칸. 진할수록 많다 (성별마다 따로 맞춘다) */
-export function Heatmap({ data, gender, title }: { data: number[][]; gender: "male" | "female"; title: string }) {
-  const max = Math.max(1, ...data.flat());
+/** 여러 묶음(용도 등)을 쌓은 막대. 칸 이름(labels)마다 막대 하나, 위에 가장 큰 값을 format으로 */
+export function StackedSeries({
+  labels,
+  series,
+  label,
+  format,
+  tick = (l) => l,
+  labelEvery = 1,
+}: {
+  labels: string[];
+  series: { key: string; label: string; className: string; values: number[] }[];
+  label: string;
+  format: (v: number) => string;
+  /** 아래 칸 이름 바꾸기 (날짜 → 10/23 등) */
+  tick?: (l: string) => string;
+  labelEvery?: number;
+}) {
+  const totals = labels.map((_, i) => series.reduce((acc, s) => acc + s.values[i], 0));
+  const max = Math.max(...totals, 0);
+  const scale = max > 0 ? max : 1;
+  return (
+    <div>
+      <div className="relative" role="img" aria-label={label}>
+        <span className="absolute left-0 top-0 text-[11px] tabular-nums text-muted">{format(max)}</span>
+        <div className="flex h-40 items-end gap-[2px] border-b border-line pt-5">
+          {labels.map((l, i) => (
+            <div
+              key={l}
+              className="flex h-full min-w-0 flex-1 flex-col justify-end"
+              title={`${tick(l)} · 합계 ${format(totals[i])}${series
+                .filter((s) => s.values[i] > 0)
+                .map((s) => ` · ${s.label} ${format(s.values[i])}`)
+                .join("")}`}
+            >
+              {[...series].reverse().map((s, k) => (
+                <span
+                  key={s.key}
+                  className={`block w-full ${s.className} ${k === 0 ? "rounded-t-sm" : ""}`}
+                  style={{ height: `${(s.values[i] / scale) * 100}%` }}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="mt-1 flex gap-[2px]">
+        {labels.map((l, i) => (
+          <span key={l} className="min-w-0 flex-1 overflow-visible whitespace-nowrap text-center text-[10px] tabular-nums text-muted">
+            {i % labelEvery === 0 ? tick(l) : ""}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** 요일 × 시간 칸. 진할수록 많다 (성별마다 따로 맞춘다). color를 주면 그 색, format은 칸에 마우스를 올렸을 때의 값 */
+export function Heatmap({
+  data,
+  gender = "male",
+  color,
+  format = (v) => `${v}건`,
+  title,
+}: {
+  data: number[][];
+  gender?: "male" | "female";
+  color?: string;
+  format?: (v: number) => string;
+  title: string;
+}) {
+  const max = Math.max(...data.flat(), 0) || 1;
+  const base = color ?? GENDER_VAR[gender];
   const days = ["월", "화", "수", "목", "금", "토", "일"];
   return (
     <figure>
@@ -120,8 +189,8 @@ export function Heatmap({ data, gender, title }: { data: number[][]; gender: "ma
               <span
                 key={h}
                 className="block h-4 rounded-[2px]"
-                title={`${days[d]} ${h}시 · ${v}건`}
-                style={{ background: v ? `color-mix(in srgb, ${GENDER_VAR[gender]} ${15 + (v / max) * 85}%, var(--color-surface))` : "var(--color-mist)" }}
+                title={`${days[d]} ${h}시 · ${format(v)}`}
+                style={{ background: v ? `color-mix(in srgb, ${base} ${15 + (v / max) * 85}%, var(--color-surface))` : "var(--color-mist)" }}
               />
             ))}
           </div>

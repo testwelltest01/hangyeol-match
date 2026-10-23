@@ -1,5 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
+import { logApiUsage } from "@/lib/usage/server";
+import { parseImageUsage, type Usage } from "@/lib/usage/usage";
 
 export type GenerateResult = { ok: true; image: Buffer; model: string } | { ok: false; error: string; moderation?: boolean };
 
@@ -42,6 +44,10 @@ export async function generateIllustration({
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  // 관리자 'API 사용량' 기록 (용도·토큰·시간)
+  const started = Date.now();
+  const log = (ok: boolean, usage: Usage | null, usedModel: string, error?: string) =>
+    logApiUsage({ purpose: "illustration", endpoint: "image_edit", model: usedModel, ok, usage, durationMs: Date.now() - started, error });
   try {
     const res = await fetch("https://api.openai.com/v1/images/edits", {
       method: "POST",
@@ -50,6 +56,8 @@ export async function generateIllustration({
       signal: controller.signal,
     });
     const json = (await res.json().catch(() => null)) as {
+      model?: string;
+      usage?: unknown;
       data?: { b64_json?: string }[];
       error?: { code?: string; message?: string };
     } | null;
@@ -57,15 +65,18 @@ export async function generateIllustration({
       const code = json?.error?.code ?? "";
       const message = json?.error?.message ?? "";
       console.error("image edit failed", res.status, code, message.slice(0, 200));
+      await log(false, null, model, `${res.status} ${code}`.trim());
       if (code === "moderation_blocked" || /moderation|safety system/i.test(message)) {
         return { ok: false, moderation: true, error: "이 사진으로는 그림을 만들 수 없었어요. 다른 사진으로 바꾼 뒤 다시 시도해주세요." };
       }
       return { ok: false, error: "그림을 만들지 못했어요. 잠시 후 다시 시도해주세요." };
     }
+    await log(true, parseImageUsage(json?.usage), json?.model ?? model);
     const b64 = json?.data?.[0]?.b64_json;
     if (!b64) return { ok: false, error: "그림을 받지 못했어요. 다시 시도해주세요." };
     return { ok: true, image: Buffer.from(b64, "base64"), model };
   } catch (e) {
+    await log(false, null, model, (e as Error).name === "AbortError" ? "timeout" : "network");
     if ((e as Error).name === "AbortError") return { ok: false, error: "그림 그리기가 너무 오래 걸렸어요. 다시 시도해주세요." };
     console.error("image edit error", (e as Error).message);
     return { ok: false, error: "그림을 만들지 못했어요. 잠시 후 다시 시도해주세요." };
