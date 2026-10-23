@@ -7,7 +7,7 @@ import { ZoomImage } from "@/components/ZoomImage";
 
 export const metadata: Metadata = {
   title: "만든 사람의 편지 | 한결",
-  description: "한결을 만든 이유, 앞으로 바뀌는 점, 본인확인이 필요한 이유, 후원 안내를 편지로 전합니다.",
+  description: "정식 개시 목표일(2027년 1월 1일, 휴대폰 본인인증 연동), 한결을 만든 이유, 본인확인이 필요한 이유, 후원 안내를 편지로 전합니다.",
 };
 
 const ACCOUNT = { bank: "국민은행", number: "612502-01-316396", holder: "최현석" };
@@ -36,6 +36,23 @@ export default function LetterPage() {
   return (
     <Shell back={{ href: "/", label: "뒤로", history: true }} hideLetter>
       <article className="rounded-2xl border border-line bg-surface px-6 py-10 font-serif text-[17px] leading-[1.9] text-ink-soft shadow-[0_1px_0_rgba(31,47,92,0.04)] sm:px-10">
+        {/* 맨 앞에 강조: 정식 개시 목표일과, 그 전까지는 본인인증이 없다는 것 */}
+        <aside aria-label="정식 개시 안내" className="mb-9 rounded-xl border-2 border-primary/70 bg-primary/5 px-5 py-5 font-sans">
+          <p className="text-[13px] font-semibold text-primary">먼저 알려드립니다</p>
+          <p className="mt-1 font-serif text-[1.35rem] font-bold leading-snug text-ink">
+            정식 개시 목표일은 <span className="whitespace-nowrap text-primary">2027년 1월 1일</span>입니다
+          </p>
+          <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+            심리검사 기반 소개팅 서비스 한결은 <strong className="text-ink">휴대폰 본인인증을 연동</strong>해 2027년 1월 1일에 정식으로 문을 여는 것을
+            목표로 하고 있습니다.
+          </p>
+          <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
+            그때까지도 검사와 소개팅(매일 저녁 추천, 대화, 연락처 주고받기)은 지금처럼 이용하실 수 있습니다. 다만{" "}
+            <strong className="text-ink">아직 본인인증 서비스가 없어서</strong> 상대가 확인된 사람이라고 보장해 드릴 수 없습니다. 처음 만날 때는 사람이
+            많은 곳에서 조금 더 조심해 주세요.
+          </p>
+        </aside>
+
         <p className="font-sans text-sm text-muted">한결을 만든 사람의 편지</p>
         <h1 className="mt-2 text-[1.7rem] font-bold leading-snug text-ink">
           결이 맞는 사람을
@@ -89,7 +106,7 @@ export default function LetterPage() {
             많습니다. 불편한 점을 알려주시면 하나씩 고쳐가겠습니다.
           </p>
           <div className="rounded-xl bg-mist px-5 py-4 font-sans text-[15px] leading-relaxed text-ink">
-            앱이 나오면 <strong>휴대폰 본인확인 절차</strong>가 추가됩니다. 그때 지금 사이트의 모든 정보(검사 결과, 사진,
+            정식으로 문을 열면(목표 2027년 1월 1일) <strong>휴대폰 본인확인 절차</strong>가 추가됩니다. 그때 지금 사이트의 모든 정보(검사 결과, 사진,
             연락처, 매칭·대화 기록)는 <strong>초기화</strong>되고, 이 사이트는 더 이상 쓰지 않습니다. 바뀌기 전에 가입하신
             이메일로 미리 알려드리겠습니다.
           </div>
