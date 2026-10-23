@@ -44,3 +44,37 @@ export function pearson(pairs: [number, number][]): number {
   }
   return sxx === 0 || syy === 0 ? NaN : sxy / Math.sqrt(sxx * syy);
 }
+
+/**
+ * 문항 분석. rows는 [사람][문항] (역문항은 뒤집은 값).
+ * 문항마다 평균·표준편차, 수정된 문항-총점 상관(그 문항을 뺀 나머지 문항 합과의 상관), 그 문항을 뺐을 때의 α
+ */
+export function itemAnalysis(rows: number[][]): { mean: number; sd: number; citc: number; alphaIfDeleted: number }[] {
+  const k = rows[0]?.length ?? 0;
+  return Array.from({ length: k }, (_, j) => {
+    const { mean, sd } = meanSd(rows.map((r) => r[j]));
+    const rest = rows.map((r) => r.reduce((a, b, i) => (i === j ? a : a + b), 0));
+    return {
+      mean,
+      sd,
+      citc: pearson(rows.map((r, p) => [r[j], rest[p]])),
+      alphaIfDeleted: k > 2 ? cronbachAlpha(rows.map((r) => r.filter((_, i) => i !== j))) : NaN,
+    };
+  });
+}
+
+/** 상관 행렬. columns는 [변수][사람] (모든 변수의 사람 순서가 같아야 한다) */
+export function correlationMatrix(columns: number[][]): number[][] {
+  return columns.map((a, i) => columns.map((b, j) => (i === j ? 1 : pearson(a.map((v, p) => [v, b[p]])))));
+}
+
+/** 왜도 (표본 보정, SPSS와 같은 식). 3명 미만이거나 분산이 0이면 NaN. LPA 전에 지표가 한쪽으로 몰렸는지 볼 때 */
+export function skewness(values: number[]): number {
+  const n = values.length;
+  if (n < 3) return NaN;
+  const m = values.reduce((a, b) => a + b, 0) / n;
+  const m2 = values.reduce((a, b) => a + (b - m) ** 2, 0) / n;
+  const m3 = values.reduce((a, b) => a + (b - m) ** 3, 0) / n;
+  if (m2 === 0) return NaN;
+  return ((m3 / m2 ** 1.5) * Math.sqrt(n * (n - 1))) / (n - 2);
+}

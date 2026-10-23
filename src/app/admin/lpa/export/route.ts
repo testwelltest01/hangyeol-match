@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { getAdmin } from "@/lib/admin/auth";
+import { parseLoveSample } from "@/lib/admin/loveSample";
 import { loadLpaRows } from "@/lib/admin/lpaData";
 import { findLpaSet } from "@/lib/admin/lpaSets";
 import { buildIdMap, buildMplusData, buildMplusInput, mplusFileBase } from "@/lib/admin/mplus";
@@ -19,8 +20,9 @@ export async function GET(request: NextRequest) {
   const model = sp.get("model") === "varying" ? "varying" : "equal";
   const k = Math.min(6, Math.max(1, Number.parseInt(sp.get("k") ?? "2", 10) || 2));
   const file = sp.get("file");
-  const rows = await loadLpaRows(createAdminClient(), set);
-  const base = mplusFileBase(set);
+  const love = parseLoveSample({ attempt: sp.get("attempt"), guests: sp.get("guests") });
+  const rows = await loadLpaRows(createAdminClient(), set, love);
+  const base = mplusFileBase(set, love);
   const stamp = new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 16).replace("T", " ");
 
   let body: string;
@@ -30,7 +32,7 @@ export async function GET(request: NextRequest) {
     body = buildMplusData(rows);
     name = `${base}.dat`;
   } else if (file === "inp") {
-    body = buildMplusInput({ set, k, model, n: rows.length, stamp });
+    body = buildMplusInput({ set, k, model, n: rows.length, stamp, love });
     name = `${base}_c${k}.inp`;
   } else if (file === "ids") {
     body = buildIdMap(rows);

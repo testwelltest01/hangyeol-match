@@ -1,12 +1,15 @@
 // Mplus로 같은 LPA를 다시 돌려볼 수 있게 데이터(.dat)와 입력 파일(.inp)을 만든다.
 // Mplus 입력은 영문(ASCII)만, 한 줄 90자 이하로 쓴다.
+import type { LoveSampleOptions } from "@/lib/admin/loveSample";
 import type { LpaModel } from "@/lib/admin/lpa";
 import type { LpaSet } from "@/lib/admin/lpaSets";
 import type { GenderKey } from "@/lib/admin/trends";
 
 const GENDER_CODE: Record<GenderKey, number> = { male: 1, female: 2, unknown: 0 };
 
-export const mplusFileBase = (set: LpaSet) => `hangyeol_lpa_${set.id}`;
+/** 파일 이름. 연애 상황 검사는 고른 표본(첫/최근 검사, 회원만)을 이름에 붙인다 */
+export const mplusFileBase = (set: LpaSet, love?: LoveSampleOptions) =>
+  `hangyeol_lpa_${set.id}${set.source === "love" && love ? `_${love.attempt}${love.guests ? "" : "_members"}` : ""}`;
 
 /** 공백으로 나눈 숫자 데이터: 행번호 성별 지표들 */
 export function buildMplusData(rows: { gender: GenderKey; x: number[] }[]): string {
@@ -36,9 +39,23 @@ function wrap(prefix: string, names: string[], indent = "    "): string[] {
   return lines;
 }
 
-export function buildMplusInput({ set, k, model, n, stamp }: { set: LpaSet; k: number; model: LpaModel; n: number; stamp: string }): string {
+export function buildMplusInput({
+  set,
+  k,
+  model,
+  n,
+  stamp,
+  love,
+}: {
+  set: LpaSet;
+  k: number;
+  model: LpaModel;
+  n: number;
+  stamp: string;
+  love?: LoveSampleOptions;
+}): string {
   const vars = set.indicators.map((i) => i.mplus);
-  const base = mplusFileBase(set);
+  const base = mplusFileBase(set, love);
   const lines: string[] = [
     `TITLE: Hangyeol LPA - ${set.id}, ${k} classes (${model === "equal" ? "equal" : "class-varying"} variances)`,
     `  n = ${n}, exported ${stamp} KST`,
@@ -50,7 +67,7 @@ export function buildMplusInput({ set, k, model, n, stamp }: { set: LpaSet; k: n
     ...wrap("  NAMES = id gender", vars),
     ...wrap("  USEVARIABLES =", vars),
     "  IDVARIABLE = id;",
-    "  AUXILIARY = gender;   ! 1 = male, 2 = female",
+    set.source === "love" ? "  AUXILIARY = gender;   ! 1 = male, 2 = female, 0 = unknown (guest)" : "  AUXILIARY = gender;   ! 1 = male, 2 = female",
     `  CLASSES = c(${k});`,
     "",
     "ANALYSIS:",

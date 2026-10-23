@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { requireAdmin } from "@/lib/admin/auth";
 import { fitRange, suggestK, type LpaModel } from "@/lib/admin/lpa";
+import { parseLoveSample } from "@/lib/admin/loveSample";
 import { loadLpaRows } from "@/lib/admin/lpaData";
 import { findLpaSet } from "@/lib/admin/lpaSets";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -28,7 +29,8 @@ async function LpaGate({ searchParams }: { searchParams: PageProps<"/admin/lpa">
   const set = findLpaSet(sp.set);
   const model: LpaModel = sp.model === "varying" ? "varying" : "equal";
 
-  const rows = await loadLpaRows(createAdminClient(), set);
+  const love = parseLoveSample(sp);
+  const rows = await loadLpaRows(createAdminClient(), set, love);
   const X = rows.map((r) => r.x);
   const n = X.length;
   const d = set.indicators.length;
@@ -44,6 +46,7 @@ async function LpaGate({ searchParams }: { searchParams: PageProps<"/admin/lpa">
     <LpaView
       set={set}
       model={model}
+      love={love}
       n={n}
       genders={rows.map((r) => r.gender)}
       results={results}

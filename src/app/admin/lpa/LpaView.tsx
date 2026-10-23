@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Notice } from "@/components/ui";
+import { loveSampleQuery, type LoveSampleOptions } from "@/lib/admin/loveSample";
 import { defaultStarts, paramCount, type LpaModel, type LpaResult } from "@/lib/admin/lpa";
 import { LPA_SETS, type LpaSet } from "@/lib/admin/lpaSets";
 import type { GenderKey } from "@/lib/admin/trends";
@@ -14,6 +15,8 @@ const RECOMMENDED_N = 100;
 type Props = {
   set: LpaSet;
   model: LpaModel;
+  /** 연애 상황 검사 표본 (사람마다 첫/최근 검사, 비회원 포함) */
+  love: LoveSampleOptions;
   n: number;
   genders: GenderKey[];
   results: LpaResult[];
@@ -25,8 +28,8 @@ type Props = {
 const fmt = (v: number, digits = 2) => (Number.isFinite(v) ? v.toFixed(digits) : "–");
 const pct = (a: number, b: number) => (b ? `${((a / b) * 100).toFixed(1)}%` : "–");
 
-function hrefOf(set: string, model: LpaModel, k?: number) {
-  const p = new URLSearchParams({ set, model });
+function hrefOf(set: string, model: LpaModel, k?: number, love?: LoveSampleOptions) {
+  const p = new URLSearchParams({ set, model, ...(love && set.startsWith("love") ? loveSampleQuery(love) : {}) });
   if (k) p.set("k", String(k));
   return `/admin/lpa?${p}`;
 }
@@ -100,29 +103,48 @@ function ProfilePlot({ set, r, overall }: { set: LpaSet; r: LpaResult; overall: 
   );
 }
 
-export function LpaView({ set, model, n, genders, results, selected, suggested, overall }: Props) {
+export function LpaView({ set, model, love, n, genders, results, selected, suggested, overall }: Props) {
   const male = genders.filter((g) => g === "male").length;
   const female = genders.filter((g) => g === "female").length;
   const best = (key: "aic" | "bic" | "sabic") => (results.length ? Math.min(...results.map((r) => r[key])) : NaN);
   const starts = defaultStarts(n, set.indicators.length);
-  const mplus = (file: string) => `/admin/lpa/export?set=${set.id}&model=${model}&k=${selected?.k ?? 2}&file=${file}`;
+  const mplus = (file: string) =>
+    `/admin/lpa/export?${new URLSearchParams({ set: set.id, model, k: String(selected?.k ?? 2), file, ...(set.source === "love" ? loveSampleQuery(love) : {}) })}`;
+  const unknown = genders.length - male - female;
 
   return (
     <AdminShell current="lpa">
       <AdminTitle title="잠재프로파일분석 (LPA)" lead="검사 점수로 비슷한 응답 패턴을 가진 집단을 찾아요. 새로 고칠 때마다 같은 결과가 나오도록 시드를 고정했어요." />
 
       <div className="mt-6 space-y-3">
-        <Chips items={LPA_SETS.map((s) => ({ href: hrefOf(s.id, model), label: s.label, active: s.id === set.id }))} />
+        <Chips items={LPA_SETS.map((s) => ({ href: hrefOf(s.id, model, undefined, love), label: s.label, active: s.id === set.id }))} />
         <Chips
           items={[
-            { href: hrefOf(set.id, "equal"), label: "분산 같음 (Mplus 기본)", active: model === "equal" },
-            { href: hrefOf(set.id, "varying"), label: "분산 다름", active: model === "varying" },
+            { href: hrefOf(set.id, "equal", undefined, love), label: "분산 같음 (Mplus 기본)", active: model === "equal" },
+            { href: hrefOf(set.id, "varying", undefined, love), label: "분산 다름", active: model === "varying" },
           ]}
         />
+        {set.source === "love" && (
+          <>
+            <Chips
+              items={[
+                { href: hrefOf(set.id, model, undefined, { ...love, attempt: "first" }), label: "사람마다 첫 검사", active: love.attempt === "first" },
+                { href: hrefOf(set.id, model, undefined, { ...love, attempt: "latest" }), label: "사람마다 가장 최근 검사", active: love.attempt === "latest" },
+              ]}
+            />
+            <Chips
+              items={[
+                { href: hrefOf(set.id, model, undefined, { ...love, guests: true }), label: "가입 전 비회원 포함", active: love.guests },
+                { href: hrefOf(set.id, model, undefined, { ...love, guests: false }), label: "회원만", active: !love.guests },
+              ]}
+            />
+          </>
+        )}
       </div>
       <p className="mt-3 text-sm text-muted">
-        {set.lead} 검사를 마친 {n}명 (남 {male} · 여 {female}), 지표 {set.indicators.length}개. 시작값 {starts.starts}개를 짧게 돌리고 그중 {starts.finalStarts}
-        개를 끝까지 돌려요.
+        {set.lead} 검사를 마친 {n}명 (남 {male} · 여 {female}
+        {unknown ? ` · 성별 모름 ${unknown}` : ""}), 지표 {set.indicators.length}개.
+        {set.source === "love" ? " 지금 문항 버전만, 비회원은 검사 한 번을 한 사람으로 세요." : ""} 시작값 {starts.starts}개를 짧게 돌리고 그중 {starts.finalStarts}개를 끝까지 돌려요.
       </p>
 
       {n < MIN_LPA_N ? (
@@ -171,7 +193,7 @@ export function LpaView({ set, model, n, genders, results, selected, suggested, 
                   return (
                     <tr key={r.k} className={active ? "bg-mist" : "hover:bg-paper"}>
                       <td className={td}>
-                        <Link href={hrefOf(set.id, model, r.k)} className="font-semibold underline underline-offset-4">
+                        <Link href={hrefOf(set.id, model, r.k, love)} className="font-semibold underline underline-offset-4">
                           {r.k}개
                         </Link>
                         {r.k === suggested && <span className="ml-1.5 text-xs text-indigo">추천</span>}

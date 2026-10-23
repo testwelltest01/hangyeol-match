@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { GenderKey } from "@/lib/admin/trends";
 import type { ExtraRow } from "@/lib/extra/server";
 import { cronbachAlpha, meanSd, pearson } from "@/lib/extra/stats";
@@ -178,6 +179,11 @@ function LovePanel({ all }: { all: LoveRowG[] }) {
     <Panel
       className="mt-4"
       title={`연애 상황 보고서 · ${rows.length}명`}
+      aside={
+        <Link href="/admin/extra/love" className="shrink-0 rounded-full bg-ink px-3.5 py-1.5 text-[13px] font-semibold text-white">
+          문항 분석·상관·LPA
+        </Link>
+      }
       lead={`남 ${male.length} · 여 ${female.length} · 가입 전 비회원 ${guests} · 문항 버전 ${LOVE_VERSION} · 검사 ${attempts.length}번(두 번 이상 ${retested.length}명) · 최근 보고서 완료 ${count("done")} · 쓰는 중 ${count("pending")} · 실패 ${count("failed")}. 사람마다 가장 최근 검사로 계산, 평균(표준편차)은 1~5점.`}
     >
       {rows.length === 0 ? (

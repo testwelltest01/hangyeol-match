@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { fitLpa, fitRange, paramCount, suggestK } from "./lpa";
+import { LOVE_SCALES, LOVE_VERSION } from "@/lib/love/items";
+import { pickLoveSample, retestPairs } from "./loveSample";
+import { LPA_SETS, loveMplus } from "./lpaSets";
 
 /** 고정 시드 정규분포 난수 */
 function normal(seed: number) {
@@ -79,5 +82,33 @@ describe("fitLpa", () => {
     const X = twoGroups(6, 6); // 12명
     const results = fitRange(X, 6); // 3지표: k=2 → 10개, k=3 → 14개
     expect(results.map((r) => r.k)).toEqual([1, 2]);
+  });
+});
+
+
+describe("연애 상황 검사 LPA 표본", () => {
+  const a = (id: string, user: string | null, at: string, version = LOVE_VERSION) => ({ id, user_id: user, version, created_at: at });
+  const rows = [
+    a("r2", "u1", "2026-10-21T00:00:00Z"),
+    a("r1", "u1", "2026-10-20T00:00:00Z"),
+    a("g1", null, "2026-10-20T05:00:00Z"),
+    a("old", "u2", "2026-10-19T00:00:00Z", "2026-09-v1"),
+    a("r3", "u3", "2026-10-22T00:00:00Z"),
+  ];
+  it("사람마다 첫/최근 검사 하나, 지금 문항 버전만, 비회원은 검사 한 번이 한 사람", () => {
+    expect(pickLoveSample(rows, { attempt: "first", guests: true }).map((r) => r.id)).toEqual(["r1", "g1", "r3"]);
+    expect(pickLoveSample(rows, { attempt: "latest", guests: true }).map((r) => r.id)).toEqual(["r2", "g1", "r3"]);
+    expect(pickLoveSample(rows, { attempt: "first", guests: false }).map((r) => r.id)).toEqual(["r1", "r3"]);
+    expect(retestPairs(rows).map(([x, y]) => [x.id, y.id])).toEqual([["r1", "r2"]]);
+  });
+  it("연애 지표 묶음: Mplus 이름이 8자 이하이고 겹치지 않는다", () => {
+    const names = LOVE_SCALES.map((s) => loveMplus(s.id));
+    expect(new Set(names).size).toBe(names.length);
+    expect(names.every((n) => /^[A-Z]{1,8}$/.test(n))).toBe(true);
+    const all = LPA_SETS.find((s) => s.id === "love_all")!;
+    expect(all.source).toBe("love");
+    expect(all.indicators).toHaveLength(19);
+    expect(LPA_SETS.find((s) => s.id === "love_relation")!.indicators).toHaveLength(12);
+    expect(LPA_SETS.find((s) => s.id === "love_nature")!.indicators).toHaveLength(7);
   });
 });
