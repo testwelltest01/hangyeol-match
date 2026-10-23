@@ -51,6 +51,7 @@ describe("pushMessages", () => {
   it("새 추천 알림은 추천 화면으로, 하루 하나로 묶는다", () => {
     const m = pushMessages.dailyRecommendations(3);
     expect(m.body).toContain("3명");
+    expect(pushMessages.dailyRecommendations(1).body).toContain("한 사람을");
     expect(m.url).toBe("/match");
     expect(m.tag).toBe("daily");
   });

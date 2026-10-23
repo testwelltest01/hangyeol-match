@@ -45,7 +45,7 @@ export type PushMessage = { title: string; body: string; url: string; tag?: stri
 export const pushMessages = {
   dailyRecommendations: (count: number): PushMessage => ({
     title: "오늘의 추천이 도착했어요",
-    body: `결이 맞는 ${count}명을 새로 골랐어요. 추천 이유부터 확인해보세요.`,
+    body: `결이 맞는 ${count === 1 ? "한 사람을" : `${count}명을`} 새로 골랐어요. 추천 이유부터 확인해보세요.`,
     url: "/match",
     tag: "daily",
   }),

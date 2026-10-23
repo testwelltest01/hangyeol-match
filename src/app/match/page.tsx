@@ -16,7 +16,7 @@ export const maxDuration = 300;
 
 export default function MatchPage() {
   return (
-    <MatchFrame current="today" title="오늘의 추천" sub="매일 저녁 8시에 결이 맞는 3명을 새로 골라요. 서로 관심을 보내면 사진이 공개돼요.">
+    <MatchFrame current="today" title="오늘의 추천" sub="매일 저녁 8시에 결이 맞는 한 사람을 새로 골라요. 서로 관심을 보내면 사진이 공개돼요.">
       <TodayGate />
     </MatchFrame>
   );

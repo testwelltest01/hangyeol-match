@@ -25,7 +25,7 @@ export function RefreshCoupon({ balance, usedToday, canUse }: { balance: number;
         setError(res.error);
         return;
       }
-      setDone(`새로운 ${res.added}명을 골랐어요.`);
+      setDone(res.added === 1 ? "새로운 사람을 골랐어요." : `새로운 ${res.added}명을 골랐어요.`);
       router.refresh();
     });
   }

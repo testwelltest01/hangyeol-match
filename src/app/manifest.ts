@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: "/",
     name: "한결 | 결이 맞는 사람",
     short_name: "한결",
-    description: "가치관 검사로 결이 맞는 사람을 매일 3명 소개해요.",
+    description: "가치관 검사로 결이 맞는 사람을 매일 한 명씩 소개해요.",
     lang: "ko",
     dir: "ltr",
     // 로그인 여부와 진행 단계에 맞는 화면으로 보내준다

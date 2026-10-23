@@ -211,7 +211,7 @@ export function TourClient({ initialGender, nickname, journey, cta }: Props) {
             <span className="py-3 text-center text-muted">관심</span>
             <span className="py-3 text-center text-muted">연결</span>
           </div>
-          <p className="mt-6 text-ink-soft">매일 저녁 8시에 결이 맞는 사람 3명을 새로 골라요. 그중 한 명을 먼저 만나볼게요.</p>
+          <p className="mt-6 text-ink-soft">매일 저녁 8시에 결이 맞는 한 사람을 새로 골라요. 어떻게 만나는지 먼저 따라가 볼게요.</p>
 
           <article className="mt-5 overflow-hidden rounded-2xl border border-line bg-surface">
             <div className="px-5 py-5">
@@ -643,7 +643,7 @@ function Finish({
         <h2 className="font-serif text-2xl font-bold">{left.length ? `진짜 소개까지 ${left.length}단계 남았어요` : "진짜 소개를 받을 준비가 끝났어요"}</h2>
         <p className="mt-2 text-ink-soft">
           {left.length
-            ? `남은 시간은 약 ${minutes}분이에요. 모두 채우면 바로 오늘의 추천이 열리고, 그다음부터 매일 결이 맞는 3명이 찾아와요.`
+            ? `남은 시간은 약 ${minutes}분이에요. 모두 채우면 바로 오늘의 추천이 열리고, 그다음부터 매일 결이 맞는 한 사람이 찾아와요.`
             : "오늘의 추천에서 결이 맞는 진짜 회원을 만나보세요."}
         </p>
         <ol className="mt-6 space-y-2.5">

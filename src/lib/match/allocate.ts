@@ -8,7 +8,8 @@ export type Edge = {
   priority: boolean;
 };
 
-export const PER_USER = 3;
+/** 한 사람이 하루에 받는 추천 수 (2026-10-23 3명 → 1명) */
+export const PER_USER = 1;
 /** 한 사람이 하루에 다른 사람의 추천에 들어갈 수 있는 최대 횟수 */
 export const EXPOSURE_CAP = 6;
 
