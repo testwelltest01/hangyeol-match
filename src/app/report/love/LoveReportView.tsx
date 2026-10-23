@@ -148,7 +148,7 @@ function SceneCard({ n, id, title, scene, image }: { n: number; id: string; titl
  * 다 쓴 보고서. 한 줄 요약 → 화면 안 탭(장면 10가지 슬라이드 · 나의 연애 결(기질·성격, 강점, 잘 맞는 결, 한 가지) · 검사 결과) → 안내.
  * retest면 맨 아래에 '다시 검사하기', share면 그 아래에 이 검사를 친구에게 공유하는 버튼(가입 없이 받는 /love).
  * rewrite가 있으면(예전 PROMPT_VERSION으로 쓴 보고서) 맨 위에 '새 보고서 받기'.
- * reportShare: 공유 칸 맨 위에 넣는 '내 연애 보고서 공유하기'(ReportShare). 있으면 '이 검사 공유하기'는 그 아래 작은 글자로.
+ * reportShare: 공유 칸에 넣는 '내 연애 보고서 공유하기'(ReportShare). 그 아래 따로 '친구도 검사해 보게 하기'(검사 링크 /love만).
  * shared: 남에게 보여주는 화면(/love/s/열쇠). 검사 점수 탭·다시 검사·공유 없이 보고서 글만, 제목은 3인칭으로
  */
 export function LoveReportView({
@@ -308,24 +308,18 @@ export function LoveReportView({
         </div>
       )}
 
+      {share && !shared && reportShare && <div className="mt-4 rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">{reportShare}</div>}
+
+      {/* 내 보고서가 아니라 검사 링크(/love)만 보내서 친구도 자기 보고서를 받아 보게 한다 */}
       {share && !shared && (
         <div className="mt-4 rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
-          {reportShare ? (
-            <>
-              {reportShare}
-              <div className="mt-5 border-t border-line/70 pt-4">
-                <ShareLink path="/love" label="보고서 없이 검사만 공유하기" variant="text" />
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-[15px] font-semibold text-ink">친구도 받아 보게 하기</p>
-              <p className="mt-1 text-[14px] leading-relaxed text-muted">가입하지 않아도 10분이면 자기 연애 상황 보고서를 받아 볼 수 있어요.</p>
-              <div className="mt-4">
-                <ShareLink path="/love" label="이 검사 공유하기" />
-              </div>
-            </>
-          )}
+          <p className="text-[15px] font-semibold text-ink">친구도 검사해 보게 하기</p>
+          <p className="mt-1 text-[14px] leading-relaxed text-muted">
+            가입하지 않아도 10분이면 친구도 자기 연애 상황 보고서를 받아 볼 수 있어요. 검사 링크만 보내고 내 보고서는 보이지 않아요.
+          </p>
+          <div className="mt-4">
+            <ShareLink path="/love" label="친구에게 검사 보내기" />
+          </div>
         </div>
       )}
     </article>
