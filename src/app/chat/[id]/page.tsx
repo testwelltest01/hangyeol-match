@@ -5,6 +5,7 @@ import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
 import { chatState, getChatRoom, loadChatMessages, openChatRoom, syncReads } from "@/lib/chat/server";
 import { decryptText } from "@/lib/crypto";
+import { igVerifiedSet } from "@/lib/instagram/server";
 import { commonGround, talkingPoint } from "@/lib/match/explain";
 import { loadPair, pairStage } from "@/lib/match/server";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
@@ -56,13 +57,14 @@ async function ChatGate({ params }: { params: PageProps<"/chat/[id]">["params"] 
     // 연락처는 둘 다 '연락처 전달'을 누른 뒤에만 읽는다
     room.exchanged_at ? admin.from("contacts").select("instagram, kakao").eq("user_id", id).maybeSingle() : Promise.resolve({ data: null }),
   ]);
+  const instagramVerified = contactRow.data ? (await igVerifiedSet(admin, [id])).has(id) : false;
   if (!profile.data) notFound();
   const theirRead = await syncReads(admin, room, userId!, messages.at(-1)?.id ?? 0);
   const both = myScores.data && theirScores.data ? ([myScores.data.scores as Scores, theirScores.data.scores as Scores] as const) : null;
   const tip = both ? talkingPoint(...both) : null;
   const common = both ? commonGround(...both) : null;
   const contact = contactRow.data
-    ? { instagram: safeDecrypt(contactRow.data.instagram), kakao: safeDecrypt(contactRow.data.kakao) }
+    ? { instagram: safeDecrypt(contactRow.data.instagram), kakao: safeDecrypt(contactRow.data.kakao), instagramVerified }
     : null;
 
   return (

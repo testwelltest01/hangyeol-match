@@ -15,6 +15,7 @@ export function DashboardView({
   recsToday,
   recsAll,
   feedback,
+  igVerified,
   now,
 }: {
   members: MemberRow[];
@@ -23,6 +24,8 @@ export function DashboardView({
   recsToday: number;
   recsAll: number;
   feedback: { outcome: string }[];
+  /** 인스타 확인을 마친 회원 수 */
+  igVerified: number;
   now: Date;
 }) {
   const today = kstDay(now);
@@ -258,6 +261,18 @@ export function DashboardView({
             </li>
           ))}
         </ul>
+      </Panel>
+      <Panel
+        className="mt-4"
+        title={`인스타 확인 ${igVerified}명`}
+        lead="한결 인스타 DM 코드로 인스타 계정을 확인한 회원 (선택)"
+        aside={
+          <Link href="/admin/instagram" className="shrink-0 text-sm font-semibold text-indigo underline-offset-4 hover:underline">
+            설정·상태
+          </Link>
+        }
+      >
+        <p className="text-sm text-ink-soft">추천 카드와 연락처에 &lsquo;인스타 확인됨&rsquo;이 붙어요.</p>
       </Panel>
     </AdminShell>
   );

@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { chatState, myChatRooms, unreadCounts } from "@/lib/chat/server";
 import { matchDay } from "@/lib/day";
 import { shownIllustrationUrls } from "@/lib/illustration/server";
+import { igVerifiedSet } from "@/lib/instagram/server";
 import { profileChips, recommendationReason, talkingPoint } from "@/lib/match/explain";
 import { photosVisible } from "@/lib/match/rules";
 import { pairStage, type Pair, type PairStage } from "@/lib/match/server";
@@ -25,6 +26,8 @@ export type PersonCard = {
   illustrationUrl: string | null;
   /** 얼굴 사진 (10분 서명 주소). 사진이 공개된 단계(서로 관심 이후)에서만 채운다 */
   faceUrl: string | null;
+  /** 한결 인스타 DM 코드로 인스타 계정을 확인한 사람 (아이디는 연락처 전달 뒤에만) */
+  instagramVerified: boolean;
 };
 
 /** 연결된 사람과의 대화방 요약 */
@@ -102,9 +105,10 @@ export async function loadDashboard(admin: SupabaseClient, me: string, myScores:
     : [{ data: [] }, { data: [] }, { data: [] }];
 
   // 그림 프로필은 모두(고른 그림, 없으면 최근 그림), 얼굴은 사진이 공개된 단계(서로 관심 이후)인 사람만
-  const [illustrations, faces] = await Promise.all([
+  const [illustrations, faces, igVerified] = await Promise.all([
     shownIllustrationUrls(admin, visible),
     revealedFaceUrls(admin, visible.filter((id) => photosVisible(stages.get(id)!))),
+    igVerifiedSet(admin, visible),
   ]);
   const profileById = new Map((profiles.data ?? []).map((p) => [p.id, p]));
   const mpById = new Map((matchProfiles.data ?? []).map((p) => [p.user_id, p]));
@@ -129,6 +133,7 @@ export async function loadDashboard(admin: SupabaseClient, me: string, myScores:
       likedMe: theirs.get(id)?.interest === true,
       illustrationUrl: illustrations.get(id) ?? null,
       faceUrl: faces.get(id) ?? null,
+      instagramVerified: igVerified.has(id),
     };
   };
 

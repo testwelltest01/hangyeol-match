@@ -4,10 +4,12 @@ import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
 import { PageTitle } from "@/components/ui";
 import { decryptText } from "@/lib/crypto";
+import { igOfficial, myIgVerification } from "@/lib/instagram/server";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserId } from "@/lib/supabase/server";
 import { ContactForm } from "./ContactForm";
+import { InstagramVerify } from "./InstagramVerify";
 
 export default function ContactPage() {
   return (
@@ -37,6 +39,19 @@ async function ContactGate() {
   const progress = await getProgress(userId);
   if (progress !== "report") redirect(PROGRESS_PATH[progress]);
 
-  const { data } = await createAdminClient().from("contacts").select("instagram, kakao").eq("user_id", userId!).maybeSingle();
-  return <ContactForm initial={{ instagram: safeDecrypt(data?.instagram ?? null), kakao: safeDecrypt(data?.kakao ?? null) }} />;
+  const admin = createAdminClient();
+  const [{ data }, verified] = await Promise.all([
+    admin.from("contacts").select("instagram, kakao").eq("user_id", userId!).maybeSingle(),
+    myIgVerification(admin, userId!),
+  ]);
+  const initial = { instagram: safeDecrypt(data?.instagram ?? null), kakao: safeDecrypt(data?.kakao ?? null) };
+  const official = igOfficial();
+  return (
+    <>
+      {/* 인스타 확인(선택): 공식 계정이 설정돼 있을 때만 */}
+      {official && <InstagramVerify official={official} verified={verified ? { username: verified.username } : null} />}
+      {/* 확인으로 인스타 아이디가 바뀌면 입력칸을 새 값으로 다시 그린다 */}
+      <ContactForm key={initial.instagram} initial={initial} verifiedInstagram={verified?.username ?? null} />
+    </>
+  );
 }

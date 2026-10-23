@@ -23,12 +23,13 @@ async function DashboardGate() {
   const admin = createAdminClient();
   // 지금 보이는 추천 묶음 (저녁 8시에 바뀐다)
   const today = matchDay();
-  const [{ members, reactions }, reports, recsToday, recsAll, feedback] = await Promise.all([
+  const [{ members, reactions }, reports, recsToday, recsAll, feedback, igVerified] = await Promise.all([
     loadMembers(admin),
     loadReports(admin),
     admin.from("recommendations").select("target_id", { count: "exact", head: true }).eq("day", today),
     admin.from("recommendations").select("target_id", { count: "exact", head: true }),
     fetchAll<{ outcome: string }>((a, b) => admin.from("meeting_feedback").select("outcome").range(a, b)),
+    admin.from("instagram_verifications").select("user_id", { count: "exact", head: true }),
   ]);
 
   return (
@@ -39,6 +40,7 @@ async function DashboardGate() {
       recsToday={recsToday.count ?? 0}
       recsAll={recsAll.count ?? 0}
       feedback={feedback}
+      igVerified={igVerified.count ?? 0}
       now={new Date()}
     />
   );

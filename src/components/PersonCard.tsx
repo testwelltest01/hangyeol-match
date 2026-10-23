@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Avatar } from "@/components/app-ui";
+import { IgVerifiedBadge } from "@/components/IgVerifiedBadge";
 import { LikedBadge } from "@/components/LikedBadge";
 import type { PersonCard as Card } from "@/lib/match/dashboard";
 import { regionLabel } from "@/lib/regions";
@@ -53,6 +54,7 @@ export function PersonCardView({
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <h3 className="font-serif text-xl font-bold leading-tight">{card.nickname}</h3>
               {card.likedMe && card.stage === "new" && <LikedBadge />}
+              {card.instagramVerified && <IgVerifiedBadge />}
             </div>
             <p className="mt-0.5 text-[13px] text-muted">{personLine(card)}</p>
           </div>

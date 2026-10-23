@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { sendChatMessage, setContactShare } from "@/app/chat/actions";
 import { CopyText } from "@/components/CopyText";
 import { DateTipsButton } from "@/components/DateTips";
+import { IgVerifiedBadge } from "@/components/IgVerifiedBadge";
 import { checkChatMessage, MAX_MESSAGE_CHARS } from "@/lib/chat/rules";
 import type { ChatMessageView, ChatState } from "@/lib/chat/server";
 import { dateTipsSeenKey } from "@/lib/dateTips";
@@ -28,7 +29,7 @@ type Props = {
   initialMessages: ChatMessageView[];
   initialState: ChatState;
   initialTheirRead: number;
-  contact: { instagram: string | null; kakao: string | null } | null;
+  contact: { instagram: string | null; kakao: string | null; instagramVerified?: boolean } | null;
   /** 둘 다 신경 쓰는데 다른 영역 (첫 인사 안내·첫 만남 팁) */
   tip: string | null;
   /** 가장 비슷한 영역 (첫 만남 팁) */
@@ -358,7 +359,10 @@ function ContactPanel({
             {contact.instagram && (
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <dt className="text-xs text-muted">인스타그램</dt>
+                  <dt className="flex items-center gap-2 text-xs text-muted">
+                    인스타그램
+                    {contact.instagramVerified && <IgVerifiedBadge short />}
+                  </dt>
                   <dd className="font-semibold">@{contact.instagram}</dd>
                 </div>
                 <CopyText text={contact.instagram} />

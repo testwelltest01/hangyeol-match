@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Avatar } from "@/components/app-ui";
 import { DateTipsButton } from "@/components/DateTips";
+import { IgVerifiedBadge } from "@/components/IgVerifiedBadge";
 import { LikedBadge } from "@/components/LikedBadge";
 import { Loading } from "@/components/Loading";
 import { personLine } from "@/components/PersonCard";
@@ -13,6 +14,7 @@ import { Notice } from "@/components/ui";
 import { getChatRoom, unreadCounts } from "@/lib/chat/server";
 import { decryptText } from "@/lib/crypto";
 import { shownIllustrationUrls } from "@/lib/illustration/server";
+import { igVerifiedSet } from "@/lib/instagram/server";
 import { loadExtraResults, sharedScores } from "@/lib/extra/server";
 import { EXTRA_TESTS, extraCommonalities, summarizeExtra } from "@/lib/extra/tests";
 import { commonGround, domainComparison, profileChips, recommendationReason, talkingPoint } from "@/lib/match/explain";
@@ -71,7 +73,9 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
     loadExtraResults(admin, id),
     loadExtraResults(admin, userId!),
   ]);
-  const illustrationUrl = (await shownIllustrationUrls(admin, [id])).get(id) ?? null;
+  const [illustrationUrls, igVerified] = await Promise.all([shownIllustrationUrls(admin, [id]), igVerifiedSet(admin, [id])]);
+  const illustrationUrl = illustrationUrls.get(id) ?? null;
+  const instagramVerified = igVerified.has(id);
   if (!profile.data || !mp.data || !theirScores.data) notFound();
 
   const mine = myScores.data!.scores as Scores;
@@ -119,7 +123,10 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
       <div className="flex items-center gap-4">
         {!showPhotos && !illustrationUrl && <Avatar name={name} size={56} />}
         <div className="min-w-0 flex-1">
-          <h1 className="font-serif text-[1.8rem] font-bold leading-tight">{name}</h1>
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+            <h1 className="font-serif text-[1.8rem] font-bold leading-tight">{name}</h1>
+            {instagramVerified && <IgVerifiedBadge />}
+          </div>
           <p className="mt-0.5 text-[14px] text-muted">{personLine({ birthYear: profile.data.birth_year, region: mp.data.region, height: mp.data.height })}</p>
         </div>
         {stage === "new" && pair.theirs?.interest === true && <LikedBadge />}
@@ -251,7 +258,10 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
               {contact.instagram && (
                 <div className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3">
                   <div>
-                    <dt className="text-sm text-muted">인스타그램</dt>
+                    <dt className="flex items-center gap-2 text-sm text-muted">
+                      인스타그램
+                      {instagramVerified && <IgVerifiedBadge short />}
+                    </dt>
                     <dd className="font-semibold">@{contact.instagram}</dd>
                   </div>
                   <CopyButton text={contact.instagram} />

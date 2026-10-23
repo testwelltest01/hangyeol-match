@@ -16,6 +16,7 @@ import {
   type MatchPerson,
 } from "@/lib/match/filters";
 import { startAutoIllustration } from "@/lib/illustration/server";
+import { syncIgVerification } from "@/lib/instagram/server";
 import { loadMySetup, nextSetupPath } from "@/lib/match/me";
 import { countMutualMatches, loadPool } from "@/lib/match/server";
 import { analyzePhoto, type Improvement, type PhotoSlot, type UserView } from "@/lib/photo/feedback";
@@ -166,8 +167,11 @@ export async function saveContact(_prev: FormState, formData: FormData): Promise
     console.error(e);
     return { error: "서버 설정 문제로 저장하지 못했어요. 운영자에게 알려주세요." };
   }
-  const { error } = await createAdminClient().from("contacts").upsert(row);
+  const admin = createAdminClient();
+  const { error } = await admin.from("contacts").upsert(row);
   if (error) return { error: "저장하지 못했어요. 다시 시도해주세요." };
+  // 인스타 아이디를 확인한 아이디와 다르게 바꾸거나 지우면 '인스타 확인됨'을 푼다
+  await syncIgVerification(admin, userId, instagram);
 
   const setup = await loadMySetup(userId);
   redirect(setup ? nextSetupPath(setup, "contact") : "/match");

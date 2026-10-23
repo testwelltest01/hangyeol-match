@@ -1,6 +1,7 @@
 "use server";
 
 import { getAdmin } from "@/lib/admin/auth";
+import { refreshIgToken, subscribeIgWebhooks } from "@/lib/instagram/server";
 import { allow, TOO_MANY, UUID_RE } from "@/lib/security";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -42,4 +43,18 @@ export async function resolveReport(reportId: number): Promise<Result> {
     .is("resolved_at", null);
   if (error) return { ok: false, error: "저장하지 못했어요." };
   return { ok: true };
+}
+
+/** 인스타 확인: 공식 계정이 DM 알림(웹훅)을 받도록 메타 앱에 연결한다 (src/lib/instagram/server.ts) */
+export async function subscribeInstagram(): Promise<{ ok: boolean; message: string }> {
+  const g = await guard();
+  if ("error" in g) return { ok: false, message: g.error };
+  return subscribeIgWebhooks(createAdminClient());
+}
+
+/** 인스타 확인: 공식 계정 토큰을 지금 갱신한다 (평소에는 크론이 7일마다) */
+export async function refreshInstagramToken(): Promise<{ ok: boolean; message: string }> {
+  const g = await guard();
+  if ("error" in g) return { ok: false, message: g.error };
+  return refreshIgToken(createAdminClient(), true);
 }

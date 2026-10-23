@@ -20,7 +20,8 @@ export type MySetup = {
     paused: boolean;
   } | null;
   photos: { face: PhotoRow | null; body: PhotoRow | null };
-  contact: { instagram: boolean; kakao: boolean } | null;
+  /** instagramVerified = 한결 인스타 DM 코드로 인스타 계정을 확인함 (선택) */
+  contact: { instagram: boolean; kakao: boolean; instagramVerified: boolean } | null;
   consents: { religion: boolean; photoOverseas: boolean; illustration: boolean };
   /** 그림 프로필 (매칭에 꼭 필요). done = 다 그린(지우지 않은) 그림이 있음, drawing = 지금 그리는 중 */
   illustration: { done: boolean; drawing: boolean };
@@ -32,7 +33,7 @@ export type MySetup = {
 /** 매칭 준비 상태. 서버에서 로그인 사용자를 확인한 뒤에만 부른다 */
 export async function loadMySetup(userId: string): Promise<MySetup | null> {
   const admin = createAdminClient();
-  const [profile, mp, photos, contact, consents, flag, friends, illus] = await Promise.all([
+  const [profile, mp, photos, contact, consents, flag, friends, illus, igVerified] = await Promise.all([
     admin.from("profiles").select("nickname, gender, birth_year").eq("id", userId).maybeSingle(),
     admin
       .from("match_profiles")
@@ -50,6 +51,7 @@ export async function loadMySetup(userId: string): Promise<MySetup | null> {
       .eq("user_id", userId)
       .is("deleted_at", null)
       .in("status", ["done", "pending"]),
+    admin.from("instagram_verifications").select("user_id").eq("user_id", userId).maybeSingle(),
   ]);
   if (!profile.data) return null;
 
@@ -62,7 +64,9 @@ export async function loadMySetup(userId: string): Promise<MySetup | null> {
     birthYear: profile.data.birth_year,
     matchProfile: mp.data ? { ...mp.data, filters: mp.data.filters as Filters } : null,
     photos: { face: rows.find((r) => r.slot === "face") ?? null, body: rows.find((r) => r.slot === "body") ?? null },
-    contact: contact.data ? { instagram: Boolean(contact.data.instagram), kakao: Boolean(contact.data.kakao) } : null,
+    contact: contact.data
+      ? { instagram: Boolean(contact.data.instagram), kakao: Boolean(contact.data.kakao), instagramVerified: Boolean(igVerified.data) }
+      : null,
     consents: { religion: kinds.has("religion"), photoOverseas: kinds.has("photo_overseas"), illustration: kinds.has("illustration") },
     illustration: {
       done: (illus.data ?? []).some((r) => r.status === "done"),

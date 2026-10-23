@@ -14,19 +14,28 @@ export function CodeBoxes({
   onChange,
   onComplete,
   disabled = false,
+  id = "email-code",
+  label = "인증 코드",
+  autoFocus = true,
 }: {
   value: string;
   onChange: (v: string) => void;
   onComplete: (v: string) => void;
   disabled?: boolean;
+  id?: string;
+  label?: string;
+  /** false면 처음에는 포커스를 주지 않는다(다른 입력이 있는 화면). 한 번 쓰기 시작한 뒤 비워지면 다시 포커스 */
+  autoFocus?: boolean;
 }) {
   const ref = useRef<HTMLInputElement>(null);
+  const typed = useRef(false);
   const active = Math.min(value.length, OTP_LENGTH - 1);
 
   // 틀려서 비워졌거나 확인이 끝나 다시 쓸 수 있게 되면 바로 이어서 칠 수 있게
   useEffect(() => {
-    if (!disabled && value === "") ref.current?.focus();
-  }, [disabled, value]);
+    if (value) typed.current = true;
+    else if (!disabled && (autoFocus || typed.current)) ref.current?.focus();
+  }, [disabled, value, autoFocus]);
 
   return (
     // 입력칸에 포커스가 있을 때만 지금 칠 칸을 강조한다 (group-focus-within)
@@ -50,10 +59,10 @@ export function CodeBoxes({
       </div>
       <input
         ref={ref}
-        id="email-code"
-        aria-label={`인증 코드 ${OTP_LENGTH}자리`}
+        id={id}
+        aria-label={`${label} ${OTP_LENGTH}자리`}
         required
-        autoFocus
+        autoFocus={autoFocus}
         autoComplete="one-time-code"
         inputMode="numeric"
         pattern={`[0-9]{${OTP_LENGTH}}`}

@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { CHAT_BODY_RETENTION_DAYS } from "@/lib/chat/rules";
 import { matchDay } from "@/lib/day";
+import { purgeIgCodes, refreshIgToken } from "@/lib/instagram/server";
 import { purgeGuestLove } from "@/lib/love/server";
 import { purgeApiUsage } from "@/lib/usage/server";
 import { generateRecommendations } from "@/lib/match/server";
@@ -64,6 +65,9 @@ export async function GET(request: Request) {
   const loveGuestPurged = await purgeGuestLove(admin).catch(() => 0);
   // API 호출 기록(관리자 'API 사용량')은 400일 뒤 지운다 (회원을 가리키는 값은 없다)
   const apiUsagePurged = await purgeApiUsage(admin).catch(() => 0);
+  // 인스타 확인: 하루 지난 코드는 지우고(처리방침), 공식 계정 토큰(60일)은 7일마다 새로 받는다
+  const igCodesPurged = await purgeIgCodes(admin).catch(() => 0);
+  const igToken = process.env.INSTAGRAM_ACCESS_TOKEN ? (await refreshIgToken(admin).catch(() => ({ ok: false, message: "error" }))).message : null;
 
-  return Response.json({ day, created, notified, purged, chatPurged: chatPurged ?? 0, loveGuestPurged, apiUsagePurged });
+  return Response.json({ day, created, notified, purged, chatPurged: chatPurged ?? 0, loveGuestPurged, apiUsagePurged, igCodesPurged, igToken });
 }

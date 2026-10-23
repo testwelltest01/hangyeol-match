@@ -229,7 +229,14 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
               ["지역", setup?.matchProfile ? regionLabel(setup.matchProfile.region) : null],
               ["키", setup?.matchProfile ? `${setup.matchProfile.height}cm` : null],
               ["검사", scoreRow.data ? `${kstTime(scoreRow.data.computed_at)} (${scoreRow.data.version})` : null],
-              ["연락처", setup?.contact ? [setup.contact.instagram && "인스타그램", setup.contact.kakao && "카카오톡"].filter(Boolean).join(", ") + " 등록" : null],
+              [
+                "연락처",
+                setup?.contact
+                  ? [setup.contact.instagram && "인스타그램", setup.contact.kakao && "카카오톡"].filter(Boolean).join(", ") +
+                    " 등록" +
+                    (setup.contact.instagramVerified ? " · 인스타 확인됨" : "")
+                  : null,
+              ],
               ["추천받음", `${recsReceived.count ?? 0}번`],
               ["추천됨", `${recsShown.count ?? 0}번`],
               ["정지 사유", suspended ? `${flag.data?.reason ?? ""} (${kstTime(flag.data?.suspended_at)})` : null],
