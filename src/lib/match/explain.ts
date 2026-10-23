@@ -56,6 +56,13 @@ export function talkingPoint(viewer: Scores, cand: Scores): string | null {
   return `${josa(DOMAIN_PHRASE[diff.domain], "은", "는")} 조금 달라요. 만나면 먼저 이야기해보세요.`;
 }
 
+/** 두 사람이 가장 비슷한 영역 한 줄 (첫 만남 팁의 '공통점'). 충분히 비슷한 영역이 없으면 null */
+export function commonGround(viewer: Scores, cand: Scores): string | null {
+  const top = domainSims(viewer, cand).sort((a, b) => b.sim - a.sim || b.weight - a.weight)[0];
+  if (!top || top.sim < 0.7) return null;
+  return `${josa(DOMAIN_PHRASE[top.domain], "이", "가")} 가장 비슷해요. 만나서 '저도요'가 나오기 쉬운 이야기예요.`;
+}
+
 /** 카드에 붙이는 짧은 성향 3개: 가장 뚜렷하게 기운 답부터 */
 export function profileChips(scores: Scores, count = 3): string[] {
   return VALUE_ITEMS.map((v) => ({ v, value: scores.values.items[v.id] }))

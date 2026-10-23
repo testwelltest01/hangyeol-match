@@ -129,6 +129,14 @@ body {
   }
 }
 
+/* 아래에서 올라오는 창 (첫 만남 팁 DateTips) */
+@keyframes sheet-up {
+  from {
+    opacity: 0.6;
+    transform: translateY(32px);
+  }
+}
+
 /* 가상 매칭 둘러보기: 새로 나타나는 블록·메시지 */
 @keyframes rise-in {
   from {

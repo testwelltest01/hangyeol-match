@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Avatar } from "@/components/app-ui";
+import { DateTipsButton } from "@/components/DateTips";
 import { LikedBadge } from "@/components/LikedBadge";
 import { Loading } from "@/components/Loading";
 import { personLine } from "@/components/PersonCard";
@@ -14,7 +15,7 @@ import { decryptText } from "@/lib/crypto";
 import { shownIllustrationUrls } from "@/lib/illustration/server";
 import { loadExtraResults, sharedScores } from "@/lib/extra/server";
 import { EXTRA_TESTS, extraCommonalities, summarizeExtra } from "@/lib/extra/tests";
-import { domainComparison, profileChips, recommendationReason, talkingPoint } from "@/lib/match/explain";
+import { commonGround, domainComparison, profileChips, recommendationReason, talkingPoint } from "@/lib/match/explain";
 import { signedPhotoUrls } from "@/lib/match/me";
 import { photosVisible } from "@/lib/match/rules";
 import { FIRST_MEETING_GUIDE } from "@/lib/match/safety";
@@ -273,6 +274,10 @@ async function PersonGate({ params }: { params: PageProps<"/people/[id]">["param
                   <li key={g}>{g}</li>
                 ))}
               </ul>
+            </div>
+            {/* 연구로 확인된 첫 만남 팁 (대화방 연락처 칸에도 같은 버튼) */}
+            <div className="mt-4">
+              <DateTipsButton name={name} hints={{ common: commonGround(mine, theirs), differ: talk }} />
             </div>
             <div id="feedback" className="mt-10">
               <MeetingFeedbackForm targetId={id} name={name} answered={feedback?.outcome ?? null} />

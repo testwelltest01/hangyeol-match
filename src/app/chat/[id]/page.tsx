@@ -5,7 +5,7 @@ import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
 import { chatState, getChatRoom, loadChatMessages, openChatRoom, syncReads } from "@/lib/chat/server";
 import { decryptText } from "@/lib/crypto";
-import { talkingPoint } from "@/lib/match/explain";
+import { commonGround, talkingPoint } from "@/lib/match/explain";
 import { loadPair, pairStage } from "@/lib/match/server";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
 import type { Scores } from "@/lib/scoring";
@@ -58,8 +58,9 @@ async function ChatGate({ params }: { params: PageProps<"/chat/[id]">["params"] 
   ]);
   if (!profile.data) notFound();
   const theirRead = await syncReads(admin, room, userId!, messages.at(-1)?.id ?? 0);
-  const tip =
-    myScores.data && theirScores.data ? talkingPoint(myScores.data.scores as Scores, theirScores.data.scores as Scores) : null;
+  const both = myScores.data && theirScores.data ? ([myScores.data.scores as Scores, theirScores.data.scores as Scores] as const) : null;
+  const tip = both ? talkingPoint(...both) : null;
+  const common = both ? commonGround(...both) : null;
   const contact = contactRow.data
     ? { instagram: safeDecrypt(contactRow.data.instagram), kakao: safeDecrypt(contactRow.data.kakao) }
     : null;
@@ -73,6 +74,7 @@ async function ChatGate({ params }: { params: PageProps<"/chat/[id]">["params"] 
       initialTheirRead={theirRead}
       contact={contact}
       tip={tip}
+      common={common}
     />
   );
 }

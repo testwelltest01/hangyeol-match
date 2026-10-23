@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { sendChatMessage, setContactShare } from "@/app/chat/actions";
 import { CopyText } from "@/components/CopyText";
+import { DateTipsButton } from "@/components/DateTips";
 import { checkChatMessage, MAX_MESSAGE_CHARS } from "@/lib/chat/rules";
 import type { ChatMessageView, ChatState } from "@/lib/chat/server";
+import { dateTipsSeenKey } from "@/lib/dateTips";
 
 // 서버와 브라우저가 같은 글자를 그리도록 시간대를 고정한다
 const timeFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", hour: "numeric", minute: "2-digit" });
@@ -27,10 +29,13 @@ type Props = {
   initialState: ChatState;
   initialTheirRead: number;
   contact: { instagram: string | null; kakao: string | null } | null;
+  /** 둘 다 신경 쓰는데 다른 영역 (첫 인사 안내·첫 만남 팁) */
   tip: string | null;
+  /** 가장 비슷한 영역 (첫 만남 팁) */
+  common: string | null;
 };
 
-export function ChatRoom({ otherId, name, initialMessages, initialState, initialTheirRead, contact, tip }: Props) {
+export function ChatRoom({ otherId, name, initialMessages, initialState, initialTheirRead, contact, tip, common }: Props) {
   const router = useRouter();
   const [messages, setMessages] = useState(initialMessages);
   const [state, setState] = useState(initialState);
@@ -208,7 +213,15 @@ export function ChatRoom({ otherId, name, initialMessages, initialState, initial
         </Link>
       </div>
 
-      <ContactPanel state={state} name={name} contact={contact} pending={contactPending} onToggle={toggleContact} otherId={otherId} />
+      <ContactPanel
+        state={state}
+        name={name}
+        contact={contact}
+        pending={contactPending}
+        onToggle={toggleContact}
+        otherId={otherId}
+        hints={{ common, differ: tip }}
+      />
 
       {messages.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-line px-5 py-6 text-center">
@@ -325,6 +338,7 @@ function ContactPanel({
   pending,
   onToggle,
   otherId,
+  hints,
 }: {
   state: ChatState;
   name: string;
@@ -332,6 +346,7 @@ function ContactPanel({
   pending: boolean;
   onToggle: (on: boolean) => void;
   otherId: string;
+  hints: { common: string | null; differ: string | null };
 }) {
   const box = "mt-5 rounded-2xl px-4 py-4";
   if (state.exchanged) {
@@ -362,6 +377,10 @@ function ContactPanel({
         ) : (
           <p className="mt-2 text-sm text-ink-soft">연락처를 불러오는 중이에요.</p>
         )}
+        {/* 연구로 확인된 첫 만남 팁. 이 기기에서 처음 연락처를 주고받은 걸 볼 때 한 번은 알아서 열린다 */}
+        <div className="mt-4">
+          <DateTipsButton name={name} hints={hints} autoOpenKey={dateTipsSeenKey(otherId)} />
+        </div>
         <Link href={`/people/${otherId}#feedback`} className="mt-3 inline-block text-sm text-muted underline underline-offset-4">
           첫 만남 안전 수칙
         </Link>
