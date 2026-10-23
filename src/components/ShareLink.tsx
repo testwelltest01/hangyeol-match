@@ -4,9 +4,9 @@ import { useState } from "react";
 
 /**
  * 한결 안의 주소(path)를 공유하는 버튼. 링크만 보낸다 (문구를 붙이면 카카오톡 등에 그대로 같이 보내진다. 미리보기는 그 페이지의 제목·설명이 맡는다).
- * 공유 창이 없거나 닫으면 링크를 복사한다
+ * 공유 창이 없거나 닫으면 링크를 복사한다. variant="text"면 작은 밑줄 글자 버튼 (한 칸에 큰 버튼이 이미 있을 때)
  */
-export function ShareLink({ path, label }: { path: string; label: string }) {
+export function ShareLink({ path, label, variant = "button" }: { path: string; label: string; variant?: "button" | "text" }) {
   const [copied, setCopied] = useState(false);
 
   async function share() {
@@ -32,7 +32,11 @@ export function ShareLink({ path, label }: { path: string; label: string }) {
       <button
         type="button"
         onClick={share}
-        className="w-full rounded-full border border-primary px-6 py-3 text-[15px] font-semibold text-primary transition-colors hover:bg-primary hover:text-white active:scale-[0.98] active:opacity-80"
+        className={
+          variant === "text"
+            ? "mx-auto block text-[14px] text-muted underline underline-offset-4"
+            : "w-full rounded-full border border-primary px-6 py-3 text-[15px] font-semibold text-primary transition-colors hover:bg-primary hover:text-white active:scale-[0.98] active:opacity-80"
+        }
       >
         {label}
       </button>

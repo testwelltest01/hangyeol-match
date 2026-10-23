@@ -6,11 +6,14 @@ import { PrimaryButton } from "@/components/buttons";
 import { inAppNow, iosNow, openOutside } from "@/lib/openOutside";
 
 const TRIED_KEY = "hg-inapp-escape";
+/** 앱 안 브라우저에서도 그 자리에서 보여주는 주소 */
+const STAY = ["/f/", "/love/s/"];
 
 /**
  * 카카오톡 같은 앱 안 브라우저로 한결이 열리면 바로 밖의 브라우저로 넘긴다 (아이폰은 Safari, 안드로이드는 기본 브라우저).
  * 앱 창에서 가입하면 로그인·홈 화면 추가가 그 창에 묶이기 때문이다.
  * - 친구 평가(/f/)는 친구가 그 자리에서 1분 만에 끝내도록 넘기지 않는다 (끝난 화면의 '시작하기'가 넘긴다)
+ * - 공유받은 연애 상황 보고서(/love/s/)도 그 자리에서 읽게 둔다 (아래 '나도 검사해보기'가 넘긴다)
  * - 한 번 시도했으면 같은 창에서는 다시 자동으로 넘기지 않는다(sessionStorage). 넘긴 뒤 이 창에는 안내를 띄우고
  *   '다시 열기'와 '여기서 계속 보기'를 둔다 (앱이 막아 못 넘긴 경우에도 쓸 수 있게)
  * 루트 레이아웃에 둔다
@@ -22,7 +25,7 @@ export function InAppEscape() {
 
   useEffect(() => {
     const escape = () => {
-      if (!inAppNow() || pathname.startsWith("/f/")) return;
+      if (!inAppNow() || STAY.some((p) => pathname.startsWith(p))) return;
       try {
         if (sessionStorage.getItem(TRIED_KEY)) return;
         sessionStorage.setItem(TRIED_KEY, "1");

@@ -147,7 +147,9 @@ function SceneCard({ n, id, title, scene, image }: { n: number; id: string; titl
 /**
  * 다 쓴 보고서. 한 줄 요약 → 화면 안 탭(장면 10가지 슬라이드 · 나의 연애 결(기질·성격, 강점, 잘 맞는 결, 한 가지) · 검사 결과) → 안내.
  * retest면 맨 아래에 '다시 검사하기', share면 그 아래에 이 검사를 친구에게 공유하는 버튼(가입 없이 받는 /love).
- * rewrite가 있으면(예전 PROMPT_VERSION으로 쓴 보고서) 맨 위에 '새 보고서 받기'
+ * rewrite가 있으면(예전 PROMPT_VERSION으로 쓴 보고서) 맨 위에 '새 보고서 받기'.
+ * reportShare: 공유 칸 맨 위에 넣는 '내 연애 보고서 공유하기'(ReportShare). 있으면 '이 검사 공유하기'는 그 아래 작은 글자로.
+ * shared: 남에게 보여주는 화면(/love/s/열쇠). 검사 점수 탭·다시 검사·공유 없이 보고서 글만, 제목은 3인칭으로
  */
 export function LoveReportView({
   report,
@@ -158,9 +160,12 @@ export function LoveReportView({
   guest = false,
   images = {},
   rewrite,
+  reportShare,
+  shared = false,
 }: {
   report: LoveReport;
-  scores: LoveScores;
+  /** 검사 점수 (shared면 넘기지 않는다) */
+  scores?: LoveScores;
   completedAt: string | null;
   retest?: boolean;
   share?: boolean;
@@ -170,15 +175,18 @@ export function LoveReportView({
   guest?: boolean;
   /** 같은 답으로 새 형식 보고서를 쓰는 서버 액션 (예전 형식 보고서에만 넘긴다) */
   rewrite?: () => Promise<{ ok: true } | { ok: false; error: string }>;
+  reportShare?: ReactNode;
+  shared?: boolean;
 }) {
-  // 문항 버전이 바뀌기 전 결과에는 없는 척도가 있어서, 점수가 있는 것만 보여준다
-  const shown = LOVE_SCALES.filter((s) => typeof scores[s.id] === "number");
+  // 문항 버전이 바뀌기 전 결과에는 없는 척도가 있어서, 점수가 있는 것만 보여준다. 남에게 보여주는 화면에는 점수를 넣지 않는다
+  const points = shared ? undefined : scores;
+  const shown = points ? LOVE_SCALES.filter((s) => typeof points[s.id] === "number") : [];
   const date = completedAt
     ? new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "long", day: "numeric" }).format(new Date(completedAt))
     : null;
   return (
     <article>
-      {rewrite && <RewriteOffer rewrite={rewrite} news={PROMPT_NEWS} />}
+      {rewrite && !shared && <RewriteOffer rewrite={rewrite} news={PROMPT_NEWS} />}
       <p className="text-sm font-semibold text-indigo">연애 상황 보고서</p>
       <h1 className="mt-1.5 font-serif text-[1.8rem] font-bold leading-snug text-ink">{report.headline}</h1>
       <p className="mt-4 text-[15.5px] leading-relaxed text-ink-soft">{report.summary}</p>
@@ -203,7 +211,7 @@ export function LoveReportView({
           },
           {
             id: "summary",
-            label: "나의 연애 결",
+            label: shared ? "연애 결" : "나의 연애 결",
             content: (
               <div className="space-y-8">
                 {report.nature && (
@@ -211,7 +219,7 @@ export function LoveReportView({
                     <p className="rounded-[22px] bg-surface px-5 py-5 text-[15px] leading-relaxed text-ink ring-1 ring-line/80">{report.nature}</p>
                   </Part>
                 )}
-                <Part title="연애에서 나의 강점">
+                <Part title={shared ? "연애에서의 강점" : "연애에서 나의 강점"}>
                   <ul className="space-y-3 rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
                     {report.strengths.map((s) => (
                       <li key={s} className="flex gap-3 text-[15px] leading-relaxed text-ink">
@@ -223,7 +231,7 @@ export function LoveReportView({
                     ))}
                   </ul>
                 </Part>
-                <Part title="나와 결이 맞는 사람">
+                <Part title={shared ? "결이 맞는 사람" : "나와 결이 맞는 사람"}>
                   <div className="space-y-5 rounded-[22px] bg-surface px-5 py-6 text-[15px] leading-relaxed ring-1 ring-line/80">
                     <div>
                       <p className="text-[13px] font-semibold text-moss">잘 맞는 결</p>
@@ -242,39 +250,52 @@ export function LoveReportView({
               </div>
             ),
           },
-          {
-            id: "scores",
-            label: `검사 결과 ${shown.length}가지`,
-            content: (
-              <>
-                <p className="mb-4 px-1 text-[14px] leading-relaxed text-muted">
-                  보고서의 바탕이 된 검사 결과예요. 점이 가까운 쪽이 나에 더 가까워요. 좋고 나쁨이 아니라 방향의 차이예요.
-                </p>
-                <div className="space-y-4">
-                  {LOVE_GROUPS.filter((g) => shown.some((s) => s.group === g.id)).map((g) => (
-                    <div key={g.id} className="rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
-                      <h3 className="text-[13px] font-semibold text-muted">{g.label}</h3>
-                      <div className="mt-3 space-y-5">
-                        {shown.filter((s) => s.group === g.id).map((s) => (
-                          <ScaleTrack key={s.id} label={s.label} low={s.low} high={s.high} score={scores[s.id]} />
+          ...(points && shown.length > 0
+            ? [
+                {
+                  id: "scores",
+                  label: `검사 결과 ${shown.length}가지`,
+                  content: (
+                    <>
+                      <p className="mb-4 px-1 text-[14px] leading-relaxed text-muted">
+                        보고서의 바탕이 된 검사 결과예요. 점이 가까운 쪽이 나에 더 가까워요. 좋고 나쁨이 아니라 방향의 차이예요.
+                      </p>
+                      <div className="space-y-4">
+                        {LOVE_GROUPS.filter((g) => shown.some((s) => s.group === g.id)).map((g) => (
+                          <div key={g.id} className="rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
+                            <h3 className="text-[13px] font-semibold text-muted">{g.label}</h3>
+                            <div className="mt-3 space-y-5">
+                              {shown.filter((s) => s.group === g.id).map((s) => (
+                                <ScaleTrack key={s.id} label={s.label} low={s.low} high={s.high} score={points[s.id]} />
+                              ))}
+                            </div>
+                          </div>
                         ))}
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ),
-          },
+                    </>
+                  ),
+                },
+              ]
+            : []),
         ]}
       />
 
       <p className="mt-8 px-1 text-[13px] leading-relaxed text-muted">
-        공개 성격검사(IPIP) 문항과 한결이 만든 기질·성격 문항으로 잰 결과{guest ? "" : ", 기본 검사 결과"}를 바탕으로 AI(OpenAI)가 쓴 보고서예요
-        {date ? ` (${date})` : ""}. 진단이 아니라 나를 돌아보는 참고용이고,{" "}
-        {guest ? "이 주소를 아는 사람만 볼 수 있어요." : "나만 볼 수 있어요. 추천 계산에는 쓰지 않아요."}
+        {shared ? (
+          <>
+            한결 연애 상황 검사(공개 성격검사 IPIP 문항과 한결이 만든 기질·성격 문항) 결과를 바탕으로 AI(OpenAI)가 쓴 보고서예요{date ? ` (${date})` : ""}.
+            진단이 아니라 참고용이고, 공유 링크를 받은 사람만 볼 수 있어요.
+          </>
+        ) : (
+          <>
+            공개 성격검사(IPIP) 문항과 한결이 만든 기질·성격 문항으로 잰 결과{guest ? "" : ", 기본 검사 결과"}를 바탕으로 AI(OpenAI)가 쓴 보고서예요
+            {date ? ` (${date})` : ""}. 진단이 아니라 나를 돌아보는 참고용이고,{" "}
+            {guest ? "이 주소를 아는 사람만 볼 수 있어요." : "공유 링크를 켜지 않으면 나만 볼 수 있어요. 추천 계산에는 쓰지 않아요."}
+          </>
+        )}
       </p>
 
-      {retest && (
+      {retest && !shared && (
         <div className="mt-8 rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
           <p className="text-[15px] font-semibold text-ink">요즘의 나는 좀 달라졌나요?</p>
           <p className="mt-1 text-[14px] leading-relaxed text-muted">다시 검사하면 새 답으로 보고서를 새로 써 드려요. 하루 3번까지 할 수 있어요.</p>
@@ -287,13 +308,24 @@ export function LoveReportView({
         </div>
       )}
 
-      {share && (
+      {share && !shared && (
         <div className="mt-4 rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">
-          <p className="text-[15px] font-semibold text-ink">친구도 받아 보게 하기</p>
-          <p className="mt-1 text-[14px] leading-relaxed text-muted">가입하지 않아도 10분이면 자기 연애 상황 보고서를 받아 볼 수 있어요.</p>
-          <div className="mt-4">
-            <ShareLink path="/love" label="이 검사 공유하기" />
-          </div>
+          {reportShare ? (
+            <>
+              {reportShare}
+              <div className="mt-5 border-t border-line/70 pt-4">
+                <ShareLink path="/love" label="보고서 없이 검사만 공유하기" variant="text" />
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-[15px] font-semibold text-ink">친구도 받아 보게 하기</p>
+              <p className="mt-1 text-[14px] leading-relaxed text-muted">가입하지 않아도 10분이면 자기 연애 상황 보고서를 받아 볼 수 있어요.</p>
+              <div className="mt-4">
+                <ShareLink path="/love" label="이 검사 공유하기" />
+              </div>
+            </>
+          )}
         </div>
       )}
     </article>

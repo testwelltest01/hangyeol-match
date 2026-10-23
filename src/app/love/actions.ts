@@ -4,6 +4,7 @@ import { hashGuestToken, isGuestToken, newGuestToken } from "@/lib/love/guest";
 import { LOVE_VERSION } from "@/lib/love/items";
 import { scoreLove, validateLove } from "@/lib/love/score";
 import { overGuestCap, overLoveCap, rewriteLove, startLoveReport } from "@/lib/love/server";
+import { sharePath, startShare, stopShare } from "@/lib/love/share";
 import { allow, clientIp, TOO_MANY } from "@/lib/security";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserId } from "@/lib/supabase/server";
@@ -97,6 +98,38 @@ export async function rewriteGuestLoveReport(token: unknown): Promise<Result> {
   if (!res.ok) {
     console.error("love guest rewrite failed", res.error.code, res.error.message);
     return { ok: false, error: res.error.code === "23505" ? "지금 다른 보고서를 쓰고 있어요. 다 쓴 뒤에 다시 시도해주세요." : "새로 쓰지 못했어요. 잠시 후 다시 시도해주세요." };
+  }
+  return { ok: true };
+}
+
+/** 비회원 보고서의 '내 연애 보고서 공유하기': 남에게 보여주는 링크를 켠다 (그 검사마다 하나, 열쇠가 있어야 한다) */
+export async function shareGuestLoveReport(token: unknown): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
+  if (!isGuestToken(token)) return { ok: false, error: "잘못된 요청이에요." };
+  const ip = await clientIp();
+  if (!(await allow(`love-guest-share:${ip}`, 20, 3600))) return { ok: false, error: TOO_MANY };
+  const admin = createAdminClient();
+  const { data: row } = await admin.from("love_reports").select("id, report").eq("guest_hash", hashGuestToken(token)).maybeSingle();
+  if (!row?.report) return { ok: false, error: "보고서를 다 쓴 뒤에 공유할 수 있어요." };
+  const res = await startShare(admin, { reportId: row.id as string });
+  if (!res.ok) {
+    console.error("love guest share failed", res.error.code, res.error.message);
+    return { ok: false, error: "링크를 만들지 못했어요. 잠시 후 다시 시도해주세요." };
+  }
+  return { ok: true, path: sharePath(res.token) };
+}
+
+/** 비회원 보고서의 공유 링크 끄기 */
+export async function stopSharingGuestLoveReport(token: unknown): Promise<Result> {
+  if (!isGuestToken(token)) return { ok: false, error: "잘못된 요청이에요." };
+  const ip = await clientIp();
+  if (!(await allow(`love-guest-share:${ip}`, 20, 3600))) return { ok: false, error: TOO_MANY };
+  const admin = createAdminClient();
+  const { data: row } = await admin.from("love_reports").select("id").eq("guest_hash", hashGuestToken(token)).maybeSingle();
+  if (!row) return { ok: false, error: "보고서를 찾지 못했어요." };
+  const error = await stopShare(admin, { reportId: row.id as string });
+  if (error) {
+    console.error("love guest unshare failed", error.code, error.message);
+    return { ok: false, error: "링크를 끄지 못했어요. 잠시 후 다시 시도해주세요." };
   }
   return { ok: true };
 }

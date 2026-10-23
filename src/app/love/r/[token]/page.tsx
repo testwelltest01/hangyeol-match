@@ -8,11 +8,13 @@ import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
 import { LoveProgress } from "@/app/report/love/LoveProgress";
 import { LoveReportView } from "@/app/report/love/LoveReportView";
+import { ReportShare } from "@/app/report/love/ReportShare";
 import { GUEST_KEEP_DAYS, isGuestToken } from "@/lib/love/guest";
 import { loadSceneImageUrls } from "@/lib/love/sceneImages";
 import { canRewrite, loadGuestReport } from "@/lib/love/server";
+import { loadShareToken, sharePath } from "@/lib/love/share";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { retryGuestLoveReport, rewriteGuestLoveReport } from "../../actions";
+import { retryGuestLoveReport, rewriteGuestLoveReport, shareGuestLoveReport, stopSharingGuestLoveReport } from "../../actions";
 import { ServiceInvite } from "../../ServiceInvite";
 
 // 주소에 비밀 열쇠가 있어서 검색에 걸리지 않게, 밖으로 나가는 링크에 주소를 넘기지 않게
@@ -61,6 +63,15 @@ async function GuestResultGate({ params }: { params: PageProps<"/love/r/[token]"
   }
 
   const member = row.user_id !== null;
+  // 남에게 보여주는 링크 (이 검사마다 하나)
+  const shareToken = row.report ? await loadShareToken(admin, { reportId: row.id }) : null;
+  const reportShare = (
+    <ReportShare
+      initialPath={shareToken ? sharePath(shareToken) : null}
+      create={shareGuestLoveReport.bind(null, token)}
+      stop={stopSharingGuestLoveReport.bind(null, token)}
+    />
+  );
   const next = member ? (
     <section className="mt-12 rounded-[22px] bg-surface px-5 py-6 ring-1 ring-line/80">
       <p className="text-[15px] font-semibold text-ink">이 보고서는 내 계정에 저장돼 있어요</p>
@@ -89,6 +100,7 @@ async function GuestResultGate({ params }: { params: PageProps<"/love/r/[token]"
           scores={row.scores}
           completedAt={row.completed_at}
           share
+          reportShare={reportShare}
           guest
           images={images}
           rewrite={canRewrite(row) ? rewriteGuestLoveReport.bind(null, token) : undefined}
@@ -117,7 +129,7 @@ async function GuestResultGate({ params }: { params: PageProps<"/love/r/[token]"
       {current && (
         <div className="mt-12 border-t border-line/80 pt-8">
           <p className="mb-4 px-1 text-[13px] font-semibold text-muted">지금 보고서</p>
-          <LoveReportView report={current} scores={row.scores} completedAt={row.completed_at} share guest images={images} />
+          <LoveReportView report={current} scores={row.scores} completedAt={row.completed_at} share reportShare={reportShare} guest images={images} />
         </div>
       )}
       {next}

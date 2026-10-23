@@ -5,13 +5,15 @@ import { Loading } from "@/components/Loading";
 import { Shell } from "@/components/Shell";
 import { loadSceneImageUrls } from "@/lib/love/sceneImages";
 import { canRewrite, loadLoveReports, pickLove } from "@/lib/love/server";
+import { loadShareToken, sharePath } from "@/lib/love/share";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserId } from "@/lib/supabase/server";
-import { rewriteLoveReport } from "./actions";
+import { rewriteLoveReport, shareLoveReport, stopSharingLoveReport } from "./actions";
 import { LoveIntro } from "./LoveIntro";
 import { LoveProgress } from "./LoveProgress";
 import { LoveReportView } from "./LoveReportView";
+import { ReportShare } from "./ReportShare";
 
 export const metadata: Metadata = { title: "연애 상황 보고서 | 한결", robots: { index: false, follow: false } };
 
@@ -34,9 +36,17 @@ async function LoveGate() {
   if (progress !== "report") redirect(PROGRESS_PATH[progress]);
 
   const admin = createAdminClient();
-  const [rows, images] = await Promise.all([loadLoveReports(admin, userId!), loadSceneImageUrls(admin)]);
+  const [rows, images, shareToken] = await Promise.all([
+    loadLoveReports(admin, userId!),
+    loadSceneImageUrls(admin),
+    loadShareToken(admin, { userId: userId! }),
+  ]);
   const { latest, lastDone } = pickLove(rows);
   if (!latest) return <LoveIntro />;
+  // 남에게 보여주는 링크 (사람마다 하나, 늘 가장 최근 보고서)
+  const reportShare = (
+    <ReportShare initialPath={shareToken ? sharePath(shareToken) : null} create={shareLoveReport} stop={stopSharingLoveReport} followsLatest />
+  );
   // 가장 최근 시도가 다 쓴 보고서면 그대로 (예전 형식이면 맨 위에 '새 보고서 받기')
   if (latest.status === "done" && latest === lastDone) {
     return (
@@ -46,6 +56,7 @@ async function LoveGate() {
         completedAt={lastDone.completed_at}
         retest
         share
+        reportShare={reportShare}
         images={images}
         rewrite={canRewrite(latest) ? rewriteLoveReport : undefined}
       />
@@ -70,7 +81,15 @@ async function LoveGate() {
       {lastDone && (
         <div className="mt-12 border-t border-line/80 pt-8">
           <p className="mb-4 px-1 text-[13px] font-semibold text-muted">{rewriting ? "지금 보고서" : "이전 보고서"}</p>
-          <LoveReportView report={lastDone.report} scores={lastDone.scores} completedAt={lastDone.completed_at} retest={!pending} share images={images} />
+          <LoveReportView
+            report={lastDone.report}
+            scores={lastDone.scores}
+            completedAt={lastDone.completed_at}
+            retest={!pending}
+            share
+            reportShare={reportShare}
+            images={images}
+          />
         </div>
       )}
     </div>

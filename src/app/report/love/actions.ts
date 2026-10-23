@@ -3,7 +3,8 @@
 import { getAdmin } from "@/lib/admin/auth";
 import { LOVE_VERSION } from "@/lib/love/items";
 import { scoreLove, validateLove } from "@/lib/love/score";
-import { overLoveCap, rewriteLove, startLoveReport } from "@/lib/love/server";
+import { loadLoveReports, overLoveCap, pickLove, rewriteLove, startLoveReport } from "@/lib/love/server";
+import { sharePath, startShare, stopShare } from "@/lib/love/share";
 import { getProgress } from "@/lib/progress";
 import { allow } from "@/lib/security";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -22,8 +23,9 @@ function logDbError(where: string, error: DbError) {
 }
 
 /** 오류 코드로 짐작한 원인. 대부분 Supabase에 SQL을 아직 실행하지 않은 경우다 */
-function schemaHint(error: DbError): string {
+function schemaHint(error: DbError, where = ""): string {
   const code = error?.code ?? "";
+  if (where.includes("share") && (code === "42P01" || code === "PGRST205")) return "love_shares 표가 없어요. Supabase SQL Editor에서 0006_love_share.sql을 실행해 주세요.";
   if (code === "23514") return "동의 종류에 love_report가 없어요. Supabase SQL Editor에서 0002_love_report.sql을 실행해 주세요.";
   if (code === "42P01" || code === "PGRST205") return "love_reports 표가 없어요. 0002_love_report.sql과 0003_love_retest.sql을 차례로 실행해 주세요.";
   if (code === "42703" || code === "PGRST204") return "love_reports에 id 칸이 없어요. 0003_love_retest.sql을 실행해 주세요.";
@@ -37,7 +39,7 @@ function schemaHint(error: DbError): string {
 async function failText(where: string, error: DbError, text: string): Promise<string> {
   logDbError(where, error);
   if (!error || !(await getAdmin())) return text;
-  const hint = schemaHint(error);
+  const hint = schemaHint(error, where);
   return `${text}\n[관리자에게만 보여요] ${where}: ${error.code ?? ""} ${error.message ?? ""}${hint ? `\n→ ${hint}` : ""}`;
 }
 
@@ -144,5 +146,32 @@ export async function rewriteLoveReport(): Promise<Result> {
     if (res.error.code === "23505") return { ok: false, error: BUSY_ERROR };
     return { ok: false, error: await failText("rewrite", res.error, "새로 쓰지 못했어요. 잠시 후 다시 시도해주세요.") };
   }
+  return { ok: true };
+}
+
+type ShareResult = { ok: true; path: string } | { ok: false; error: string };
+
+/**
+ * '내 연애 보고서 공유하기': 남에게 보여주는 링크(/love/s/열쇠)를 켠다. 이미 켜져 있으면 그 링크.
+ * 사람마다 링크 하나라 다시 검사해도 같은 링크가 가장 최근 보고서를 보여준다 (src/lib/love/share.ts)
+ */
+export async function shareLoveReport(): Promise<ShareResult> {
+  const userId = await getUserId();
+  if (!userId) return { ok: false, error: "로그인이 풀렸어요. 다시 로그인해주세요." };
+  if (!(await allow(`love-share:${userId}`, 20, 3600))) return { ok: false, error: "요청이 너무 많아요. 잠시 후 다시 시도해주세요." };
+  const admin = createAdminClient();
+  if (!pickLove(await loadLoveReports(admin, userId)).lastDone) return { ok: false, error: "보고서를 다 쓴 뒤에 공유할 수 있어요." };
+  const res = await startShare(admin, { userId });
+  if (!res.ok) return { ok: false, error: await failText("share", res.error, "링크를 만들지 못했어요. 잠시 후 다시 시도해주세요.") };
+  return { ok: true, path: sharePath(res.token) };
+}
+
+/** 공유 링크 끄기: 그 링크로는 더 볼 수 없다. 다시 켜면 새 링크 */
+export async function stopSharingLoveReport(): Promise<Result> {
+  const userId = await getUserId();
+  if (!userId) return { ok: false, error: "로그인이 풀렸어요. 다시 로그인해주세요." };
+  if (!(await allow(`love-share:${userId}`, 20, 3600))) return { ok: false, error: "요청이 너무 많아요. 잠시 후 다시 시도해주세요." };
+  const error = await stopShare(createAdminClient(), { userId });
+  if (error) return { ok: false, error: await failText("unshare", error, "링크를 끄지 못했어요. 잠시 후 다시 시도해주세요.") };
   return { ok: true };
 }
