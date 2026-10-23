@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/app-ui";
 import { IconHeart } from "@/components/icons";
+import { daysLeftLabel, INTEREST_RESPONSE_DAYS } from "@/lib/match/rules";
 import { loadMatch, MatchFrame, MatchNotices, PairRow, Section } from "../frame";
 
 export default function InterestPage() {
@@ -14,7 +15,7 @@ export default function InterestPage() {
 async function InterestGate() {
   const data = await loadMatch();
   const { d } = data;
-  const empty = d.photos.length === 0 && d.waitingAccept.length === 0 && d.sentInterest.length === 0;
+  const empty = d.received.length === 0 && d.photos.length === 0 && d.waitingAccept.length === 0 && d.sentInterest.length === 0;
 
   return (
     <>
@@ -32,6 +33,16 @@ async function InterestGate() {
         />
       ) : (
         <div className="space-y-8">
+          {d.received.length > 0 && (
+            <Section
+              title="나에게 관심을 보냈어요"
+              lead={`관심을 보낸 지 ${INTEREST_RESPONSE_DAYS}일이 지나도록 답하지 않으면 응답 없음으로 넘어가요. 관심을 보내면 서로의 사진이 공개돼요.`}
+            >
+              {d.received.map((c) => (
+                <PairRow key={c.id} card={c} note={daysLeftLabel(c.daysLeft)} />
+              ))}
+            </Section>
+          )}
           {d.photos.length > 0 && (
             <Section title="서로 관심을 보냈어요" lead="사진이 공개됐어요. 마음에 들면 수락해주세요. 서로 수락하면 대화방이 열려요.">
               {d.photos.map((c) => (
@@ -47,7 +58,7 @@ async function InterestGate() {
             </Section>
           )}
           {d.sentInterest.length > 0 && (
-            <Section title="내가 관심을 보냈어요" lead="상대도 관심을 보내면 서로의 사진이 공개돼요.">
+            <Section title="내가 관심을 보냈어요" lead={`상대도 관심을 보내면 서로의 사진이 공개돼요. ${INTEREST_RESPONSE_DAYS}일 안에 답이 없으면 목록에서 빠져요.`}>
               {d.sentInterest.map((c) => (
                 <PairRow key={c.id} card={c} note="기다리는 중" waiting />
               ))}

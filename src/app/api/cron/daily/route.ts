@@ -4,7 +4,7 @@ import { matchDay } from "@/lib/day";
 import { purgeIgCodes, refreshIgToken } from "@/lib/instagram/server";
 import { purgeGuestLove } from "@/lib/love/server";
 import { purgeApiUsage } from "@/lib/usage/server";
-import { generateRecommendations } from "@/lib/match/server";
+import { expireUnansweredInterests, generateRecommendations } from "@/lib/match/server";
 import { pushMessages } from "@/lib/push/rules";
 import { sendPushMany } from "@/lib/push/server";
 import { safeEqual } from "@/lib/security";
@@ -26,6 +26,11 @@ export async function GET(request: Request) {
   }
 
   const admin = createAdminClient();
+  // 받은 관심에 5일 동안 답이 없으면 응답 없음으로 정리한다. 추천보다 먼저: 정리된 사람 자리에 오늘 새 사람이 온다
+  const interestsExpired = await expireUnansweredInterests(admin).catch((e) => {
+    console.error("[cron] expire interests failed", e);
+    return 0;
+  });
   // 저녁 8시에 넘어간 새 추천 하루 (크론보다 먼저 들어온 사람은 그때 이미 만들어졌다)
   const day = matchDay();
   const { created, perViewer } = await generateRecommendations(admin, day);
@@ -69,5 +74,5 @@ export async function GET(request: Request) {
   const igCodesPurged = await purgeIgCodes(admin).catch(() => 0);
   const igToken = process.env.INSTAGRAM_ACCESS_TOKEN ? (await refreshIgToken(admin).catch(() => ({ ok: false, message: "error" }))).message : null;
 
-  return Response.json({ day, created, notified, purged, chatPurged: chatPurged ?? 0, loveGuestPurged, apiUsagePurged, igCodesPurged, igToken });
+  return Response.json({ day, interestsExpired, created, notified, purged, chatPurged: chatPurged ?? 0, loveGuestPurged, apiUsagePurged, igCodesPurged, igToken });
 }

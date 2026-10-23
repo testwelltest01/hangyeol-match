@@ -48,8 +48,8 @@ export function InviteBox({ initialToken, count, minCount }: { initialToken: str
         {minCount}명 이상 모였을 때 평균만 보여줘요.
       </p>
       <p className="mt-3 rounded-2xl bg-indigo/5 px-4 py-3 text-[14px] leading-relaxed text-ink-soft ring-1 ring-indigo/15">
-        친구 1명이 평가할 때마다 <strong className="font-semibold text-ink">오늘의 추천 새로고침 쿠폰</strong> 1장을 받아요. 오늘 탭에서 아직 답하지 않은 추천을 새
-        사람으로 바꿀 수 있어요(하루 한 번).
+        친구 1명이 평가할 때마다 <strong className="font-semibold text-ink">오늘의 추천 새로고침 쿠폰</strong> 1장을 받아요. 오늘 추천을 넘긴 뒤 저녁 8시를
+        기다리지 않고 바로 새 사람을 받을 수 있어요(하루 한 번).
       </p>
       <p className="mt-3 font-semibold">
         {count === 0

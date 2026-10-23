@@ -200,6 +200,19 @@ describe("추천 배분", () => {
     expect(out.get("A")![0].target).toBe("Y");
   });
 
+  it("답하지 않은 추천(keep)은 그대로 이어 자리를 채우고, 상한이 넘어도 남기며 노출에 센다", () => {
+    const xa: Edge = { viewer: "A", target: "X", score: 0.2, priority: false };
+    const edges: Edge[] = [
+      xa,
+      { viewer: "A", target: "Y", score: 0.9, priority: true }, // 먼저 관심을 보낸 사람이 있어도 이어 보여주는 사람이 자리를 지킨다
+      { viewer: "B", target: "X", score: 0.9, priority: false },
+      { viewer: "B", target: "Z", score: 0.1, priority: false },
+    ];
+    const out = allocate(edges, { perUser: 1, exposureCap: 1, exposure: new Map([["X", 1]]), keep: new Map([["A", [xa]]]) });
+    expect(out.get("A")!.map((e) => e.target)).toEqual(["X"]);
+    expect(out.get("B")!.map((e) => e.target)).toEqual(["Z"]); // X는 상한(1)을 넘겨 B에게는 안 간다
+  });
+
   it("만남 후 평가가 나쁘게 쌓이면 노출을 줄인다", () => {
     const bad = { outcome: "met", photo_match: 1, cleanliness: 4, manners: 4 };
     const good = { outcome: "met", photo_match: 5, cleanliness: 5, manners: 5 };

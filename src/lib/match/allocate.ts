@@ -16,10 +16,11 @@ export const EXPOSURE_CAP = 6;
 /**
  * 라운드 로빈 배분: 후보가 적은 사람부터 한 명씩 고르기를 PER_USER번 반복한다.
  * 점수 순으로 한꺼번에 나누면 "누구에게나 좋은 상대"가 모든 추천을 차지하고, 후보가 적은 사람이 빈손이 된다.
+ * keep: 아직 답하지 않아 그대로 이어 보여줄 추천(사람마다, edges 안의 것). 먼저 자리를 채우고 노출에도 센다(상한과 상관없이 남긴다)
  */
 export function allocate(
   edges: Edge[],
-  opts: { perUser?: number; exposureCap?: number; exposure?: Map<string, number> } = {},
+  opts: { perUser?: number; exposureCap?: number; exposure?: Map<string, number>; keep?: Map<string, Edge[]> } = {},
 ): Map<string, Edge[]> {
   const perUser = opts.perUser ?? PER_USER;
   const cap = opts.exposureCap ?? EXPOSURE_CAP;
@@ -37,6 +38,14 @@ export function allocate(
 
   const order = [...byViewer.keys()].sort((a, b) => byViewer.get(a)!.length - byViewer.get(b)!.length || a.localeCompare(b));
   const picked = new Map<string, Edge[]>(order.map((v) => [v, []]));
+  for (const [viewer, list] of opts.keep ?? []) {
+    const mine = picked.get(viewer);
+    if (!mine) continue;
+    for (const e of list.slice(0, perUser)) {
+      mine.push(e);
+      exposure.set(e.target, (exposure.get(e.target) ?? 0) + 1);
+    }
+  }
 
   for (let round = 0; round < perUser; round++) {
     for (const viewer of order) {

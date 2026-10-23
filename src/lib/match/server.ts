@@ -4,6 +4,7 @@ import { daysBefore, kstYear } from "@/lib/day";
 import { allocate, gateFactor, type Edge, type FeedbackReceived } from "@/lib/match/allocate";
 import { recommendationReason } from "@/lib/match/explain";
 import { checkMutual, type Filters, type Gender, type MatchPerson, type Religion } from "@/lib/match/filters";
+import { unansweredInterests } from "@/lib/match/rules";
 import { mutualScore, type Scores } from "@/lib/scoring";
 
 type Admin = SupabaseClient;
@@ -114,43 +115,49 @@ export function countMutualMatches(me: MatchPerson, pool: Map<string, PoolEntry>
   return n;
 }
 
-/** 같은 사람을 다시 추천하기까지 쉬는 날 (새로고침 쿠폰으로 바꾼 사람도 같다) */
-export const REPEAT_AFTER_DAYS = 14;
-
-type Recent = { user_id: string; target_id: string };
-
-/** 최근에 새로고침 쿠폰으로 바꾼(뺀) 추천 */
-async function recentlyReplaced(admin: Admin, since: string): Promise<Recent[]> {
-  const { data } = await admin.from("recommendation_refreshes").select("user_id, replaced").gte("day", since);
-  return (data ?? []).flatMap((r) => ((r.replaced as string[] | null) ?? []).map((t) => ({ user_id: r.user_id as string, target_id: t })));
+/**
+ * 크론: 받은 관심에 5일 동안 답하지 않으면 받은 사람 쪽에 '넘김'(no_response = 응답 없음)을 넣는다.
+ * 그러면 보낸 사람의 '기다리는 중'에서 빠지고, 받은 사람의 오늘 추천·관심 탭에서도 빠져 다음 사람이 온다
+ */
+export async function expireUnansweredInterests(admin: Admin): Promise<number> {
+  const rows = await fetchAll<{ from_user: string; to_user: string; interest: boolean; interest_at: string }>((a, b) =>
+    admin.from("reactions").select("from_user, to_user, interest, interest_at").order("from_user").order("to_user").range(a, b),
+  );
+  const add = unansweredInterests(rows);
+  if (!add.length) return 0;
+  // 그 사이 직접 답했으면 그 답을 남긴다 (이미 있는 줄은 건드리지 않음)
+  const { error } = await admin
+    .from("reactions")
+    .upsert(add.map((r) => ({ ...r, interest: false, no_response: true })), { onConflict: "from_user,to_user", ignoreDuplicates: true });
+  if (error) throw new Error(error.message);
+  return add.length;
 }
+
+/** 답하지 않은 추천을 이어 보여줄 때 거슬러 보는 날 수 (그보다 오래 추천이 없었으면 새로 고른다) */
+const CARRY_LOOKBACK_DAYS = 30;
 
 /**
  * 추천 후보를 고르는 공통 규칙 (매일 추천과 새로고침이 같이 쓴다).
- * 다른 성별, 차단 없음, 내가 이미 답하지 않음, 상대가 넘기지 않음, 최근 14일 안에 추천했거나 바꾼 사람 아님(상대가 먼저 관심이면 예외),
- * 서로의 '꼭' 조건 통과. 점수는 상호 점수 × '되도록' 감점 × 행동 게이트
+ * 다른 성별, 차단 없음, 내가 이미 답하지 않음(넘긴 사람은 다시 안 나옴), 상대가 넘기지 않음, 서로의 '꼭' 조건 통과.
+ * 점수는 상호 점수 × '되도록' 감점 × 행동 게이트. 상대가 먼저 관심을 보냈으면 priority.
+ * (예전의 '14일 동안 다시 추천 안 함'은 없앴다: 답하지 않은 추천은 답할 때까지 그대로 이어 보여주므로 답 없이 사라지는 사람이 없다)
  */
 async function candidateEdges(
   admin: Admin,
   pool: Map<string, PoolEntry>,
   viewers: string[],
-  day: string,
   exclude: Map<string, Set<string>> = new Map(),
 ): Promise<Edge[]> {
-  const since = daysBefore(day, REPEAT_AFTER_DAYS);
-  const [reactions, blocks, recent, replaced] = await Promise.all([
+  const [reactions, blocks] = await Promise.all([
     fetchAll<{ from_user: string; to_user: string; interest: boolean }>((a, b) =>
       admin.from("reactions").select("from_user, to_user, interest").range(a, b),
     ),
     fetchAll<{ blocker: string; blocked: string }>((a, b) => admin.from("blocks").select("blocker, blocked").range(a, b)),
-    fetchAll<Recent>((a, b) => admin.from("recommendations").select("user_id, target_id").gte("day", since).lt("day", day).range(a, b)),
-    recentlyReplaced(admin, since),
   ]);
 
   const key = (a: string, b: string) => `${a}>${b}`;
   const reaction = new Map(reactions.map((r) => [key(r.from_user, r.to_user), r.interest]));
   const blocked = new Set(blocks.flatMap((b) => [key(b.blocker, b.blocked), key(b.blocked, b.blocker)]));
-  const recentSet = new Set([...recent, ...replaced].map((r) => key(r.user_id, r.target_id)));
   const year = kstYear();
 
   const edges: Edge[] = [];
@@ -167,7 +174,6 @@ async function candidateEdges(
       const theirs = reaction.get(key(cid, v));
       if (theirs === false) continue; // 상대가 이미 넘긴 사람
       const priority = theirs === true;
-      if (!priority && recentSet.has(key(v, cid))) continue;
       const check = checkMutual(me.person, c.person, year);
       if (!check.ok) continue;
       edges.push({ viewer: v, target: cid, score: mutualScore(me.scores, c.scores) * check.softFactor * c.gate, priority });
@@ -191,8 +197,34 @@ function toRows(picked: Map<string, Edge[]>, pool: Map<string, PoolEntry>, day: 
 }
 
 /**
+ * 사람마다 가장 최근 추천 하루(오늘 전, 30일 안)에 받은 추천 대상. 그중 아직 답하지 않았고 여전히 후보인 사람을 오늘도 이어 보여준다
+ */
+async function lastRecTargets(admin: Admin, viewers: string[], day: string): Promise<Map<string, Set<string>>> {
+  const wanted = new Set(viewers);
+  // 사람이 많으면 주소가 길어지지 않게 기간으로만 읽고 여기서 거른다
+  const rows = (
+    await fetchAll<{ user_id: string; target_id: string; day: string }>((a, b) => {
+      const q = admin.from("recommendations").select("user_id, target_id, day").gte("day", daysBefore(day, CARRY_LOOKBACK_DAYS)).lt("day", day);
+      return (viewers.length <= 50 ? q.in("user_id", viewers) : q).order("day").order("user_id").order("target_id").range(a, b);
+    })
+  ).filter((r) => wanted.has(r.user_id));
+  const latest = new Map<string, string>();
+  for (const r of rows) if ((latest.get(r.user_id) ?? "") < r.day) latest.set(r.user_id, r.day);
+  const out = new Map<string, Set<string>>();
+  for (const r of rows) {
+    if (latest.get(r.user_id) !== r.day) continue;
+    const set = out.get(r.user_id) ?? new Set<string>();
+    set.add(r.target_id);
+    out.set(r.user_id, set);
+  }
+  return out;
+}
+
+/**
  * 하루 추천을 만들어 저장한다. onlyViewer를 주면 그 사람 것만 만든다(오늘 처음 들어왔는데 추천이 없을 때).
  * 이미 오늘 추천이 있는 사람은 건너뛴다. 오늘 다른 사람 추천에 들어간 횟수도 노출 상한에 반영한다.
+ * 지난 추천에 아직 답하지 않았으면(관심도 넘기기도 안 함) 새 사람 대신 그 사람을 오늘도 보여준다. 답해야 다음 사람이 온다
+ * (그 사이 상대가 매칭을 쉬거나 조건이 바뀌어 후보에서 빠졌으면 새로 고른다)
  */
 export async function generateRecommendations(
   admin: Admin,
@@ -214,8 +246,14 @@ export async function generateRecommendations(
   const viewers = candidates.filter((v) => !done.has(v));
   if (viewers.length === 0) return none;
 
-  const edges = await candidateEdges(admin, pool, viewers, day);
-  const rows = toRows(allocate(edges, { exposure }), pool, day);
+  const [edges, last] = await Promise.all([candidateEdges(admin, pool, viewers), lastRecTargets(admin, viewers, day)]);
+  const keep = new Map<string, Edge[]>();
+  for (const e of edges) {
+    if (!last.get(e.viewer)?.has(e.target)) continue;
+    keep.set(e.viewer, [...(keep.get(e.viewer) ?? []), e]);
+  }
+  for (const list of keep.values()) list.sort((a, b) => Number(b.priority) - Number(a.priority) || b.score - a.score);
+  const rows = toRows(allocate(edges, { exposure, keep }), pool, day);
   if (rows.length === 0) return none;
   const { error } = await admin.from("recommendations").insert(rows);
   if (error) throw new Error(error.message);
@@ -225,8 +263,8 @@ export async function generateRecommendations(
 }
 
 /**
- * 새로고침 쿠폰: 오늘 추천 중 바꿀 사람(replace) 수만큼 새 사람을 고른다. 저장은 하지 않는다(부르는 쪽이 쿠폰 기록과 함께 바꾼다).
- * 오늘 이미 받은 사람(남길 사람·바꿀 사람 모두)은 다시 고르지 않고, 노출 상한은 바꿀 사람을 뺀 오늘 기록으로 센다
+ * 새로고침 쿠폰: 오늘 넘긴 추천(replace) 수만큼 새 사람을 고른다. 저장은 하지 않는다(부르는 쪽이 쿠폰 기록과 함께 넣는다).
+ * 오늘 이미 받은 사람은 다시 고르지 않고, 노출 상한은 넘긴 사람을 뺀 오늘 기록으로 센다
  */
 export async function pickRefresh(admin: Admin, day: string, viewer: string, replace: string[]): Promise<RecRow[]> {
   if (replace.length === 0) return [];
@@ -242,7 +280,7 @@ export async function pickRefresh(admin: Admin, day: string, viewer: string, rep
     if (r.user_id === viewer && leaving.has(r.target_id)) continue;
     exposure.set(r.target_id, (exposure.get(r.target_id) ?? 0) + 1);
   }
-  const edges = await candidateEdges(admin, pool, [viewer], day, new Map([[viewer, mineToday]]));
+  const edges = await candidateEdges(admin, pool, [viewer], new Map([[viewer, mineToday]]));
   return toRows(allocate(edges, { exposure, perUser: replace.length }), pool, day);
 }
 

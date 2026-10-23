@@ -16,7 +16,7 @@ export const maxDuration = 300;
 
 export default function MatchPage() {
   return (
-    <MatchFrame current="today" title="오늘의 추천" sub="매일 저녁 8시에 결이 맞는 한 사람을 새로 골라요. 서로 관심을 보내면 사진이 공개돼요.">
+    <MatchFrame current="today" title="오늘의 추천" sub="매일 저녁 8시에 결이 맞는 한 사람을 소개해요. 관심이나 넘기기로 답해야 다음 사람이 와요.">
       <TodayGate />
     </MatchFrame>
   );
@@ -77,14 +77,10 @@ async function TodayGate() {
   }
 
   const stopped = setup.suspended || setup.matchProfile!.paused;
-  // 새로고침 쿠폰: 추천이 멈추지 않았고 오늘 추천이 있을 때. 바꿀 수 있는 사람은 아직 답하지 않았고 나에게 먼저 관심을 보내지 않은 사람
+  // 새로고침 쿠폰: 추천이 멈추지 않았고 오늘 추천이 있었을 때. 오늘 추천을 넘긴 뒤에만 바로 새 사람을 받는다
   const coupon =
-    !stopped && d.today.length > 0 ? (
-      <RefreshCoupon
-        balance={data.coupons.balance}
-        usedToday={data.coupons.usedToday}
-        canUse={d.today.some((c) => c.stage === "new" && !c.likedMe)}
-      />
+    !stopped && (d.today.length > 0 || d.passedToday) ? (
+      <RefreshCoupon balance={data.coupons.balance} usedToday={data.coupons.usedToday} canUse={d.passedToday} />
     ) : null;
   return (
     <>
@@ -100,6 +96,12 @@ async function TodayGate() {
                 내 정보에서 다시 시작하기
               </Link>
             }
+          />
+        ) : d.passedToday ? (
+          <EmptyState
+            icon={<IconMoon size={26} />}
+            title="오늘 추천에 답했어요"
+            body="저녁 8시에 결이 맞는 새 사람을 소개해 드릴게요."
           />
         ) : (
           <EmptyState

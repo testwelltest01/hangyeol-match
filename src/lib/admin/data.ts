@@ -70,7 +70,8 @@ export async function loadMembers(admin: Admin): Promise<{ members: MemberRow[];
     ),
     fetchAll<{ user_id: string }>((a, b) => admin.from("friend_ratings").select("user_id").range(a, b)),
     fetchAll<ReactionRow>((a, b) =>
-      admin.from("reactions").select("from_user, to_user, interest, accept, interest_at, accept_at").range(a, b),
+      // *: 0009의 no_response(응답 없음)까지. SQL을 실행하기 전에도 오류 없이 읽힌다
+      admin.from("reactions").select("*").order("from_user").order("to_user").range(a, b),
     ),
     illustratedUsers(admin),
   ]);

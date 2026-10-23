@@ -12,7 +12,8 @@ export type TabBadges = { today: number; interest: number; chat: number };
 type ReactionRow = { from_user: string; to_user: string; interest: boolean; accept: boolean | null; accept_at: string | null };
 
 /**
- * 오늘: 오늘 추천 중 아직 답하지 않은 사람 / 관심: 서로 관심이라 내가 수락할 차례 / 대화: 안 읽은 메시지 + 연락처 전달 요청.
+ * 오늘: 오늘 추천 중 아직 답하지 않은 사람 / 관심: 서로 관심이라 내가 수락할 차례 + 나에게 온 관심에 답할 차례(오늘 추천에 있는 사람은 오늘에서 센다)
+ * / 대화: 안 읽은 메시지 + 연락처 전달 요청.
  * 탭 화면마다 부르므로 가벼운 질의만 쓰고, 한 요청 안에서는 한 번만 읽는다.
  */
 export const loadTabBadges = cache(async (): Promise<TabBadges> => {
@@ -38,9 +39,13 @@ export const loadTabBadges = cache(async (): Promise<TabBadges> => {
     recommended,
   });
 
-  const today = (recs.data ?? []).filter((r) => pairStage(pairOf(r.target_id, true)) === "new").length;
+  const todayIds = new Set((recs.data ?? []).map((r) => r.target_id as string));
+  const today = [...todayIds].filter((id) => pairStage(pairOf(id, true)) === "new").length;
   const others = new Set([...mine.keys(), ...theirs.keys()]);
-  const interest = [...others].filter((o) => pairStage(pairOf(o, false)) === "photos").length;
+  const interest = [...others].filter((o) => {
+    const stage = pairStage(pairOf(o, false));
+    return stage === "photos" || (stage === "new" && !todayIds.has(o));
+  }).length;
 
   let chatCount = 0;
   const open = rooms.filter((r) => !r.closed_at);

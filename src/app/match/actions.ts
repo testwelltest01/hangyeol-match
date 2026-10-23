@@ -148,8 +148,8 @@ export async function saveMeetingFeedback(targetId: string, input: MeetingInput)
 type RefreshResult = { ok: true; added: number } | { ok: false; error: string };
 
 /**
- * 새로고침 쿠폰 쓰기: 오늘 추천 중 아직 답하지 않은 사람을 새 사람으로 바꾼다 (하루 한 번, 쿠폰 1장).
- * 새 사람을 못 찾으면 쿠폰을 쓰지 않는다. 바꾼 사람은 14일 동안 다시 추천하지 않는다
+ * 새로고침 쿠폰 쓰기: 오늘 추천을 '넘기기'한 뒤, 저녁 8시를 기다리지 않고 바로 새 사람을 받는다 (하루 한 번, 쿠폰 1장).
+ * 답하지 않은 추천은 답할 때까지 그대로라 바꿀 수 없다. 새 사람을 못 찾으면 쿠폰을 쓰지 않는다
  */
 export async function refreshToday(): Promise<RefreshResult> {
   const userId = await getUserId();
@@ -166,24 +166,22 @@ export async function refreshToday(): Promise<RefreshResult> {
   if (coupons.usedToday) return { ok: false, error: "오늘은 이미 새로고침을 썼어요. 저녁 8시 새 추천 뒤에 다시 쓸 수 있어요." };
   if (coupons.balance <= 0) return { ok: false, error: "쿠폰이 없어요. 친구가 평가를 남기면 1장씩 받아요." };
 
-  const [recs, mine, liked] = await Promise.all([
+  const [recs, mine] = await Promise.all([
     admin.from("recommendations").select("target_id, score").eq("user_id", userId).eq("day", day),
-    admin.from("reactions").select("to_user").eq("from_user", userId),
-    admin.from("reactions").select("from_user").eq("to_user", userId).eq("interest", true),
+    admin.from("reactions").select("to_user, interest").eq("from_user", userId),
   ]);
-  if (recs.error || mine.error || liked.error) return { ok: false, error: "불러오지 못했어요. 다시 시도해주세요." };
+  if (recs.error || mine.error) return { ok: false, error: "불러오지 못했어요. 다시 시도해주세요." };
   const candidates = refreshTargets(
     (recs.data ?? []).map((r) => ({ target: r.target_id as string, score: Number(r.score) })),
-    new Set((mine.data ?? []).map((r) => r.to_user as string)),
-    new Set((liked.data ?? []).map((r) => r.from_user as string)),
+    new Set((mine.data ?? []).filter((r) => r.interest === false).map((r) => r.to_user as string)),
   );
-  if (candidates.length === 0) return { ok: false, error: "바꿀 사람이 없어요. 모두 답했거나 나에게 먼저 관심을 보낸 사람이에요." };
+  if (candidates.length === 0) return { ok: false, error: "오늘 추천을 '넘기기'한 뒤에 쓸 수 있어요. 답하지 않은 추천은 답할 때까지 그대로 있어요." };
 
   const rows = await pickRefresh(admin, day, userId, candidates);
   if (rows.length === 0) return { ok: false, error: "지금은 새로 소개할 사람이 없어요. 쿠폰은 그대로 있어요." };
-  const replaced = candidates.slice(0, rows.length); // 새 사람 수만큼만, 점수 낮은 사람부터
+  const replaced = candidates.slice(0, rows.length); // 새 사람 수만큼만, 점수 낮은 자리부터
 
-  // 새 추천을 먼저 넣고, 쿠폰 기록(하루 한 번 unique)으로 동시에 두 번 누른 경우를 막은 뒤, 바꾼 사람을 뺀다
+  // 새 추천을 넣고, 쿠폰 기록(하루 한 번 unique)으로 동시에 두 번 누른 경우를 막는다. 넘긴 추천 기록은 그대로 둔다(통계용, 화면에는 안 보임)
   const inserted = await admin.from("recommendations").insert(rows);
   if (inserted.error) return { ok: false, error: "새 추천을 저장하지 못했어요. 다시 시도해주세요." };
   const added = rows.map((r) => r.target_id);
@@ -195,6 +193,5 @@ export async function refreshToday(): Promise<RefreshResult> {
       error: used.error.code === "23505" ? "오늘은 이미 새로고침을 썼어요." : "쿠폰을 쓰지 못했어요. 다시 시도해주세요.",
     };
   }
-  await admin.from("recommendations").delete().eq("user_id", userId).eq("day", day).in("target_id", replaced);
   return { ok: true, added: added.length };
 }

@@ -248,7 +248,7 @@ export function DashboardView({
       <GroupTitle icon={<IconHeart size={18} />}>매칭</GroupTitle>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat icon={<IconToday size={18} />} label="지금 추천" value={recsToday} sub={`저녁 8시 묶음, 누적 ${recsAll}건`} />
-        <Stat icon={<IconHeart size={18} />} label="보낸 관심" value={totals.interests} sub={`넘기기 ${totals.passes}건`} />
+        <Stat icon={<IconHeart size={18} />} label="보낸 관심" value={totals.interests} sub={`넘기기 ${totals.passes}건 · 응답 없음 ${totals.noResponse}건`} />
         <Stat icon={<IconHeart size={18} />} label="서로 관심" value={`${totals.mutualPairs}쌍`} sub="사진 공개" />
         <Stat icon={<IconChat size={18} />} label="연결" value={`${totals.connectedPairs}쌍`} sub={`만남 피드백 ${feedback.length}건`} />
       </div>

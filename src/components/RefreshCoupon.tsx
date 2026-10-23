@@ -17,7 +17,7 @@ export function RefreshCoupon({ balance, usedToday, canUse }: { balance: number;
   const [pending, start] = useTransition();
 
   function use() {
-    if (!window.confirm("쿠폰 1장을 써서 아직 답하지 않은 추천을 새 사람으로 바꿀까요? 바꾼 사람은 한동안 다시 추천되지 않아요.")) return;
+    if (!window.confirm("쿠폰 1장을 써서 저녁 8시를 기다리지 않고 지금 새 사람을 소개받을까요?")) return;
     setError(null);
     start(async () => {
       const res = await refreshToday();
@@ -35,8 +35,8 @@ export function RefreshCoupon({ balance, usedToday, canUse }: { balance: number;
     : balance === 0
       ? "친구가 '친구가 보는 나'를 남길 때마다 1장씩 받아요."
       : canUse
-        ? "아직 답하지 않은 추천을 새 사람으로 바꿔요. 하루 한 번 쓸 수 있어요."
-        : "지금은 바꿀 추천이 없어요(모두 답했거나, 나에게 먼저 관심을 보낸 사람이에요). 쿠폰은 다음에 쓸 수 있어요.";
+        ? "넘긴 추천 대신 지금 바로 새 사람을 소개받아요. 하루 한 번 쓸 수 있어요."
+        : "오늘 추천을 넘기면 저녁 8시를 기다리지 않고 바로 새 사람을 받을 수 있어요.";
 
   return (
     <section className="rounded-[22px] bg-surface px-5 py-5 ring-1 ring-line/80">

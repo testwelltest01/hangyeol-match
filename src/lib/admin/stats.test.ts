@@ -41,8 +41,9 @@ describe("reactionStats", () => {
       r("c", "a", true, false), // a-c 서로 관심, c가 거절
       r("d", "a", true), // 한쪽 관심
       r("e", "a", false), // 넘김
+      { ...r("a", "d", false), no_response: true }, // d의 관심에 a가 5일 동안 답하지 않음 → 응답 없음
     ]);
-    expect(totals).toEqual({ interests: 5, passes: 1, mutualPairs: 2, connectedPairs: 1 });
+    expect(totals).toEqual({ interests: 5, passes: 1, noResponse: 1, mutualPairs: 2, connectedPairs: 1 });
     expect(byUser.get("a")).toEqual({ sentInterest: 2, receivedInterest: 3, mutual: 2, connected: 1 });
     expect(byUser.get("c")).toEqual({ sentInterest: 1, receivedInterest: 1, mutual: 1, connected: 0 });
     expect(byUser.get("e")).toBeUndefined();

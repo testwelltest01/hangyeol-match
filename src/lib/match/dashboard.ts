@@ -5,7 +5,7 @@ import { matchDay } from "@/lib/day";
 import { shownIllustrationUrls } from "@/lib/illustration/server";
 import { igVerifiedSet } from "@/lib/instagram/server";
 import { profileChips, recommendationReason, talkingPoint } from "@/lib/match/explain";
-import { photosVisible } from "@/lib/match/rules";
+import { photosVisible, responseDaysLeft } from "@/lib/match/rules";
 import { pairStage, type Pair, type PairStage } from "@/lib/match/server";
 import type { Scores } from "@/lib/scoring";
 
@@ -45,6 +45,10 @@ export type ChatSummary = {
 export type Dashboard = {
   /** 오늘 추천받은 사람. 관심·수락이 진행돼도 하루 동안은 그대로 보여준다 */
   today: PersonCard[];
+  /** 오늘 추천을 넘겼다 (넘긴 카드는 안 보인다. 새로고침 쿠폰으로 바로 새 사람을 받을 수 있다) */
+  passedToday: boolean;
+  /** 나에게 먼저 관심을 보냈고 내가 아직 답하지 않은 사람. 5일 안에 답하지 않으면 응답 없음으로 정리된다 */
+  received: (PersonCard & { daysLeft: number })[];
   /** 서로 관심: 사진 공개, 내 수락 차례 */
   photos: PersonCard[];
   /** 내가 수락, 상대 답 기다림 */
@@ -55,7 +59,7 @@ export type Dashboard = {
   contactNotFound: boolean;
 };
 
-type ReactionRow = { from_user: string; to_user: string; interest: boolean; accept: boolean | null; accept_at: string | null };
+type ReactionRow = { from_user: string; to_user: string; interest: boolean; interest_at: string; accept: boolean | null; accept_at: string | null };
 
 /** 연락처를 주고받은 뒤 며칠 뒤에 만남 피드백을 묻는지 */
 const FEEDBACK_AFTER_DAYS = 3;
@@ -67,7 +71,7 @@ export async function loadDashboard(admin: SupabaseClient, me: string, myScores:
   const [todayRecs, allRecs, reactions, blocks, myFeedback, contact, notFound] = await Promise.all([
     admin.from("recommendations").select("target_id, reason, score").eq("user_id", me).eq("day", day).order("score", { ascending: false }),
     admin.from("recommendations").select("target_id").eq("user_id", me),
-    admin.from("reactions").select("from_user, to_user, interest, accept, accept_at").or(`from_user.eq.${me},to_user.eq.${me}`),
+    admin.from("reactions").select("from_user, to_user, interest, interest_at, accept, accept_at").or(`from_user.eq.${me},to_user.eq.${me}`),
     admin.from("blocks").select("blocker, blocked").or(`blocker.eq.${me},blocked.eq.${me}`),
     admin.from("meeting_feedback").select("to_user, outcome, updated_at").eq("from_user", me),
     admin.from("contacts").select("updated_at").eq("user_id", me).maybeSingle(),
@@ -143,6 +147,11 @@ export async function loadDashboard(admin: SupabaseClient, me: string, myScores:
 
   const cards = visible.map(card).filter((c): c is PersonCard => c !== null);
   const today = cards.filter((c) => todayReason.has(c.id));
+  const passedToday = [...todayReason.keys()].some((id) => mine.get(id)?.interest === false);
+  const received = cards
+    .filter((c) => c.stage === "new" && c.likedMe)
+    .map((c) => ({ ...c, daysLeft: responseDaysLeft(theirs.get(c.id)!.interest_at) }))
+    .sort((a, b) => a.daysLeft - b.daysLeft);
   const byStage = (s: PairStage) => cards.filter((c) => c.stage === s);
 
   const rooms = await myChatRooms(admin, me);
@@ -171,6 +180,8 @@ export async function loadDashboard(admin: SupabaseClient, me: string, myScores:
   const lastNotFound = notFound.data?.[0]?.created_at;
   return {
     today,
+    passedToday,
+    received,
     photos: byStage("photos"),
     waitingAccept: byStage("waiting_accept"),
     sentInterest: byStage("waiting_interest"),

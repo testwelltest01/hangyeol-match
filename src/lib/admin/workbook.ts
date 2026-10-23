@@ -265,7 +265,7 @@ export async function buildWorkbook(d: ExportData): Promise<Buffer> {
     ["보낸 사람ID", "보낸 사람", "받은 사람ID", "받은 사람", "관심", "관심 시각", "수락", "수락 시각"],
     d.reactions.map((r) => [
       r.from_user, nickOf(r.from_user), r.to_user, nickOf(r.to_user),
-      r.interest ? "관심" : "넘김", kst(r.interest_at),
+      r.interest ? "관심" : r.no_response ? "응답 없음" : "넘김", kst(r.interest_at),
       r.accept === null ? null : r.accept ? "수락" : "거절", kst(r.accept_at),
     ]),
     { 0: 38, 2: 38, 5: 17, 7: 17 },

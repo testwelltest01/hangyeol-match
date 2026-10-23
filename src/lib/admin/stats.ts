@@ -38,6 +38,8 @@ export type ReactionRow = {
   accept: boolean | null;
   interest_at: string;
   accept_at: string | null;
+  /** 받은 관심에 5일 동안 답하지 않아 크론이 넣은 넘김 (0009 전에는 없음) */
+  no_response?: boolean;
 };
 
 export type PersonReactions = { sentInterest: number; receivedInterest: number; mutual: number; connected: number };
@@ -47,7 +49,7 @@ const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
 /** 관심·수락 기록을 사람별, 전체로 센다. 서로 관심과 연결은 두 사람 모두 같은 답을 했을 때만 센다 */
 export function reactionStats(rows: ReactionRow[]): {
   byUser: Map<string, PersonReactions>;
-  totals: { interests: number; passes: number; mutualPairs: number; connectedPairs: number };
+  totals: { interests: number; passes: number; noResponse: number; mutualPairs: number; connectedPairs: number };
 } {
   const byUser = new Map<string, PersonReactions>();
   const get = (id: string) => {
@@ -58,12 +60,14 @@ export function reactionStats(rows: ReactionRow[]): {
   const byPair = new Map<string, ReactionRow[]>();
   let interests = 0;
   let passes = 0;
+  let noResponse = 0;
   for (const r of rows) {
     if (r.interest) {
       interests++;
       get(r.from_user).sentInterest++;
       get(r.to_user).receivedInterest++;
-    } else passes++;
+    } else if (r.no_response) noResponse++;
+    else passes++;
     const k = pairKey(r.from_user, r.to_user);
     byPair.set(k, [...(byPair.get(k) ?? []), r]);
   }
@@ -78,7 +82,7 @@ export function reactionStats(rows: ReactionRow[]): {
       for (const r of pair) get(r.from_user).connected++;
     }
   }
-  return { byUser, totals: { interests, passes, mutualPairs, connectedPairs } };
+  return { byUser, totals: { interests, passes, noResponse, mutualPairs, connectedPairs } };
 }
 
 export type FunnelStep = { label: string; count: number; /** 바로 앞 단계 대비 % */ rate: number | null };
