@@ -211,7 +211,7 @@ export async function myIgVerification(admin: SupabaseClient, userId: string): P
   }
 }
 
-/** 인스타 확인을 마친 회원 (추천 카드의 '인스타 확인됨') */
+/** 인스타 확인을 마친 회원 (추천 카드의 '인스타 인증') */
 export async function igVerifiedSet(admin: SupabaseClient, userIds: string[]): Promise<Set<string>> {
   if (!userIds.length) return new Set();
   const { data } = await admin.from("instagram_verifications").select("user_id").in("user_id", userIds);
@@ -282,7 +282,7 @@ export type IgStatus = {
   tablesReady: boolean;
 };
 
-/** 관리자 '인스타 확인' 화면: 설정이 다 됐는지, 토큰·웹훅 연결, 이용 숫자 */
+/** 관리자 '인스타 인증' 화면: 설정이 다 됐는지, 토큰·웹훅 연결, 이용 숫자 */
 export async function loadIgStatus(admin: SupabaseClient): Promise<IgStatus> {
   const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
   const [rowRes, verified, codes7, used7] = await Promise.all([

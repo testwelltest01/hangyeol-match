@@ -1,4 +1,4 @@
-/** 인스타 계정 확인을 마친 사람 (한결 인스타 DM 코드로 확인. 아이디는 연락처 전달 뒤에만 보인다) */
+/** 인스타 인증을 마친 사람 '인스타 인증' (한결 인스타 DM 코드로 계정 주인임을 확인. 아이디는 연락처 전달 뒤에만 보인다) */
 export function IgVerifiedBadge({ short = false }: { short?: boolean }) {
   return (
     <span
@@ -8,7 +8,7 @@ export function IgVerifiedBadge({ short = false }: { short?: boolean }) {
       <svg viewBox="0 0 24 24" aria-hidden className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
         <path d="M5 12.5l4.5 4.5L19 7.5" />
       </svg>
-      {short ? "확인됨" : "인스타 확인됨"}
+      {short ? "인증" : "인스타 인증"}
     </span>
   );
 }

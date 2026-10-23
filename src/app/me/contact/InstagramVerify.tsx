@@ -52,24 +52,24 @@ export function InstagramVerify({ official, verified }: { official: string; veri
     <section aria-labelledby="ig-verify-title" className="mt-8 rounded-2xl bg-surface px-5 py-5 ring-1 ring-line/80">
       <div className="flex items-center justify-between gap-3">
         <h2 id="ig-verify-title" className="font-semibold text-ink">
-          인스타 계정 확인
+          인스타 인증
         </h2>
         {verified ? <IgVerifiedBadge short /> : <span className="text-xs text-muted">선택</span>}
       </div>
 
       {done && (
         <p role="status" className="mt-3 rounded-xl bg-moss/10 px-4 py-3 text-[15px] text-ink">
-          확인됐어요. 연락처의 인스타 아이디를 @{done}(으)로 맞췄어요.
+          인증했어요. 연락처의 인스타 아이디를 @{done}(으)로 맞췄어요.
         </p>
       )}
 
       {verified && !open && (
         <>
           <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
-            @{verified.username} 계정이 확인됐어요. 추천 카드에 &lsquo;인스타 확인됨&rsquo;이 보여요. 아래에서 인스타 아이디를 바꾸면 확인이 풀려요.
+            @{verified.username} 계정으로 인증했어요. 추천 카드에 &lsquo;인스타 인증&rsquo;이 보여요. 아래에서 인스타 아이디를 바꾸면 인증이 풀려요.
           </p>
           <button type="button" onClick={() => setOpen(true)} className="mt-3 text-sm text-muted underline underline-offset-4">
-            다른 계정으로 다시 확인하기
+            다른 계정으로 다시 인증하기
           </button>
         </>
       )}
@@ -78,7 +78,7 @@ export function InstagramVerify({ official, verified }: { official: string; veri
         <>
           {!verified && (
             <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
-              인스타를 연락처로 쓴다면 확인해 두세요. 추천 카드에 &lsquo;인스타 확인됨&rsquo;이 붙어서 상대가 더 믿고 다가올 수 있어요.
+              인스타를 연락처로 쓴다면 인증해 두세요. 추천 카드에 &lsquo;인스타 인증&rsquo;이 붙어서 상대가 더 믿고 다가올 수 있어요.
             </p>
           )}
           <div className="mt-5 space-y-5">
@@ -97,7 +97,7 @@ export function InstagramVerify({ official, verified }: { official: string; veri
             <div>
               <Step n={2}>답장으로 온 6자리 코드를 넣어주세요</Step>
               <div className="ml-7 mt-2.5">
-                <CodeBoxes id="ig-code" label="인스타 확인 코드" autoFocus={false} value={code} onChange={setCode} onComplete={submit} disabled={pending} />
+                <CodeBoxes id="ig-code" label="인스타 인증 코드" autoFocus={false} value={code} onChange={setCode} onComplete={submit} disabled={pending} />
               </div>
               {pending && <p className="ml-7 mt-2 text-sm text-muted">확인하는 중</p>}
               {error && (
@@ -108,7 +108,7 @@ export function InstagramVerify({ official, verified }: { official: string; veri
             </div>
           </div>
           <p className="mt-5 text-[13px] leading-relaxed text-muted">
-            확인하면 DM을 보낸 인스타 아이디가 연락처에 들어가요. 아이디는 둘 다 &lsquo;연락처 전달&rsquo;을 누른 뒤에만 상대에게 보여요.
+            인증하면 DM을 보낸 인스타 아이디가 연락처에 들어가요. 아이디는 둘 다 &lsquo;연락처 전달&rsquo;을 누른 뒤에만 상대에게 보여요.
             코드는 10분 동안만 쓸 수 있어요.
           </p>
           {verified && (

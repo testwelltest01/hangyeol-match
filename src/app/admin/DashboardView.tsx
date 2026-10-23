@@ -24,7 +24,7 @@ export function DashboardView({
   recsToday: number;
   recsAll: number;
   feedback: { outcome: string }[];
-  /** 인스타 확인을 마친 회원 수 */
+  /** 인스타 인증을 마친 회원 수 */
   igVerified: number;
   now: Date;
 }) {
@@ -264,7 +264,7 @@ export function DashboardView({
       </Panel>
       <Panel
         className="mt-4"
-        title={`인스타 확인 ${igVerified}명`}
+        title={`인스타 인증 ${igVerified}명`}
         lead="한결 인스타 DM 코드로 인스타 계정을 확인한 회원 (선택)"
         aside={
           <Link href="/admin/instagram" className="shrink-0 text-sm font-semibold text-indigo underline-offset-4 hover:underline">
@@ -272,7 +272,7 @@ export function DashboardView({
           </Link>
         }
       >
-        <p className="text-sm text-ink-soft">추천 카드와 연락처에 &lsquo;인스타 확인됨&rsquo;이 붙어요.</p>
+        <p className="text-sm text-ink-soft">추천 카드와 연락처에 &lsquo;인스타 인증&rsquo;이 붙어요.</p>
       </Panel>
     </AdminShell>
   );

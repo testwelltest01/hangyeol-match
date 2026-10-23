@@ -44,7 +44,7 @@ describe("웹훅에서 코드 요청 고르기", () => {
     expect(
       verifyRequests(
         payload(
-          msg(ACCOUNT, { mid: "e1", text: "한결 인스타 확인 코드: 123456", is_echo: true }),
+          msg(ACCOUNT, { mid: "e1", text: "한결 인스타 인증 코드: 123456", is_echo: true }),
           msg("111", { mid: "x", text: "인증 코드", is_echo: true }),
           msg("222", { mid: "a", text: "인증" }),
           msg("222", { mid: "b", text: "인증 다시" }),

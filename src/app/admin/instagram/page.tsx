@@ -8,7 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { AdminLoading, AdminShell, AdminTitle, Chip, Panel, Stat } from "../ui";
 import { IgButtons } from "./IgButtons";
 
-export const metadata: Metadata = { title: "인스타 확인 | 한결 관리", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "인스타 인증 | 한결 관리", robots: { index: false, follow: false } };
 
 const SITE = process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "https://hangyeol-match.vercel.app";
 const WEBHOOK_URL = `${SITE}/api/instagram/webhook`;
@@ -43,7 +43,7 @@ function InstagramView({ s }: { s: IgStatus }) {
   const subscribed = s.subscribedFields?.includes("messages") ?? false;
   return (
     <AdminShell current="dashboard" back={{ href: "/admin", label: "대시보드" }}>
-      <AdminTitle title="인스타 확인" lead="회원이 한결 공식 인스타에 DM으로 '인증'을 보내면 6자리 코드를 답장하고, 회원이 연락처 화면에 넣어 인스타 계정을 확인해요." />
+      <AdminTitle title="인스타 인증" lead="회원이 한결 공식 인스타에 DM으로 '인증'을 보내면 6자리 코드를 답장하고, 회원이 연락처 화면에 넣으면 추천 카드에 '인스타 인증'이 붙어요." />
 
       <div className="mt-6 grid grid-cols-3 gap-3">
         <Stat label="확인한 회원" value={s.verified} />

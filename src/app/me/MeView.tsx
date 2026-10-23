@@ -46,7 +46,7 @@ function stepSub(s: SetupStep, setup: MySetup): string {
       return (
         [setup.contact?.instagram && "인스타그램", setup.contact?.kakao && "카카오톡"].filter(Boolean).join(", ") +
         " 등록" +
-        (setup.contact?.instagramVerified ? " · 인스타 확인됨" : "")
+        (setup.contact?.instagramVerified ? " · 인스타 인증" : "")
       );
     case "illustration":
       return "추천 카드에 실제 사진 대신 보여요";

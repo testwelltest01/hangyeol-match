@@ -37,7 +37,7 @@ export function ContactForm({
           className={fieldClass}
         />
         {verifiedInstagram !== null && !stillVerified ? (
-          <span className="mt-2 block text-sm text-alert">확인한 아이디(@{verifiedInstagram})와 달라요. 이대로 저장하면 &lsquo;인스타 확인됨&rsquo;이 풀려요.</span>
+          <span className="mt-2 block text-sm text-alert">인증한 아이디(@{verifiedInstagram})와 달라요. 이대로 저장하면 &lsquo;인스타 인증&rsquo;이 풀려요.</span>
         ) : (
           <span className="mt-2 block text-sm text-muted">비공개 계정이어도 괜찮아요. 공개 계정이면 사진이 먼저 보일 수 있다는 점만 알아두세요.</span>
         )}

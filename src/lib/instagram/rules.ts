@@ -32,7 +32,7 @@ export function isVerifyText(text: unknown): boolean {
 /** 봇이 보내는 답장 (UTF-8 1000바이트 이하) */
 export function codeReply(code: string): string {
   return [
-    `한결 인스타 확인 코드: ${code}`,
+    `한결 인스타 인증 코드: ${code}`,
     "",
     `${IG_CODE_TTL_MINUTES}분 안에 한결 '연락처' 화면에 넣어주세요.`,
     "이 코드는 다른 사람에게 알려주지 마세요. 한결은 DM으로 코드를 되묻지 않아요.",

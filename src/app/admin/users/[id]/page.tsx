@@ -234,7 +234,7 @@ async function MemberGate({ params }: { params: PageProps<"/admin/users/[id]">["
                 setup?.contact
                   ? [setup.contact.instagram && "인스타그램", setup.contact.kakao && "카카오톡"].filter(Boolean).join(", ") +
                     " 등록" +
-                    (setup.contact.instagramVerified ? " · 인스타 확인됨" : "")
+                    (setup.contact.instagramVerified ? " · 인스타 인증" : "")
                   : null,
               ],
               ["추천받음", `${recsReceived.count ?? 0}번`],
