@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { codeReply, dmLink, IG_VERIFY_REF, isIgCode, isVerifyText, officialUsername, verifyRequests } from "./rules";
+import { codeReply, dmLink, IG_VERIFY_WORD, isIgCode, isVerifyText, officialUsername, verifyRequests } from "./rules";
 import { validSignature } from "./signature";
 
 const ACCOUNT = "17841400000000001";
@@ -14,40 +14,42 @@ const msg = (sender: string, message: Record<string, unknown> | undefined, extra
 const payload = (...messaging: unknown[]) => ({ object: "instagram", entry: [{ id: ACCOUNT, time: 1, messaging }] });
 
 describe("웹훅에서 코드 요청 고르기", () => {
-  it("'인증'·'코드' 같은 글에만 답한다. 다른 문의는 건드리지 않는다", () => {
+  it("딱 '인증'만 보낸 메시지에만 답한다. '인증'이 섞인 글·다른 문의는 건드리지 않는다", () => {
     const got = verifyRequests(
       payload(
         msg("111", { mid: "m1", text: "인증" }),
         msg("222", { mid: "m2", text: "안녕하세요 문의드려요" }),
-        msg("333", { mid: "m3", text: "코드 주세요" }),
-        msg("444", { mid: "m4", text: "verify" }),
+        msg("333", { mid: "m3", text: "인증해 주세요" }),
+        msg("444", { mid: "m4", text: "인증 코드 주세요" }),
+        msg("555", { mid: "m5", text: "코드" }),
+        msg("666", { mid: "m6", text: "verify" }),
+        msg("777", { mid: "m7", text: "인증." }),
+        msg("888", { mid: "m8", text: "본인인증" }),
       ),
     );
-    expect(got).toEqual([
-      { senderId: "111", mid: "m1" },
-      { senderId: "333", mid: "m3" },
-      { senderId: "444", mid: "m4" },
-    ]);
+    expect(got).toEqual([{ senderId: "111", mid: "m1" }]);
   });
 
-  it("한결 화면의 링크(ref)로 연 대화는 글이 없어도 답한다", () => {
-    expect(verifyRequests(payload(msg("111", undefined, { referral: { ref: IG_VERIFY_REF, source: "SHORTLINKS", type: "OPEN_THREAD" } })))).toEqual([
-      { senderId: "111", mid: null },
-    ]);
-    // 새 대화: 첫 메시지 안에 referral
-    expect(verifyRequests(payload(msg("111", { mid: "m1", text: "안녕", referral: { ref: IG_VERIFY_REF } })))).toEqual([{ senderId: "111", mid: "m1" }]);
-    // 다른 ref는 무시
-    expect(verifyRequests(payload(msg("111", undefined, { referral: { ref: "ad-123" } })))).toEqual([]);
+  it("앞뒤 공백·줄바꿈은 봐준다", () => {
+    expect(verifyRequests(payload(msg("111", { mid: "m1", text: "  인증\n" })))).toEqual([{ senderId: "111", mid: "m1" }]);
+    // 자모가 풀린 채로 와도(NFD) 같은 글자로 본다
+    expect(verifyRequests(payload(msg("111", { mid: "m1", text: "인증".normalize("NFD") })))).toEqual([{ senderId: "111", mid: "m1" }]);
+  });
+
+  it("링크로 대화창만 연 알림(referral)이나 글 없는 메시지에는 답하지 않는다", () => {
+    expect(verifyRequests(payload(msg("111", undefined, { referral: { ref: "hg-verify", source: "SHORTLINKS", type: "OPEN_THREAD" } })))).toEqual([]);
+    expect(verifyRequests(payload(msg("111", { mid: "m1", text: "안녕", referral: { ref: "hg-verify" } })))).toEqual([]);
+    expect(verifyRequests(payload(msg("111", { mid: "m1", attachments: [{ type: "image" }] })))).toEqual([]);
   });
 
   it("한결 계정이 보낸 메시지(echo·보낸 사람이 계정 자신)는 빼고, 같은 사람은 한 번만", () => {
     expect(
       verifyRequests(
         payload(
-          msg(ACCOUNT, { mid: "e1", text: "한결 인스타 인증 코드: 123456", is_echo: true }),
-          msg("111", { mid: "x", text: "인증 코드", is_echo: true }),
+          msg(ACCOUNT, { mid: "e1", text: "인증" }),
+          msg("111", { mid: "x", text: "인증", is_echo: true }),
           msg("222", { mid: "a", text: "인증" }),
-          msg("222", { mid: "b", text: "인증 다시" }),
+          msg("222", { mid: "b", text: "인증" }),
         ),
       ),
     ).toEqual([{ senderId: "222", mid: "a" }]);
@@ -73,14 +75,16 @@ describe("코드·링크·문구", () => {
     expect(officialUsername(" @Hangyeol.Match ")).toBe("hangyeol.match");
     expect(officialUsername("")).toBeNull();
     expect(officialUsername("bad id!")).toBeNull();
-    expect(dmLink("hangyeol.match")).toBe(`https://ig.me/m/hangyeol.match?ref=${IG_VERIFY_REF}`);
+    expect(dmLink("hangyeol.match")).toBe("https://ig.me/m/hangyeol.match");
   });
 
   it("답장은 코드를 담고 1000바이트 이하", () => {
     const text = codeReply("482913");
     expect(text).toContain("482913");
     expect(Buffer.byteLength(text, "utf8")).toBeLessThanOrEqual(1000);
-    expect(isVerifyText(text)).toBe(true); // 그래서 echo를 꼭 빼야 한다
+    expect(isVerifyText(text)).toBe(false); // 봇 답장이 다시 봇을 부르지 않는다
+    expect(isVerifyText(IG_VERIFY_WORD)).toBe(true);
+    expect(isVerifyText(null)).toBe(false);
   });
 });
 

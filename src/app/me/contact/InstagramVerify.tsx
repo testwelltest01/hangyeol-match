@@ -83,7 +83,9 @@ export function InstagramVerify({ official, verified }: { official: string; veri
           )}
           <div className="mt-5 space-y-5">
             <div>
-              <Step n={1}>한결 인스타(@{official})에 DM으로 &ldquo;인증&rdquo;이라고 보내주세요</Step>
+              <Step n={1}>
+                한결 인스타(@{official})에 DM으로 다른 말 없이 <strong className="text-primary">인증</strong> 두 글자만 보내주세요
+              </Step>
               <a
                 href={dmLink(official)}
                 target="_blank"
