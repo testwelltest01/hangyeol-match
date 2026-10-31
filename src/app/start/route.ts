@@ -3,6 +3,7 @@ import { getAdmin } from "@/lib/admin/auth";
 import { GUEST_CLAIM_COOKIE, isGuestToken } from "@/lib/love/guest";
 import { claimGuestLove } from "@/lib/love/server";
 import { PROGRESS_PATH, getProgress } from "@/lib/progress";
+import { enforceIdentityBan } from "@/lib/safety/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuth } from "@/lib/supabase/server";
 
@@ -12,6 +13,7 @@ import { getAuth } from "@/lib/supabase/server";
  * - 비밀번호를 아직 안 만든 계정: 비밀번호 만들기
  * - 관리자는 관리자 대시보드
  * - 검사를 마쳤으면 추천 화면
+ * - 정지된 사람이 탈퇴하고 같은 신원으로 다시 가입했으면 '재가입 제한'으로 정지 (src/lib/safety/server.ts)
  * 가입 전에 공유 링크로 한 연애 상황 검사가 있으면(쿠키, /love/claim) 이 계정으로 옮기고 쿠키를 지운다
  */
 export async function GET(request: NextRequest) {
@@ -25,6 +27,8 @@ export async function GET(request: NextRequest) {
 
   const go = async () => {
     if (await getAdmin()) return "/admin";
+    // 정지된 채 탈퇴한 신원으로 다시 가입했으면 '재가입 제한'으로 정지한다. 화면은 그대로 가고 매칭만 막힌다(안내는 오늘·내 정보)
+    await enforceIdentityBan(createAdminClient(), auth.userId, { email: auth.email }).catch((e) => console.error("[start] identity ban check failed", e));
     return PROGRESS_PATH[await getProgress(auth.userId)];
   };
   const res = NextResponse.redirect(new URL(await go(), request.url));

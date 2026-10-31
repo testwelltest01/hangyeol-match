@@ -2,6 +2,7 @@
 
 import { getAdmin } from "@/lib/admin/auth";
 import { refreshIgToken, subscribeIgWebhooks } from "@/lib/instagram/server";
+import { suspendUser, unsuspendUser } from "@/lib/safety/server";
 import { allow, TOO_MANY, UUID_RE } from "@/lib/security";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -15,18 +16,19 @@ async function guard(): Promise<{ error: string } | { userId: string }> {
   return { userId: me.userId };
 }
 
-/** 이용 정지 / 정지 해제. 정지하면 추천에서 빠지고 관심·수락을 할 수 없다 */
+/**
+ * 이용 정지 / 정지 해제. 정지하면 추천에서 빠지고 관심·수락을 할 수 없고, 탈퇴해도 같은 신원으로는 다시 이용하지 못한다(재가입 제한).
+ * 해제하면 같은 신원의 재가입 제한도 함께 풀린다 (src/lib/safety/server.ts)
+ */
 export async function setSuspended(userId: string, suspended: boolean): Promise<Result> {
   const g = await guard();
   if ("error" in g) return { ok: false, error: g.error };
   if (typeof userId !== "string" || !UUID_RE.test(userId) || typeof suspended !== "boolean") {
     return { ok: false, error: "잘못된 요청이에요." };
   }
-  const now = new Date().toISOString();
-  const { error } = await createAdminClient()
-    .from("user_flags")
-    .upsert({ user_id: userId, suspended_at: suspended ? now : null, reason: suspended ? "운영자 정지" : null, updated_at: now });
-  if (error) return { ok: false, error: "저장하지 못했어요." };
+  const admin = createAdminClient();
+  const ok = suspended ? await suspendUser(admin, userId, "운영자 정지") : await unsuspendUser(admin, userId);
+  if (!ok) return { ok: false, error: "저장하지 못했어요." };
   console.info(`[admin] ${g.userId} ${suspended ? "suspended" : "unsuspended"} ${userId}`);
   return { ok: true };
 }

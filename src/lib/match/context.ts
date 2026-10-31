@@ -17,7 +17,7 @@ export async function pairContext(targetId: unknown, limit: { key: string; count
   if (!(await allow(`${limit.key}:${userId}`, limit.count, limit.seconds))) return { error: TOO_MANY } as const;
   const admin = createAdminClient();
   const { data: flag } = await admin.from("user_flags").select("suspended_at").eq("user_id", userId).maybeSingle();
-  if (flag?.suspended_at) return { error: "신고가 접수되어 지금은 이용할 수 없어요." } as const;
+  if (flag?.suspended_at) return { error: "이용이 정지되어 지금은 할 수 없어요." } as const;
   const pair = await loadPair(admin, userId, targetId);
   return { userId, admin, pair, stage: pairStage(pair) } as const;
 }

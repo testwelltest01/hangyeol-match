@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { Improvement, UserView } from "@/lib/photo/feedback";
 import type { Filters, Gender, Religion } from "@/lib/match/filters";
 import { isDrawing, type IllustrationStatus } from "@/lib/illustration/rules";
+import { REJOIN_REASON } from "@/lib/safety/rules";
 
 export type PhotoRow = { id: string; slot: "face" | "body"; path: string; feedback: UserView; created_at: string };
 
@@ -22,10 +23,13 @@ export type MySetup = {
   photos: { face: PhotoRow | null; body: PhotoRow | null };
   /** instagramVerified = 한결 인스타 DM 코드로 인스타 계정을 확인함 (선택) */
   contact: { instagram: boolean; kakao: boolean; instagramVerified: boolean } | null;
-  consents: { religion: boolean; photoOverseas: boolean; illustration: boolean };
+  /** single = 법적으로 혼인 중이 아님을 확인함 (2026-10-31부터 처음 정보 입력에서 필수, 그 전 회원은 추천 화면 안내에서) */
+  consents: { religion: boolean; photoOverseas: boolean; illustration: boolean; single: boolean };
   /** 그림 프로필 (매칭에 꼭 필요). done = 다 그린(지우지 않은) 그림이 있음, drawing = 지금 그리는 중 */
   illustration: { done: boolean; drawing: boolean };
   suspended: boolean;
+  /** 정지 이유가 재가입 제한(정지된 채 탈퇴한 신원으로 다시 가입)인지. 안내 문구가 다르다 */
+  rejoinBlocked: boolean;
   /** 친구 평가 수 ('친구가 보는 나') */
   friendCount: number;
 };
@@ -43,7 +47,7 @@ export async function loadMySetup(userId: string): Promise<MySetup | null> {
     admin.from("photos").select("id, slot, path, feedback, created_at").eq("user_id", userId).is("replaced_at", null),
     admin.from("contacts").select("instagram, kakao").eq("user_id", userId).maybeSingle(),
     admin.from("consents").select("kind").eq("user_id", userId),
-    admin.from("user_flags").select("suspended_at").eq("user_id", userId).maybeSingle(),
+    admin.from("user_flags").select("suspended_at, reason").eq("user_id", userId).maybeSingle(),
     admin.from("friend_ratings").select("id", { count: "exact", head: true }).eq("user_id", userId),
     admin
       .from("illustrations")
@@ -67,12 +71,18 @@ export async function loadMySetup(userId: string): Promise<MySetup | null> {
     contact: contact.data
       ? { instagram: Boolean(contact.data.instagram), kakao: Boolean(contact.data.kakao), instagramVerified: Boolean(igVerified.data) }
       : null,
-    consents: { religion: kinds.has("religion"), photoOverseas: kinds.has("photo_overseas"), illustration: kinds.has("illustration") },
+    consents: {
+      religion: kinds.has("religion"),
+      photoOverseas: kinds.has("photo_overseas"),
+      illustration: kinds.has("illustration"),
+      single: kinds.has("single"),
+    },
     illustration: {
       done: (illus.data ?? []).some((r) => r.status === "done"),
       drawing: (illus.data ?? []).some((r) => isDrawing(r as { status: IllustrationStatus; created_at: string })),
     },
     suspended: Boolean(flag.data?.suspended_at),
+    rejoinBlocked: Boolean(flag.data?.suspended_at) && flag.data?.reason === REJOIN_REASON,
     friendCount: friends.count ?? 0,
   };
 }

@@ -85,7 +85,10 @@ export function SafetyActions({ targetId, name, connected }: { targetId: string;
             placeholder="자세한 내용 (선택)"
             className={fieldClass}
           />
-          <p className="mt-2 text-muted">신고하면 바로 차단돼요. 운영자가 확인하고, 신고가 여러 건 쌓이면 상대의 매칭이 멈춰요.</p>
+          <p className="mt-2 leading-relaxed text-muted">
+            신고하면 바로 차단돼요. 성적인 말·위협·돈 요구·미성년자는 서로 관심을 보낸 사이라면 신고 한 번으로 상대의 매칭이 바로 멈추고,
+            운영자가 모든 신고를 확인해요.
+          </p>
           <button
             type="button"
             disabled={!reason || pending}

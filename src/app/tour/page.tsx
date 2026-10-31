@@ -61,9 +61,10 @@ const EMPTY_SETUP: MySetup = {
   matchProfile: null,
   photos: { face: null, body: null },
   contact: null,
-  consents: { religion: false, photoOverseas: false, illustration: false },
+  consents: { religion: false, photoOverseas: false, illustration: false, single: false },
   illustration: { done: false, drawing: false },
   suspended: false,
+  rejoinBlocked: false,
   friendCount: 0,
 };
 

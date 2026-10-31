@@ -7,6 +7,7 @@ import { purgeApiUsage } from "@/lib/usage/server";
 import { expireUnansweredInterests, generateRecommendations } from "@/lib/match/server";
 import { pushMessages } from "@/lib/push/rules";
 import { sendPushMany } from "@/lib/push/server";
+import { syncIdentityBans } from "@/lib/safety/server";
 import { safeEqual } from "@/lib/security";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -73,6 +74,11 @@ export async function GET(request: Request) {
   // 인스타 확인: 하루 지난 코드는 지우고(처리방침), 공식 계정 토큰(60일)은 7일마다 새로 받는다
   const igCodesPurged = await purgeIgCodes(admin).catch(() => 0);
   const igToken = process.env.INSTAGRAM_ACCESS_TOKEN ? (await refreshIgToken(admin).catch(() => ({ ok: false, message: "error" }))).message : null;
+  // 재가입 제한 기록을 정지 상태에 맞추고, 정지된 채 탈퇴한 계정의 기록은 3년 뒤 지운다 (처리방침의 보유기간)
+  const identityBans = await syncIdentityBans(admin).catch((e) => {
+    console.error("[cron] identity bans failed", e);
+    return null;
+  });
 
-  return Response.json({ day, interestsExpired, created, notified, purged, chatPurged: chatPurged ?? 0, loveGuestPurged, apiUsagePurged, igCodesPurged, igToken });
+  return Response.json({ day, interestsExpired, created, notified, purged, chatPurged: chatPurged ?? 0, loveGuestPurged, apiUsagePurged, igCodesPurged, igToken, identityBans });
 }

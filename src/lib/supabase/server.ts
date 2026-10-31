@@ -50,12 +50,13 @@ export async function getUserId(): Promise<string | null> {
  * 로그인 정보와 비밀번호 설정 여부. 비밀번호는 가입할 때 이메일 코드로 확인한 뒤 만든다.
  * 코드 인증만 하고 비밀번호를 만들기 전에 나간 계정은 password_set이 없어서 비밀번호 만들기로 보낸다.
  */
-export async function getAuth(): Promise<{ userId: string; passwordSet: boolean } | null> {
+export async function getAuth(): Promise<{ userId: string; passwordSet: boolean; email: string | null } | null> {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const sub = data?.claims?.sub as string | undefined;
   if (!sub) return null;
   track(data?.claims);
   const meta = (data?.claims?.user_metadata ?? {}) as Record<string, unknown>;
-  return { userId: sub, passwordSet: meta.password_set === true };
+  const email = typeof data?.claims?.email === "string" ? data.claims.email : null;
+  return { userId: sub, passwordSet: meta.password_set === true, email };
 }

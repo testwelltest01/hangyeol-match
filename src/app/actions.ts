@@ -6,6 +6,7 @@ import { OBSERVER_ITEMS, STEPS, TEST_VERSION, firstIncompleteStep, sanitizeAnswe
 import { computeScores } from "@/lib/scoring";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { allow, clientIp, TOO_MANY } from "@/lib/security";
+import { enforceIdentityBan } from "@/lib/safety/server";
 import { createClient, getUserId } from "@/lib/supabase/server";
 
 export type FormState = { error: string | null };
@@ -28,11 +29,13 @@ export async function saveProfile(_prev: FormState, formData: FormData): Promise
   const agreePhotoAi = formData.get("agreePhotoAi") === "on";
   const agreeReligion = formData.get("agreeReligion") === "on";
   const agreeIllustration = formData.get("agreeIllustration") === "on";
+  const confirmSingle = formData.get("confirmSingle") === "on";
 
   if (nickname.length < 1 || nickname.length > 12) return { error: "닉네임은 1~12자로 정해주세요." };
   if (gender !== "male" && gender !== "female") return { error: "성별을 골라주세요." };
   if (!Number.isInteger(birthYear) || birthYear < 1900) return { error: "출생연도를 확인해주세요." };
   if (!isAdultByBirthYear(birthYear)) return { error: "한결은 만 19세 이상만 이용할 수 있어요." };
+  if (!confirmSingle) return { error: "한결은 법적으로 혼인 중이 아닌 분만 이용할 수 있어요." };
   if (!agreed) return { error: "개인정보 수집·이용에 동의해야 검사를 시작할 수 있어요." };
   if (!agreePhotoAi) return { error: "프로필 사진을 AI가 확인하는 데 동의해야 시작할 수 있어요." };
   if (!agreeReligion) return { error: "종교 정보 수집·이용에 동의해야 시작할 수 있어요." };
@@ -49,16 +52,28 @@ export async function saveProfile(_prev: FormState, formData: FormData): Promise
   });
   if (error) return { error: "저장하지 못했어요. 잠시 후 다시 시도해주세요." };
 
-  // 동의 기록: 사진 AI 확인(국외 이전)·종교(민감정보)·그림 프로필(국외 이전)은 모두 필수
+  // 동의 기록: 사진 AI 확인(국외 이전)·종교(민감정보)·그림 프로필(국외 이전)·혼인 중이 아님 확인은 모두 필수
   const admin = createAdminClient();
   const { error: consentError } = await admin.from("consents").upsert([
     { user_id: userId, kind: "photo_overseas" },
     { user_id: userId, kind: "religion" },
     { user_id: userId, kind: "illustration" },
+    { user_id: userId, kind: "single" },
   ]);
   if (consentError) return { error: "동의를 저장하지 못했어요. 잠시 후 다시 시도해주세요." };
+  // /start를 거치지 않고 들어온 경우를 위해 여기서도 재가입 제한을 확인한다 (정지돼도 검사는 할 수 있고 매칭만 막힌다)
+  await enforceIdentityBan(admin, userId).catch((e) => console.error("[onboarding] identity ban check failed", e));
 
   redirect("/test");
+}
+
+/** 혼인 중이 아님 확인. 이 확인이 생기기 전(2026-10-31)에 처음 정보를 입력한 회원이 추천 화면 안내에서 한 번 누른다 */
+export async function confirmSingle(): Promise<{ ok: boolean; error?: string }> {
+  const userId = await getUserId();
+  if (!userId) return { ok: false, error: "로그인이 풀렸어요. 다시 로그인해주세요." };
+  if (!(await allow(`single:${userId}`, 10, 3600))) return { ok: false, error: TOO_MANY };
+  const { error } = await createAdminClient().from("consents").upsert({ user_id: userId, kind: "single" });
+  return error ? { ok: false, error: "저장하지 못했어요. 잠시 후 다시 시도해주세요." } : { ok: true };
 }
 
 /** 검사 한 단계를 저장한다. 마지막 단계까지 끝나면 점수를 계산해 저장한다. */

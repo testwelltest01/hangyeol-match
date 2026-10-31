@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { deleteAccount } from "@/app/actions";
+import { BAN_KEEP_DAYS } from "@/lib/safety/rules";
 
 /**
  * 탈퇴: 누르면 화면 안 확인 창을 띄우고, '탈퇴하기'를 한 번 더 눌러야 지운다 (되돌릴 수 없다).
- * 브라우저 기본 확인 창(window.confirm)은 사이트 주소가 붙어 낯설고 앱 안 브라우저에서 막히기도 해서 쓰지 않는다
+ * 브라우저 기본 확인 창(window.confirm)은 사이트 주소가 붙어 낯설고 앱 안 브라우저에서 막히기도 해서 쓰지 않는다.
+ * 이용이 정지된 상태면 탈퇴해도 재가입 제한이 남는다는 걸 미리 알린다 (src/lib/safety/)
  */
-export function DeleteAccount() {
+export function DeleteAccount({ suspended = false }: { suspended?: boolean }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -66,7 +68,14 @@ export function DeleteAccount() {
                 <strong className="font-semibold text-alert">탈퇴하면 복구할 수 없어요.</strong> 검사 결과, 친구 평가, 사진, 그림 프로필, 연락처,
                 관심·대화 기록이 바로 지워져요.
               </p>
-              <p>같은 이메일로 다시 가입할 수는 있지만, 처음부터 다시 시작해야 해요.</p>
+              {suspended ? (
+                <p>
+                  <strong className="font-semibold text-ink">지금은 이용이 정지된 상태예요.</strong> 탈퇴해도 정지 기록은 {BAN_KEEP_DAYS / 365}년 동안
+                  남아서, 다시 가입해도 매칭을 이용할 수 없어요.
+                </p>
+              ) : (
+                <p>같은 이메일로 다시 가입할 수는 있지만, 처음부터 다시 시작해야 해요.</p>
+              )}
             </div>
             {error && (
               <p role="alert" className="mt-3 text-sm text-alert">

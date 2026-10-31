@@ -14,6 +14,7 @@ import {
 import { personLine } from "@/components/PersonCard";
 import { Notice } from "@/components/ui";
 import { isReady, setupSteps, type MySetup, type SetupStep } from "@/lib/match/me";
+import { suspendedNotice } from "@/lib/match/safety";
 import { AppSettings } from "./AppSettings";
 import { ScrollToHash } from "@/components/ScrollToHash";
 import { PauseToggle } from "./PauseToggle";
@@ -81,7 +82,7 @@ export function MeView({ setup, faceUrl }: { setup: MySetup; faceUrl: string | n
         )}
       </section>
 
-      {setup.suspended && <Notice tone="alert">신고가 접수되어 매칭이 잠시 멈춰 있어요. 운영자가 확인한 뒤 다시 열려요.</Notice>}
+      {setup.suspended && <Notice tone="alert">{suspendedNotice(setup.rejoinBlocked)}</Notice>}
       {!ready && <NextStepCard steps={steps} showList={false} />}
 
       <ListGroup title="매칭 정보" note={ready ? "언제든 고칠 수 있어요. 바꾼 내용은 다음 추천부터 반영돼요." : undefined}>
@@ -132,7 +133,7 @@ export function MeView({ setup, faceUrl }: { setup: MySetup; faceUrl: string | n
         <SignOutButton />
       </ListGroup>
 
-      <DeleteAccount />
+      <DeleteAccount suspended={setup.suspended} />
     </div>
   );
 }

@@ -8,8 +8,9 @@ import { isReady, loadMySetup } from "@/lib/match/me";
 import { refreshTargets } from "@/lib/match/rules";
 import { pairContext } from "@/lib/match/context";
 import { loadPair, pairStage, pickRefresh, type PairStage } from "@/lib/match/server";
-import { REPORT_REASONS, type ReportReason } from "@/lib/match/safety";
+import { autoSuspension, isReportReason, type ReportReason } from "@/lib/match/safety";
 import { notifyPair } from "@/lib/push/server";
+import { suspendUser } from "@/lib/safety/server";
 import { allow, TOO_MANY } from "@/lib/security";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserId } from "@/lib/supabase/server";
@@ -63,15 +64,15 @@ export async function blockUser(targetId: string): Promise<Result> {
   return { ok: true };
 }
 
-/** 신고 3건이 쌓이면 운영자가 확인할 때까지 매칭을 자동으로 멈춘다 */
-const AUTO_SUSPEND_REPORTERS = 3;
-
+/**
+ * 신고: 신고하면 바로 차단되고 대화방이 닫힌다. 자동 정지 규칙은 src/lib/match/safety.ts autoSuspension
+ * (서로 관심 이후의 심한 신고는 한 건으로, 나머지는 서로 다른 사람 2명). 정지는 운영자가 확인할 때까지 유지되고 재가입 제한도 함께 걸린다
+ */
 export async function reportUser(targetId: string, reason: ReportReason, detail: string): Promise<Result> {
   const ctx = await context(targetId);
   if ("error" in ctx) return { ok: false, error: ctx.error! };
   const { userId, admin, pair } = ctx;
-  const validReason = reason === "contact_not_found" || REPORT_REASONS.some((r) => r.id === reason);
-  if (!validReason) return { ok: false, error: "신고 사유를 골라주세요." };
+  if (!isReportReason(reason)) return { ok: false, error: "신고 사유를 골라주세요." };
   if (typeof detail !== "string") return { ok: false, error: "잘못된 요청이에요." };
   if (!(await allow(`report:${userId}`, 20, 86400))) return { ok: false, error: TOO_MANY };
   // 추천받았거나 관심·수락으로 이어진 사람만 신고할 수 있다
@@ -97,14 +98,13 @@ export async function reportUser(targetId: string, reason: ReportReason, detail:
       .eq("target", targetId)
       .is("resolved_at", null)
       .neq("reason", "contact_not_found");
-    const reporters = new Set((reports ?? []).map((r) => r.reporter).filter(Boolean));
-    if (reporters.size >= AUTO_SUSPEND_REPORTERS) {
-      await admin.from("user_flags").upsert({
-        user_id: targetId,
-        suspended_at: new Date().toISOString(),
-        reason: `자동: 신고 ${reporters.size}건`,
-        updated_at: new Date().toISOString(),
-      });
+    const reporters = new Set((reports ?? []).map((r) => r.reporter).filter(Boolean)).size;
+    // 서로 관심을 보낸 사이: 사진이 공개됐고 대화를 나눴을 수 있다 (차단·신고 뒤에도 관심 기록은 남는다)
+    const mutual = pair.mine?.interest === true && pair.theirs?.interest === true;
+    const suspend = autoSuspension({ reason, mutual, reporters });
+    if (suspend) {
+      const { data: flag } = await admin.from("user_flags").select("suspended_at").eq("user_id", targetId).maybeSingle();
+      if (!flag?.suspended_at) await suspendUser(admin, targetId, suspend);
     }
   }
   return { ok: true };

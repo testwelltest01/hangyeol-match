@@ -69,6 +69,9 @@ export function OnboardingForm({ years }: { years: number[] }) {
       </label>
 
       <div className="space-y-3">
+        <Consent name="confirmSingle" required title="지금 법적으로 혼인 중이 아니에요">
+          한결은 결혼하지 않은 분만 이용할 수 있어요. 혼인 중인 사실이 확인되면 이용이 정지되고, 탈퇴한 뒤 다시 가입해도 이용할 수 없어요.
+        </Consent>
         <Consent name="agreePrivacy" required title="개인정보 수집·이용에 동의해요">
           이메일, 닉네임, 성별, 출생연도, 검사 응답, 친구가 남긴 평가. 리포트와 매칭 추천에 쓰고, 탈퇴하면 바로 지워요.{" "}
           <Link href="/privacy" target="_blank" className="underline underline-offset-4">

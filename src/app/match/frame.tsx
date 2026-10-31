@@ -9,6 +9,7 @@ import { personLine } from "@/components/PersonCard";
 import { Shell } from "@/components/Shell";
 import { Notice } from "@/components/ui";
 import { matchDay } from "@/lib/day";
+import { suspendedNotice } from "@/lib/match/safety";
 import { loadCoupons, type CouponState } from "@/lib/match/coupons";
 import { loadDashboard, type Dashboard, type PersonCard } from "@/lib/match/dashboard";
 import { isReady, loadMySetup, type MySetup } from "@/lib/match/me";
@@ -16,6 +17,7 @@ import { generateRecommendations } from "@/lib/match/server";
 import { getProgress, PROGRESS_PATH } from "@/lib/progress";
 import type { Scores } from "@/lib/scoring";
 import { PendingChevron } from "@/components/LinkPending";
+import { SingleConfirm } from "./SingleConfirm";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserId } from "@/lib/supabase/server";
 
@@ -64,14 +66,17 @@ export function MatchFrame({ current, title, sub, children }: { current: MatchTa
   );
 }
 
-/** 모든 탭 위에 띄우는 알림. 매칭 쉬기 안내는 오늘 탭에만 */
+/** 모든 탭 위에 띄우는 알림(정지, 혼인 중이 아님 확인, 연락처 확인). 매칭 쉬기 안내는 오늘 탭에만 */
 export function MatchNotices({ data, showPaused = false }: { data: MatchData; showPaused?: boolean }) {
   const { setup, d } = data;
   const paused = showPaused && setup.matchProfile?.paused;
-  if (!setup.suspended && !paused && !d.contactNotFound) return null;
+  // 혼인 중이 아님 확인이 생기기 전에 가입한 회원에게만 (정지된 사람에게는 정지 안내만)
+  const askSingle = !setup.consents.single && !setup.suspended;
+  if (!setup.suspended && !paused && !d.contactNotFound && !askSingle) return null;
   return (
     <div className="mb-6 space-y-3">
-      {setup.suspended && <Notice tone="alert">신고가 접수되어 매칭이 잠시 멈춰 있어요. 운영자가 확인한 뒤 다시 열려요.</Notice>}
+      {setup.suspended && <Notice tone="alert">{suspendedNotice(setup.rejoinBlocked)}</Notice>}
+      {askSingle && <SingleConfirm />}
       {paused && (
         <Notice>
           매칭을 쉬는 중이라 새 추천이 없어요.{" "}
